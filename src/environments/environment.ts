@@ -1,11 +1,12 @@
 export const environment = {
   production: false,
   firebase: {
-    apiKey: 'INSERISCI_LA_TUA_API_KEY',
-    authDomain: 'INSERISCI_IL_TUO_AUTH_DOMAIN',
-    projectId: 'INSERISCI_IL_TUO_PROJECT_ID',
-    storageBucket: 'INSERISCI_IL_TUO_STORAGE_BUCKET',
-    messagingSenderId: 'INSERISCI_IL_TUO_MESSAGING_SENDER_ID',
-    appId: 'INSERISCI_IL_TUO_APP_ID',
+    apiKey: 'AIzaSyAGua0PTiZGvoa1YhEFYpqyj1_YB9rdp0s',
+    authDomain: 'millionaire-app-69005.firebaseapp.com',
+    projectId: 'millionaire-app-69005',
+    storageBucket: 'millionaire-app-69005.firebasestorage.app',
+    messagingSenderId: '419647253271',
+    appId: '1:419647253271:web:752b6cc90edc0cfac02552',
+    measurementId: 'G-QKB45PDS9L',
   },
 };

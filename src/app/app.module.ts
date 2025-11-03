@@ -15,14 +15,9 @@ import { environment } from '../environments/environment';
 
 @NgModule({
   declarations: [AppComponent],
-  imports: [
-    BrowserModule,
-    IonicModule.forRoot(),
-    AppRoutingModule,
-    // ⛔️ rimuovi HttpClientModule (deprecato)
-  ],
+  imports: [BrowserModule, IonicModule.forRoot(), AppRoutingModule],
   providers: [
-    provideHttpClient(withInterceptorsFromDi()), // ✅ nuovo modo consigliato
+    provideHttpClient(withInterceptorsFromDi()),
     provideFirebaseApp(() => initializeApp(environment.firebase)),
     provideAuth(() => getAuth()),
   ],
