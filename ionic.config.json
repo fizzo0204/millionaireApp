@@ -1,0 +1,7 @@
+{
+  "name": "millionaireApp",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}
