@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "419647253271",
+    "project_id": "millionaire-app-69005",
+    "storage_bucket": "millionaire-app-69005.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:419647253271:android:13dd955be9151422c02552",
+        "android_client_info": {
+          "package_name": "io.ionic.starter"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "419647253271-0kvmnhrd8otj2o24oqq9ad9rm0l3vonh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "io.ionic.starter",
+            "certificate_hash": "7acd0b221037645df3fb5b3074968cfcb9ab4185"
+          }
+        },
+        {
+          "client_id": "419647253271-kohvq0q3git46j9me69clkd5p15r77n0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDFJMkI1NC-Ad_nqBsiotXRYypvSPL_jYA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "419647253271-kohvq0q3git46j9me69clkd5p15r77n0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
