@@ -1,8 +1,9 @@
-<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">millionaireApp</string>
     <string name="title_activity_main">millionaireApp</string>
     <string name="package_name">io.ionic.starter</string>
     <string name="custom_url_scheme">io.ionic.starter</string>
-    <string name="server_client_id">419647253271-kohvq0q3git46j9me69clkd5p15r77n0.apps.googleusercontent.com</string>
+    <string name="server_client_id">
+        419647253271-kohvq0q3git46j9me69clkd5p15r77n0.apps.googleusercontent.com
+    </string>
 </resources>

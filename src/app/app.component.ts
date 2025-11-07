@@ -1,28 +1,54 @@
 import { Component } from '@angular/core';
-import { Platform } from '@ionic/angular';
+import { IonicModule, Platform } from '@ionic/angular';
+import { CommonModule } from '@angular/common';
+import { RouterOutlet } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
-import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
+import { initializeApp } from 'firebase/app';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-root',
+  standalone: true,
+  imports: [IonicModule, CommonModule],
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],
-  standalone: false,
 })
 export class AppComponent {
   constructor(private platform: Platform) {
-    this.platform.ready().then(() => {
-      console.log('✅ App avviata');
+    this.initializeApp();
+  }
 
-      if (Capacitor.getPlatform() !== 'web') {
-        GoogleAuth.initialize({
-          clientId:
-            '419647253271-kohvq0q3git46j9me69clkd5p15r77n0.apps.googleusercontent.com',
-          scopes: ['profile', 'email'],
-          grantOfflineAccess: true,
-        });
-        console.log('✅ GoogleAuth inizializzato');
-      }
-    });
+  async initializeApp() {
+    await this.platform.ready();
+    console.log('✅ App avviata');
+
+    try {
+      // Inizializza Firebase
+      const app = initializeApp(environment.firebase);
+      const auth = getAuth(app);
+
+      // Logga automaticamente se l’utente è già autenticato
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          console.log('👤 Utente autenticato:', user.displayName);
+        } else {
+          console.log('🚪 Nessun utente loggato');
+        }
+      });
+
+      console.log('🔥 Firebase Auth inizializzato correttamente');
+    } catch (err) {
+      console.error('❌ Errore inizializzazione Firebase Auth:', err);
+    }
+
+    if (
+      Capacitor.getPlatform() === 'android' ||
+      Capacitor.getPlatform() === 'ios'
+    ) {
+      console.log('📱 App in esecuzione su piattaforma mobile');
+    } else {
+      console.log('💻 App in esecuzione su web/PWA');
+    }
   }
 }

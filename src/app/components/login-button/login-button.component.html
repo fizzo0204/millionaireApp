@@ -1,0 +1,14 @@
+<ng-container *ngIf="user$ | async as user; else loginBtn">
+  <div class="user-info" (click)="logout()">
+    <img [src]="user.photoURL || 'assets/avatar.svg'" alt="user" />
+    <span class="username">{{ user.displayName || "Utente" }}</span>
+    <small class="logout-text">Logout</small>
+  </div>
+</ng-container>
+
+<ng-template #loginBtn>
+  <ion-button fill="solid" color="dark" class="login-btn" (click)="login()">
+    <ion-icon name="logo-google" slot="start"></ion-icon>
+    Accedi
+  </ion-button>
+</ng-template>

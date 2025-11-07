@@ -1,35 +1,32 @@
 package io.ionic.starter;
 
 import android.os.Bundle;
-import androidx.annotation.Nullable;
+import android.util.Log;
+
 import com.getcapacitor.BridgeActivity;
 import com.google.firebase.FirebaseApp;
-import android.util.Log;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+
+import io.capawesome.capacitorjs.plugins.firebase.app.FirebaseAppPlugin;
 import io.capawesome.capacitorjs.plugins.firebase.authentication.FirebaseAuthenticationPlugin;
 
 public class MainActivity extends BridgeActivity {
+
   @Override
-  protected void onCreate(@Nullable Bundle savedInstanceState) {
+  public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    FirebaseApp.initializeApp(this);
-
     try {
-      GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-        .requestIdToken(getString(R.string.default_web_client_id)) // 👈 prende il client dal strings.xml
-        .requestEmail()
-        .build();
+      // ✅ 1. Inizializza Firebase nativo
+      FirebaseApp.initializeApp(this);
+      Log.d("FirebaseInit", "🔥 Firebase inizializzato correttamente");
 
-      GoogleSignInClient googleSignInClient = GoogleSignIn.getClient(this, gso);
-      Log.d("GoogleSignIn", "✅ Google Sign-In inizializzato correttamente");
+      // ✅ 2. Registra i plugin necessari
+      registerPlugin(FirebaseAppPlugin.class);
+      registerPlugin(FirebaseAuthenticationPlugin.class);
+      Log.d("FirebaseInit", "✅ Plugin FirebaseApp & FirebaseAuth registrati");
+
     } catch (Exception e) {
-      Log.e("GoogleSignIn", "❌ Errore durante init Google Sign-In", e);
+      Log.e("FirebaseInit", "❌ Errore durante init Firebase", e);
     }
-
-    registerPlugin(FirebaseAuthenticationPlugin.class);
-    Log.d("FirebaseInit", "✅ Firebase inizializzato e plugin registrato");
   }
 }

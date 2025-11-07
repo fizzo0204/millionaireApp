@@ -1,15 +1,18 @@
 import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { IonicModule } from '@ionic/angular';
+import { AuthService } from '../../services/auth.service';
 import { Observable } from 'rxjs';
-import { AuthService } from '../services/auth.service';
 import { User } from 'firebase/auth';
 
 @Component({
-  selector: 'app-home',
-  templateUrl: './home.page.html',
-  styleUrls: ['./home.page.scss'],
-  standalone: false,
+  selector: 'app-login',
+  standalone: true,
+  imports: [IonicModule, CommonModule],
+  templateUrl: './login.page.html',
+  styleUrls: ['./login.page.scss'],
 })
-export class HomePage {
+export class LoginPage {
   user$: Observable<User | null>;
 
   constructor(private authService: AuthService) {

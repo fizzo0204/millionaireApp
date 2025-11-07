@@ -1,0 +1,161 @@
+/* -------- SFONDO GENERALE -------- */
+ion-content.home-content {
+  --background: linear-gradient(180deg, #001f3f 0%, #012f60 100%);
+  display: block;
+  height: 100%;
+  color: #fff;
+  font-family: "Poppins", sans-serif;
+}
+
+/* -------- NAVBAR -------- */
+.navbar {
+  width: 100%;
+  background: #ffcc00;
+  color: #000;
+  padding: 0.8rem 1rem;
+  border-radius: 0 0 1rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  margin-bottom: 1rem;
+}
+
+.navbar .title {
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.navbar ion-icon {
+  font-size: 1.4rem;
+  margin-right: 0.4rem;
+  color: #0070f3;
+}
+
+/* -------- HERO -------- */
+.hero {
+  margin-top: 0.5rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.hero h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #ffea00;
+  margin-bottom: 0.3rem;
+}
+
+.hero p {
+  font-size: 1rem;
+  color: #cfd8dc;
+}
+
+/* -------- GRID -------- */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.2rem;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* -------- CARD BASE -------- */
+.level-card {
+  text-align: center;
+  border-radius: 1.2rem;
+  padding: 1.2rem;
+  color: #fff;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  animation: fadeUp 0.6s ease forwards;
+}
+
+.level-card:hover {
+  transform: scale(1.05);
+}
+
+/* -------- COLORI -------- */
+.easy {
+  background: linear-gradient(135deg, #00c6ff, #0072ff);
+}
+
+.medium {
+  background: linear-gradient(135deg, #9c27b0, #6a1b9a);
+}
+
+.hard {
+  background: linear-gradient(135deg, #d32f2f, #b71c1c);
+}
+
+.extreme {
+  background: linear-gradient(135deg, #ff9100, #ff6d00);
+}
+
+/* -------- TESTI -------- */
+.level-card h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.level-card p {
+  margin-top: 0.4rem;
+  font-size: 0.9rem;
+  color: #fefefe;
+}
+
+/* -------- ANIMAZIONE -------- */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* ---------- ANIMAZIONE DI ENTRATA EFFETTO SEQUENZA ---------- */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.cards-grid .level-card {
+  opacity: 0;
+  animation: fadeSlideUp 0.6s ease forwards;
+}
+
+/* Sequenza (ritardo progressivo per effetto “uno dopo l’altro”) */
+.cards-grid .level-card:nth-child(1) {
+  animation-delay: 0.15s;
+}
+.cards-grid .level-card:nth-child(2) {
+  animation-delay: 0.3s;
+}
+.cards-grid .level-card:nth-child(3) {
+  animation-delay: 0.45s;
+}
+.cards-grid .level-card:nth-child(4) {
+  animation-delay: 0.6s;
+}
+.navbar {
+  padding-top: env(
+    safe-area-inset-top
+  ); /* compatibile con notch / status bar */
+  box-sizing: border-box;
+}

@@ -1,0 +1,39 @@
+<ion-content fullscreen="true" class="home-content">
+  <!-- NAVBAR -->
+  <div class="navbar">
+    <div class="title">
+      <ion-icon name="cash-outline"></ion-icon>
+      <span>Millionaire Quiz</span>
+    </div>
+    <app-login-button></app-login-button>
+  </div>
+
+  <!-- HERO SECTION -->
+  <div class="hero">
+    <h2>🎯 Scegli la difficoltà</h2>
+    <p>Metti alla prova le tue conoscenze e scala la vetta del sapere!</p>
+  </div>
+
+  <!-- CARDS GRID -->
+  <div class="cards-grid fade-seq">
+    <ion-card class="level-card easy" (click)="selectLevel('easy')">
+      <h2>Easy</h2>
+      <p>Inizia con qualcosa di semplice 😊</p>
+    </ion-card>
+
+    <ion-card class="level-card medium" (click)="selectLevel('medium')">
+      <h2>Medium</h2>
+      <p>Ora si comincia a ragionare 😎</p>
+    </ion-card>
+
+    <ion-card class="level-card hard" (click)="selectLevel('hard')">
+      <h2>Hard</h2>
+      <p>Solo per veri esperti 💪</p>
+    </ion-card>
+
+    <ion-card class="level-card extreme" (click)="selectLevel('extreme')">
+      <h2>Extreme</h2>
+      <p>La sfida definitiva 🔥</p>
+    </ion-card>
+  </div>
+</ion-content>

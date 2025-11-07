@@ -35,3 +35,20 @@
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import "@ionic/angular/css/palettes/dark.system.css";
+html,
+body,
+ion-app,
+ion-content,
+ion-router-outlet {
+  height: 100%;
+  width: 100%;
+  display: block;
+}
+
+ion-content {
+  --background: linear-gradient(180deg, #001f3f 0%, #012f60 100%) !important;
+  color: #fff !important;
+}
+ion-content {
+  --padding-top: env(safe-area-inset-top);
+}
