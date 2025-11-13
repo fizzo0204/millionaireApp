@@ -1,11 +1,8 @@
 import { Component } from '@angular/core';
 import { IonicModule, Platform } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
-import { initializeApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { environment } from 'src/environments/environment';
+import { AuthService } from './services/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -15,7 +12,7 @@ import { environment } from 'src/environments/environment';
   styleUrls: ['app.component.scss'],
 })
 export class AppComponent {
-  constructor(private platform: Platform) {
+  constructor(private platform: Platform, private auth: AuthService) {
     this.initializeApp();
   }
 
@@ -23,32 +20,12 @@ export class AppComponent {
     await this.platform.ready();
     console.log('✅ App avviata');
 
-    try {
-      // Inizializza Firebase
-      const app = initializeApp(environment.firebase);
-      const auth = getAuth(app);
+    const isMobile = Capacitor.getPlatform() !== 'web';
+    console.log(isMobile ? '📱 Piattaforma mobile' : '💻 Web/PWA');
 
-      // Logga automaticamente se l’utente è già autenticato
-      onAuthStateChanged(auth, (user) => {
-        if (user) {
-          console.log('👤 Utente autenticato:', user.displayName);
-        } else {
-          console.log('🚪 Nessun utente loggato');
-        }
-      });
+    // ❌ NON chiamare più ensureAnonymousSession
+    // 🤖 Ora viene gestito SOLO da onAuthStateChanged dentro AuthService
 
-      console.log('🔥 Firebase Auth inizializzato correttamente');
-    } catch (err) {
-      console.error('❌ Errore inizializzazione Firebase Auth:', err);
-    }
-
-    if (
-      Capacitor.getPlatform() === 'android' ||
-      Capacitor.getPlatform() === 'ios'
-    ) {
-      console.log('📱 App in esecuzione su piattaforma mobile');
-    } else {
-      console.log('💻 App in esecuzione su web/PWA');
-    }
+    console.log('🧩 Ionic components definiti correttamente');
   }
 }

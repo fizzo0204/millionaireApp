@@ -4,18 +4,20 @@ import {
   getAuth,
   signInWithCredential,
   GoogleAuthProvider,
-  signOut,
-  User,
+  signInAnonymously,
   onAuthStateChanged,
+  User,
+  linkWithCredential,
+  Auth,
+  AuthCredential,
+  signInWithPopup,
 } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
 import { environment } from 'src/environments/environment';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
-import { Capacitor } from '@capacitor/core';
 
-// ✅ Inizializza Firebase app una sola volta
 const app = initializeApp(environment.firebase);
-const auth = getAuth(app);
+const auth: Auth = getAuth(app);
 
 @Injectable({
   providedIn: 'root',
@@ -24,56 +26,116 @@ export class AuthService {
   private userSubject = new BehaviorSubject<User | null>(null);
   user$ = this.userSubject.asObservable();
 
+  private loadingSubject = new BehaviorSubject<boolean>(false);
+  isLoading$ = this.loadingSubject.asObservable();
+
+  private initialAuthResolved = false;
+
   constructor() {
-    // ✅ Monitora sempre lo stato dell’utente
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
+      console.log(
+        '👤 Stato auth cambiato →',
+        user?.displayName || (user?.isAnonymous ? 'Anonimo' : 'null')
+      );
+
       this.userSubject.next(user);
-      if (user) console.log('👤 Utente loggato:', user.email);
-      else console.log('🚪 Nessun utente autenticato');
+
+      // Evita di interferire con eventi iniziali doppi su mobile
+      if (!this.initialAuthResolved) {
+        this.initialAuthResolved = true;
+
+        // Se all’avvio non c’è un utente → ne creiamo uno anonimo
+        if (!user) {
+          console.log('🚪 Nessun utente → creo accesso anonimo...');
+          const anon = await signInAnonymously(auth);
+          this.userSubject.next(anon.user);
+          console.log('🙈 Accesso anonimo creato');
+        }
+      }
     });
   }
 
-  async googleSignIn() {
+  /* ============================================================
+     🔐 LOGIN GOOGLE (mobile + web)
+     ============================================================ */
+  async googleSignIn(): Promise<void> {
+    this.loadingSubject.next(true);
+
     try {
-      if (Capacitor.getPlatform() === 'web') {
-        // 🌐 Login Google per browser (fallback)
-        const provider = new GoogleAuthProvider();
-        const userCredential = await import('firebase/auth').then(
-          ({ signInWithPopup }) => signInWithPopup(auth, provider)
-        );
-        this.userSubject.next(userCredential.user);
-        console.log('✅ Accesso completato via web:', userCredential.user);
-        return;
-      }
+      console.log('🔹 Avvio login Google...');
+      const isMobile = (window as any).Capacitor?.isNativePlatform?.() ?? false;
 
-      console.log('🚀 Avvio login con Google su Android...');
-      const result = await FirebaseAuthentication.signInWithGoogle();
+      let credential: AuthCredential | null = null;
 
-      if (result.credential?.idToken) {
-        console.log('🧩 Token Google ricevuto, creo credenziale Firebase...');
-        const credential = GoogleAuthProvider.credential(
-          result.credential.idToken
+      if (isMobile) {
+        console.log(
+          '📱 Login Google tramite Capacitor FirebaseAuthentication...'
         );
-        const userCredential = await signInWithCredential(auth, credential);
-        this.userSubject.next(userCredential.user);
-        console.log('✅ Accesso completato:', userCredential.user);
+        const result = await FirebaseAuthentication.signInWithGoogle();
+
+        if (!result.credential?.idToken) {
+          throw new Error('❌ Nessun token Google ricevuto dal plugin');
+        }
+
+        credential = GoogleAuthProvider.credential(result.credential.idToken);
       } else {
-        console.warn('⚠️ Nessun token Google ricevuto dal plugin');
+        console.log('💻 Login Google tramite popup web...');
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+        credential = GoogleAuthProvider.credentialFromResult(result);
       }
-    } catch (error: any) {
-      console.error('❌ Errore durante il login con Google:', error);
-      alert('Errore durante il login con Google.\n' + (error.message || error));
+
+      if (!credential) throw new Error('❌ Credenziale non valida');
+
+      const currentUser = auth.currentUser;
+
+      // 🔗 Se è anonimo → collegalo
+      if (currentUser && currentUser.isAnonymous) {
+        console.log('🔗 Provo a collegare account anonimo a Google...');
+        try {
+          await linkWithCredential(currentUser, credential);
+          console.log('✅ Account anonimo collegato a Google');
+        } catch (err: any) {
+          if (err.code === 'auth/credential-already-in-use') {
+            console.warn('⚠️ Account Google già esistente → login diretto');
+            await signInWithCredential(auth, credential);
+          } else {
+            throw err;
+          }
+        }
+      } else {
+        await signInWithCredential(auth, credential);
+      }
+
+      console.log('✅ Accesso Google completato.');
+    } catch (error) {
+      console.error('❌ Errore login Google:', error);
+    } finally {
+      this.loadingSubject.next(false);
     }
   }
 
-  async logout() {
+  /* ============================================================
+     🚪 LOGOUT con ricreazione immediata utente anonimo
+     ============================================================ */
+  async logout(): Promise<void> {
+    this.loadingSubject.next(true);
+
     try {
+      console.log('👋 Effettuo logout...');
+
       await FirebaseAuthentication.signOut();
-      await signOut(auth);
-      this.userSubject.next(null);
-      console.log('👋 Logout completato.');
-    } catch (error) {
-      console.error('❌ Errore durante il logout:', error);
+      await auth.signOut();
+
+      console.log('⚪ Creo nuovo utente anonimo dopo logout...');
+      const anon = await signInAnonymously(auth);
+
+      console.log('🙈 Nuovo utente anonimo generato.');
+      this.userSubject.next(anon.user);
+    } catch (err) {
+      console.error('❌ Errore durante logout:', err);
+    } finally {
+      this.loadingSubject.next(false);
     }
   }
 }

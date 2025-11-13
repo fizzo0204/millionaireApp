@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import { User } from 'firebase/auth';
 import { AuthService } from '../../services/auth.service';
 
@@ -13,17 +13,18 @@ import { AuthService } from '../../services/auth.service';
   styleUrls: ['./login-button.component.scss'],
 })
 export class LoginButtonComponent {
-  user$: Observable<User | null>;
+  user$: Observable<User | null> = this.auth.user$;
+  loading$ = this.auth.isLoading$;
 
-  constructor(private authService: AuthService) {
-    this.user$ = this.authService.user$;
-  }
+  constructor(private auth: AuthService) {}
 
-  login() {
-    this.authService.googleSignIn().catch(console.error);
-  }
+  async handleClick(user: User | null) {
+    const loading = await firstValueFrom(this.loading$);
+    if (loading) return;
 
-  logout() {
-    this.authService.logout().catch(console.error);
+    if (!user || user.isAnonymous) {
+      return this.auth.googleSignIn();
+    }
+    return this.auth.logout();
   }
 }
