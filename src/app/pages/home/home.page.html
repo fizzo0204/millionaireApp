@@ -1,4 +1,10 @@
 <ion-content fullscreen="true" class="home-content">
+  <!-- MODALE ANONIMO -->
+  <app-anonymous-modal
+    *ngIf="showAnonModal"
+    (dismissed)="onAnonModalDismissed()"
+  ></app-anonymous-modal>
+
   <!-- NAVBAR -->
   <div class="navbar">
     <div class="title">

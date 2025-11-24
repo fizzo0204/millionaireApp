@@ -31,3 +31,27 @@ ion-router-outlet {
   width: 100%;
   display: block;
 }
+
+/* ============================
+   🟦 MODALE ANONIMO — OVERLAY
+   ============================ */
+
+ion-modal.anon-modal::part(backdrop) {
+  background: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(6px);
+}
+
+/* ============================
+   🟩 MODALE ANONIMO — CARD
+   ============================ */
+
+ion-modal.anon-modal {
+  --width: 90%;
+  --max-width: 380px;
+  --height: auto;
+  --border-radius: 20px;
+  --background: transparent; /* 🔥 niente bianco */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

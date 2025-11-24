@@ -23,9 +23,6 @@ export class AppComponent {
     const isMobile = Capacitor.getPlatform() !== 'web';
     console.log(isMobile ? '📱 Piattaforma mobile' : '💻 Web/PWA');
 
-    // ❌ NON chiamare più ensureAnonymousSession
-    // 🤖 Ora viene gestito SOLO da onAuthStateChanged dentro AuthService
-
     console.log('🧩 Ionic components definiti correttamente');
   }
 }

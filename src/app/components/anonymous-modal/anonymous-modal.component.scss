@@ -1,0 +1,98 @@
+:host {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+
+/* Sfondo scuro semi-trasparente */
+.anon-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+}
+
+/* Card centrale in stile Millionaire */
+.anon-card {
+  width: 100%;
+  max-width: 380px;
+  background: radial-gradient(circle at top, #023b7a, #001a33);
+  border-radius: 24px;
+  padding: 22px 20px 18px;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.5);
+  color: #fff;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+h2 {
+  margin: 0 0 10px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffea00;
+}
+
+p {
+  margin: 0 0 18px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: #e0ecff;
+}
+
+/* Bottoni */
+.btn-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+button {
+  border: none;
+  outline: none;
+  cursor: pointer;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 10px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease,
+    color 0.2s ease;
+}
+
+/* Bottone "Gioca anonimo" */
+.ghost-btn {
+  background: transparent;
+  color: #ffea00;
+  border: 1px solid rgba(255, 234, 0, 0.6);
+
+  &:hover {
+    background: rgba(255, 234, 0, 0.12);
+    box-shadow: 0 0 10px rgba(255, 234, 0, 0.35);
+    transform: translateY(-1px);
+  }
+}
+
+/* Bottone "Accedi" con Google */
+.google-btn {
+  background: #ffcc00;
+  color: #000;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+
+  ion-icon {
+    margin-right: 6px;
+    font-size: 1.1rem;
+  }
+
+  &:hover {
+    background: #ffd633;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  }
+}
