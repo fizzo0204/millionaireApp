@@ -1,20 +1,22 @@
 <div class="anon-backdrop">
   <div class="anon-card">
-    <h2>Continua come ospite?</h2>
+    <h2>Accedi per continuare</h2>
 
     <p>
-      Stai giocando in <strong>modalità anonima</strong>.<br />
-      Accedi con Google per salvare i progressi e sbloccare ricompense 🎁
+      Per giocare a <strong>Millionaire Quiz</strong> devi accedere con Google.
+      <br />
+      In questo modo potrai salvare i progressi e ottenere le ricompense 🎁
     </p>
 
     <div class="btn-row">
-      <button class="ghost-btn" type="button" (click)="close()">
-        Gioca anonimo
-      </button>
-
-      <button class="google-btn" type="button" (click)="login()">
+      <button
+        class="google-btn"
+        type="button"
+        (click)="login()"
+        [disabled]="loading"
+      >
         <ion-icon name="logo-google"></ion-icon>
-        <span>Accedi</span>
+        <span>{{ loading ? "Accesso in corso..." : "Accedi con Google" }}</span>
       </button>
     </div>
   </div>

@@ -1,11 +1,6 @@
 <ion-content fullscreen="true" class="home-content">
-  <!-- MODALE ANONIMO -->
-  <app-anonymous-modal
-    *ngIf="showAnonModal"
-    (dismissed)="onAnonModalDismissed()"
-  ></app-anonymous-modal>
+  <app-anonymous-modal *ngIf="showAnonModal"></app-anonymous-modal>
 
-  <!-- NAVBAR -->
   <div class="navbar">
     <div class="title">
       <ion-icon name="cash-outline"></ion-icon>
@@ -14,13 +9,16 @@
     <app-login-button></app-login-button>
   </div>
 
-  <!-- HERO SECTION -->
   <div class="hero">
     <h2>🎯 Scegli la difficoltà</h2>
     <p>Metti alla prova le tue conoscenze e scala la vetta del sapere!</p>
   </div>
 
-  <!-- CARDS GRID -->
+  <div class="coins-box">
+    <ion-icon name="logo-bitcoin"></ion-icon>
+    <span>Monete: {{ coins$ | async }}</span>
+  </div>
+
   <div class="cards-grid fade-seq">
     <ion-card class="level-card easy" (click)="selectLevel('easy')">
       <h2>Easy</h2>
@@ -41,5 +39,11 @@
       <h2>Extreme</h2>
       <p>La sfida definitiva 🔥</p>
     </ion-card>
+  </div>
+
+  <div class="reward-wrapper">
+    <ion-button expand="full" color="warning" (click)="watchAd()">
+      🎁 Guarda video e guadagna 10 monete
+    </ion-button>
   </div>
 </ion-content>

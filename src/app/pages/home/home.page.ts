@@ -1,11 +1,13 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
-import { Subscription } from 'rxjs';
+import { Subscription, Observable } from 'rxjs';
 
 import { LoginButtonComponent } from '../../components/login-button/login-button.component';
 import { AnonymousModalComponent } from '../../components/anonymous-modal/anonymous-modal.component';
 import { AuthService } from 'src/app/services/auth.service';
+import { AdsService } from 'src/app/services/ads.service';
+import { CoinsService } from 'src/app/services/coins.service';
 
 @Component({
   selector: 'app-home',
@@ -21,40 +23,41 @@ import { AuthService } from 'src/app/services/auth.service';
 })
 export class HomePage implements OnInit, OnDestroy {
   private userSub?: Subscription;
-
-  // controlla la visibilità della modale
   showAnonModal = false;
-  // per non riaprirla in continuo durante la stessa sessione
-  private dismissedOnceInSession = false;
 
-  constructor(private auth: AuthService) {}
+  coins$: Observable<number>;
 
-  ngOnInit() {
-    this.userSub = this.auth.user$.subscribe((user) => {
-      if (!user) return;
-
-      if (user.isAnonymous) {
-        // utente anonimo → mostra modale solo se non è stata chiusa in questa sessione
-        if (!this.dismissedOnceInSession) {
-          this.showAnonModal = true;
-        }
-      } else {
-        // utente Google → nessuna modale
-        this.showAnonModal = false;
-      }
-    });
+  constructor(
+    private auth: AuthService,
+    private ads: AdsService,
+    private coinsService: CoinsService,
+  ) {
+    this.coins$ = this.coinsService.coins$;
   }
 
-  onAnonModalDismissed() {
-    this.showAnonModal = false;
-    this.dismissedOnceInSession = true;
+  ngOnInit() {
+    this.ads.showBanner();
+
+    this.userSub = this.auth.user$.subscribe((user) => {
+      this.showAnonModal = !!user?.isAnonymous;
+    });
   }
 
   selectLevel(level: string) {
     console.log(`🎮 Hai selezionato il livello: ${level}`);
   }
 
+  async watchAd() {
+    const reward = await this.ads.showRewardedAd();
+
+    if (reward) {
+      await this.coinsService.addCoins(10);
+      console.log('⭐ Ricompensa ottenuta: +10 monete');
+    }
+  }
+
   ngOnDestroy() {
     this.userSub?.unsubscribe();
+    this.ads.hideBanner();
   }
 }

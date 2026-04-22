@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { AuthService } from 'src/app/services/auth.service';
@@ -11,17 +11,19 @@ import { AuthService } from 'src/app/services/auth.service';
   styleUrls: ['./anonymous-modal.component.scss'],
 })
 export class AnonymousModalComponent {
-  @Output() dismissed = new EventEmitter<void>();
+  loading = false;
 
   constructor(private auth: AuthService) {}
 
-  close() {
-    // chiude solo la modale, l’utente resta anonimo
-    this.dismissed.emit();
-  }
-
   async login() {
-    await this.auth.googleSignIn();
-    this.dismissed.emit();
+    if (this.loading) return;
+
+    this.loading = true;
+    const success = await this.auth.googleSignIn();
+    this.loading = false;
+
+    if (!success) {
+      console.log('Login non completato o annullato.');
+    }
   }
 }

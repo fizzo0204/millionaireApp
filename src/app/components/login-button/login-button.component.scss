@@ -12,7 +12,9 @@
   padding: 0 1rem;
   min-width: 120px;
   height: 44px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -57,19 +59,12 @@
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  cursor: pointer;
   color: #000;
   background: #ffea00;
   padding: 0.3rem 0.9rem;
   border-radius: 2rem;
   border: 2px solid #000;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-  transition: transform 0.2s ease, background 0.3s ease;
-
-  &:hover {
-    transform: scale(1.05);
-    background: #ffd500;
-  }
 
   img {
     width: 26px;
@@ -80,10 +75,5 @@
   .username {
     font-size: 0.8rem;
     font-weight: 600;
-  }
-
-  .logout-icon {
-    font-size: 1rem;
-    margin-left: 0.2rem;
   }
 }

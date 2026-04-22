@@ -22,6 +22,7 @@
     "@angular/platform-browser": "^20.0.0",
     "@angular/platform-browser-dynamic": "^20.0.0",
     "@angular/router": "^20.0.0",
+    "@capacitor-community/admob": "^7.2.0",
     "@capacitor-firebase/app": "^7.4.0",
     "@capacitor-firebase/authentication": "^7.4.0",
     "@capacitor/android": "^7.4.4",

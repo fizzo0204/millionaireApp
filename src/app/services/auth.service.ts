@@ -35,16 +35,14 @@ export class AuthService {
     onAuthStateChanged(auth, async (user) => {
       console.log(
         '👤 Stato auth cambiato →',
-        user?.displayName || (user?.isAnonymous ? 'Anonimo' : 'null')
+        user?.displayName || (user?.isAnonymous ? 'Anonimo' : 'null'),
       );
 
       this.userSubject.next(user);
 
-      // Evita di interferire con eventi iniziali doppi su mobile
       if (!this.initialAuthResolved) {
         this.initialAuthResolved = true;
 
-        // Se all’avvio non c’è un utente → ne creiamo uno anonimo
         if (!user) {
           console.log('🚪 Nessun utente → creo accesso anonimo...');
           const anon = await signInAnonymously(auth);
@@ -55,10 +53,7 @@ export class AuthService {
     });
   }
 
-  /* ============================================================
-     🔐 LOGIN GOOGLE (mobile + web)
-     ============================================================ */
-  async googleSignIn(): Promise<void> {
+  async googleSignIn(): Promise<boolean> {
     this.loadingSubject.next(true);
 
     try {
@@ -69,7 +64,7 @@ export class AuthService {
 
       if (isMobile) {
         console.log(
-          '📱 Login Google tramite Capacitor FirebaseAuthentication...'
+          '📱 Login Google tramite Capacitor FirebaseAuthentication...',
         );
         const result = await FirebaseAuthentication.signInWithGoogle();
 
@@ -85,11 +80,12 @@ export class AuthService {
         credential = GoogleAuthProvider.credentialFromResult(result);
       }
 
-      if (!credential) throw new Error('❌ Credenziale non valida');
+      if (!credential) {
+        throw new Error('❌ Credenziale non valida');
+      }
 
       const currentUser = auth.currentUser;
 
-      // 🔗 Se è anonimo → collegalo
       if (currentUser && currentUser.isAnonymous) {
         console.log('🔗 Provo a collegare account anonimo a Google...');
         try {
@@ -108,16 +104,15 @@ export class AuthService {
       }
 
       console.log('✅ Accesso Google completato.');
+      return true;
     } catch (error) {
       console.error('❌ Errore login Google:', error);
+      return false;
     } finally {
       this.loadingSubject.next(false);
     }
   }
 
-  /* ============================================================
-     🚪 LOGOUT con ricreazione immediata utente anonimo
-     ============================================================ */
   async logout(): Promise<void> {
     this.loadingSubject.next(true);
 

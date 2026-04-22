@@ -23,8 +23,7 @@ export class LoginButtonComponent {
     if (loading) return;
 
     if (!user || user.isAnonymous) {
-      return this.auth.googleSignIn();
+      await this.auth.googleSignIn();
     }
-    return this.auth.logout();
   }
 }
