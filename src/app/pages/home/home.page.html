@@ -1,49 +1,115 @@
 <ion-content fullscreen="true" class="home-content">
   <app-anonymous-modal *ngIf="showAnonModal"></app-anonymous-modal>
 
-  <div class="navbar">
-    <div class="title">
-      <ion-icon name="cash-outline"></ion-icon>
-      <span>Millionaire Quiz</span>
+  <div class="page-shell">
+    <div class="navbar">
+      <div class="title">
+        <span class="crown">👑</span>
+        <span>Millionaire Quiz</span>
+      </div>
+
+      <div class="navbar-right">
+        <app-login-button></app-login-button>
+      </div>
     </div>
-    <app-login-button></app-login-button>
-  </div>
 
-  <div class="hero">
-    <h2>🎯 Scegli la difficoltà</h2>
-    <p>Metti alla prova le tue conoscenze e scala la vetta del sapere!</p>
-  </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">🧠</div>
+        <div class="stat-value">12</div>
+        <div class="stat-label">Quiz giocati</div>
+      </div>
 
-  <div class="coins-box">
-    <ion-icon name="logo-bitcoin"></ion-icon>
-    <span>Monete: {{ coins$ | async }}</span>
-  </div>
+      <div class="stat-card">
+        <div class="stat-icon">🏆</div>
+        <div class="stat-value">80%</div>
+        <div class="stat-label">Miglior punteggio</div>
+      </div>
 
-  <div class="cards-grid fade-seq">
-    <ion-card class="level-card easy" (click)="selectLevel('easy')">
-      <h2>Easy</h2>
-      <p>Inizia con qualcosa di semplice 😊</p>
-    </ion-card>
+      <div class="stat-card">
+        <div class="stat-icon">🪙</div>
+        <div class="stat-value">{{ coins$ | async }}</div>
+        <div class="stat-label">Monete</div>
+      </div>
+    </div>
 
-    <ion-card class="level-card medium" (click)="selectLevel('medium')">
-      <h2>Medium</h2>
-      <p>Ora si comincia a ragionare 😎</p>
-    </ion-card>
+    <div class="section-title">
+      <span>🎯</span>
+      <h2>Categorie disponibili</h2>
+    </div>
 
-    <ion-card class="level-card hard" (click)="selectLevel('hard')">
-      <h2>Hard</h2>
-      <p>Solo per veri esperti 💪</p>
-    </ion-card>
+    <div class="categories-grid">
+      <div
+        class="category-card"
+        *ngFor="let cat of categories"
+        [ngClass]="cat.className"
+        (click)="selectCategory(cat.id)"
+      >
+        <div class="category-icon">{{ cat.icon }}</div>
 
-    <ion-card class="level-card extreme" (click)="selectLevel('extreme')">
-      <h2>Extreme</h2>
-      <p>La sfida definitiva 🔥</p>
-    </ion-card>
-  </div>
+        <div class="category-text">
+          <h3>{{ cat.title }}</h3>
+          <p>{{ cat.description }}</p>
+        </div>
+      </div>
+    </div>
 
-  <div class="reward-wrapper">
-    <ion-button expand="full" color="warning" (click)="watchAd()">
-      🎁 Guarda video e guadagna 10 monete
-    </ion-button>
+    <div class="reward-panel">
+      <div class="reward-copy">
+        <div class="reward-title">
+          <span>🪙</span>
+          <strong>Vuoi più monete?</strong>
+        </div>
+        <p>Guarda un video e ottieni ricompense!</p>
+      </div>
+
+      <ion-button expand="block" class="reward-button" (click)="watchAd()">
+        <span>🎁</span>
+        Guarda video e guadagna 10 monete
+        <ion-icon name="chevron-forward-outline"></ion-icon>
+      </ion-button>
+    </div>
+
+    <div class="bottom-nav">
+      <button
+        type="button"
+        class="nav-item"
+        [class.active]="activeTab === 'home'"
+        (click)="setActiveTab('home')"
+      >
+        <ion-icon name="home-outline"></ion-icon>
+        <span>Home</span>
+      </button>
+
+      <button
+        type="button"
+        class="nav-item"
+        [class.active]="activeTab === 'classifica'"
+        (click)="setActiveTab('classifica')"
+      >
+        <ion-icon name="trophy-outline"></ion-icon>
+        <span>Classifica</span>
+      </button>
+
+      <button
+        type="button"
+        class="nav-item"
+        [class.active]="activeTab === 'negozio'"
+        (click)="setActiveTab('negozio')"
+      >
+        <ion-icon name="cart-outline"></ion-icon>
+        <span>Negozio</span>
+      </button>
+
+      <button
+        type="button"
+        class="nav-item"
+        [class.active]="activeTab === 'impostazioni'"
+        (click)="setActiveTab('impostazioni')"
+      >
+        <ion-icon name="settings-outline"></ion-icon>
+        <span>Impostazioni</span>
+      </button>
+    </div>
   </div>
 </ion-content>

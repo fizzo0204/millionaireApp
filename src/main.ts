@@ -3,6 +3,14 @@ import { provideIonicAngular } from '@ionic/angular/standalone';
 import { provideRouter } from '@angular/router';
 import { AppComponent } from './app/app.component';
 import { routes } from './app/app-routes';
+import { addIcons } from 'ionicons';
+import {
+  homeOutline,
+  trophyOutline,
+  cartOutline,
+  settingsOutline,
+  chevronForwardOutline,
+} from 'ionicons/icons';
 
 // ✅ IMPORTA TUTTI I LOADER
 import { defineCustomElements as ionicElements } from '@ionic/core/loader';
@@ -26,3 +34,11 @@ bootstrapApplication(AppComponent, {
     console.log('🧩 Ionic components definiti correttamente');
   })
   .catch((err) => console.error('❌ Errore Bootstrap:', err));
+
+addIcons({
+  'home-outline': homeOutline,
+  'trophy-outline': trophyOutline,
+  'cart-outline': cartOutline,
+  'settings-outline': settingsOutline,
+  'chevron-forward-outline': chevronForwardOutline,
+});
