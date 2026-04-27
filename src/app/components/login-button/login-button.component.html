@@ -6,7 +6,9 @@
       alt="user"
       referrerpolicy="no-referrer"
     />
-    <span class="username">{{ user.displayName || "Utente" }}</span>
+    <span class="username">
+      {{ (user.displayName || "Utente").split(" ")[0] }}
+    </span>
   </div>
 
   <ng-template #anon>
