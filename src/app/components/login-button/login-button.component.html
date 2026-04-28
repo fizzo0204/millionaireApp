@@ -6,15 +6,13 @@
       alt="user"
       referrerpolicy="no-referrer"
     />
-    <span class="username">
-      {{ (user.displayName || "Utente").split(" ")[0] }}
-    </span>
+
+    <span class="username">{{ getFirstName(user) }}</span>
   </div>
 
   <ng-template #anon>
     <ion-button
       fill="solid"
-      color="dark"
       class="login-btn"
       (click)="handleClick(user)"
       [disabled]="loading$ | async"
@@ -22,6 +20,7 @@
       <ng-container *ngIf="!(loading$ | async); else load">
         <div class="login-content">
           <div class="user-label">Utente</div>
+
           <div class="google-login">
             <ion-icon name="logo-google"></ion-icon>
             <span>Accedi</span>
@@ -30,7 +29,7 @@
       </ng-container>
 
       <ng-template #load>
-        <ion-spinner name="dots" color="light"></ion-spinner>
+        <ion-spinner name="dots"></ion-spinner>
       </ng-template>
     </ion-button>
   </ng-template>

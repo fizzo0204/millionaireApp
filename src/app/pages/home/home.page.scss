@@ -223,7 +223,7 @@ ion-content.home-content {
   }
 }
 
-/* VITE TIMER */
+/* VITE */
 .life-timer {
   margin-top: 4px;
   font-size: 0.62rem;
@@ -231,9 +231,19 @@ ion-content.home-content {
   font-weight: 800;
 }
 
-/* ANIMAZIONE VITE */
 .lives-card.life-pulse {
   animation: lifePulse 0.9s ease;
+}
+
+.life-float {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-size: 1rem;
+  font-weight: 900;
+  color: #22ff88;
+  animation: lifeFloat 0.9s ease forwards;
+  pointer-events: none;
 }
 
 @keyframes lifePulse {
@@ -258,18 +268,6 @@ ion-content.home-content {
   }
 }
 
-/* +1 FLOAT */
-.life-float {
-  position: absolute;
-  top: 10px;
-  right: 14px;
-  font-size: 1rem;
-  font-weight: 900;
-  color: #22ff88;
-  animation: lifeFloat 0.9s ease forwards;
-  pointer-events: none;
-}
-
 @keyframes lifeFloat {
   0% {
     opacity: 0;
@@ -284,21 +282,5 @@ ion-content.home-content {
   100% {
     opacity: 0;
     transform: translateY(-20px) scale(1);
-  }
-}
-
-.page-fade {
-  animation: pageFadeIn 600ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes pageFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }

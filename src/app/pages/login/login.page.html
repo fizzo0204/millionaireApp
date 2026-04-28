@@ -5,17 +5,16 @@
 </ion-header>
 
 <ion-content class="ion-padding">
-  <ng-container *ngIf="user$ | async as user; else loginTemplate">
-    <h2>👋 Benvenuto, {{ user.displayName }}</h2>
-    <p>Email: {{ user.email }}</p>
-    <ion-button expand="block" color="danger" (click)="logout()"
-      >Logout</ion-button
-    >
-  </ng-container>
+  @if (user$ | async; as user) {
+  <h2>👋 Benvenuto, {{ user.displayName }}</h2>
+  <p>Email: {{ user.email }}</p>
 
-  <ng-template #loginTemplate>
-    <ion-button expand="block" color="primary" (click)="login()"
-      >Login con Google</ion-button
-    >
-  </ng-template>
+  <ion-button expand="block" color="danger" (click)="logout()">
+    Logout
+  </ion-button>
+  } @else {
+  <ion-button expand="block" color="primary" (click)="login()">
+    Login con Google
+  </ion-button>
+  }
 </ion-content>

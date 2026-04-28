@@ -4,6 +4,7 @@
   z-index: 9999;
 }
 
+/* BACKDROP */
 .anon-backdrop {
   position: absolute;
   inset: 0;
@@ -14,18 +15,22 @@
   padding: 0 24px;
 }
 
+/* CARD */
 .anon-card {
   width: 100%;
   max-width: 380px;
-  background: radial-gradient(circle at top, #023b7a, #001a33);
-  border-radius: 24px;
   padding: 24px 20px 20px;
-  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.5);
-  color: #fff;
+  border-radius: 24px;
   text-align: center;
+  color: #fff;
+
+  background: radial-gradient(circle at top, #023b7a, #001a33);
   border: 1px solid rgba(255, 255, 255, 0.12);
+
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.5);
 }
 
+/* TEXT */
 h2 {
   margin: 0 0 10px;
   font-size: 1.35rem;
@@ -40,35 +45,37 @@ p {
   color: #e0ecff;
 }
 
+/* BUTTON */
 .btn-row {
   display: flex;
   justify-content: center;
 }
 
-button {
-  border: none;
-  outline: none;
-  cursor: pointer;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: 0.95rem;
+.google-btn {
+  width: 100%;
   padding: 12px 18px;
+  border: none;
+  border-radius: 999px;
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+
+  font-size: 0.95rem;
+  font-weight: 600;
+
+  background: #ffcc00;
+  color: #000;
+
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+
+  cursor: pointer;
+
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease,
     background 0.2s ease,
-    color 0.2s ease,
     opacity 0.2s ease;
-}
-
-.google-btn {
-  background: #ffcc00;
-  color: #000;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 
   ion-icon {
     margin-right: 8px;

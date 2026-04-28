@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { Observable, firstValueFrom } from 'rxjs';
 import { User } from 'firebase/auth';
+
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -17,6 +18,10 @@ export class LoginButtonComponent {
   loading$ = this.auth.isLoading$;
 
   constructor(private auth: AuthService) {}
+
+  getFirstName(user: User): string {
+    return (user.displayName || 'Utente').split(' ')[0];
+  }
 
   async handleClick(user: User | null) {
     const loading = await firstValueFrom(this.loading$);

@@ -1,26 +1,18 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
-import { Subscription, Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
+
 import { AnonymousModalComponent } from '../../components/anonymous-modal/anonymous-modal.component';
 import { AuthService } from 'src/app/services/auth.service';
 import { AdsService } from 'src/app/services/ads.service';
 import { CoinsService } from 'src/app/services/coins.service';
-import { HomeNavbarComponent } from 'src/app/components/home-navbar/home-navbar.component';
-import { BottomNavComponent } from 'src/app/components/bottom-nav/bottom-nav.component';
 import { LivesService } from 'src/app/services/lives';
-import { AudioService } from 'src/app/services/audio';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [
-    IonicModule,
-    CommonModule,
-    HomeNavbarComponent,
-    BottomNavComponent,
-    AnonymousModalComponent,
-  ],
+  imports: [IonicModule, CommonModule, AnonymousModalComponent],
   templateUrl: './home.page.html',
   styleUrls: ['./home.page.scss'],
 })
@@ -28,13 +20,13 @@ export class HomePage implements OnInit, OnDestroy {
   private userSub?: Subscription;
   private livesSub?: Subscription;
   private previousLives?: number;
+
   showAnonModal = false;
   lifeRecoveredPulse = false;
 
   coins$: Observable<number>;
   lives$: Observable<number>;
   livesCountdown$: Observable<string>;
-  activeTab = 'home';
 
   categories = [
     {
@@ -100,7 +92,6 @@ export class HomePage implements OnInit, OnDestroy {
     private ads: AdsService,
     private coinsService: CoinsService,
     private livesService: LivesService,
-    private audioService: AudioService,
   ) {
     this.coins$ = this.coinsService.coins$;
     this.lives$ = this.livesService.lives$;
@@ -121,17 +112,10 @@ export class HomePage implements OnInit, OnDestroy {
 
       this.previousLives = lives;
     });
-
-    this.audioService.initHomeMusic();
   }
 
   selectCategory(categoryId: string) {
     console.log(`🎮 Categoria selezionata: ${categoryId}`);
-  }
-
-  setActiveTab(tab: string) {
-    this.activeTab = tab;
-    console.log(`📌 Tab selezionato: ${tab}`);
   }
 
   async watchAd() {
@@ -147,10 +131,6 @@ export class HomePage implements OnInit, OnDestroy {
     await this.livesService.spendLife();
   }
 
-  async testResetLives() {
-    await this.livesService.resetLives();
-  }
-
   triggerLifePulse() {
     this.lifeRecoveredPulse = true;
 
@@ -159,14 +139,9 @@ export class HomePage implements OnInit, OnDestroy {
     }, 900);
   }
 
-  async playMusic() {
-    await this.audioService.playMusic();
-  }
-
   ngOnDestroy() {
     this.userSub?.unsubscribe();
-    this.ads.hideBanner();
     this.livesSub?.unsubscribe();
-    // this.audioService.stopMusic();
+    this.ads.hideBanner();
   }
 }

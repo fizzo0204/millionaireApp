@@ -1,10 +1,10 @@
 .navbar {
   width: 100%;
   min-height: 74px;
+  padding: 10px;
+  border-radius: 18px;
   background: linear-gradient(180deg, #fff35c 0%, #ffcc00 100%);
   color: #020817;
-  border-radius: 18px;
-  padding: 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -23,12 +23,6 @@
   font-weight: 900;
   white-space: nowrap;
   flex-shrink: 0;
-}
-
-.title span:last-child {
-  overflow: visible;
-  text-overflow: unset;
-  white-space: nowrap;
 }
 
 .crown {

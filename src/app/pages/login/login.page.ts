@@ -1,9 +1,10 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
-import { AuthService } from '../../services/auth.service';
+import { CommonModule } from '@angular/common';
 import { Observable } from 'rxjs';
 import { User } from 'firebase/auth';
+
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -13,11 +14,9 @@ import { User } from 'firebase/auth';
   styleUrls: ['./login.page.scss'],
 })
 export class LoginPage {
-  user$: Observable<User | null>;
+  user$: Observable<User | null> = this.authService.user$;
 
-  constructor(private authService: AuthService) {
-    this.user$ = this.authService.user$;
-  }
+  constructor(private authService: AuthService) {}
 
   login() {
     this.authService.googleSignIn().catch(console.error);
