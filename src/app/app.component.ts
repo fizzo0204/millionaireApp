@@ -4,15 +4,23 @@ import { CommonModule } from '@angular/common';
 import { Capacitor } from '@capacitor/core';
 import { AuthService } from './services/auth.service';
 
+import { HomeNavbarComponent } from './components/home-navbar/home-navbar.component';
+import { BottomNavComponent } from './components/bottom-nav/bottom-nav.component';
+
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [IonicModule, CommonModule],
+  imports: [IonicModule, CommonModule, HomeNavbarComponent, BottomNavComponent],
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],
 })
 export class AppComponent {
-  constructor(private platform: Platform, private auth: AuthService) {
+  activeTab = 'home';
+
+  constructor(
+    private platform: Platform,
+    private auth: AuthService,
+  ) {
     this.initializeApp();
   }
 
@@ -24,5 +32,9 @@ export class AppComponent {
     console.log(isMobile ? '📱 Piattaforma mobile' : '💻 Web/PWA');
 
     console.log('🧩 Ionic components definiti correttamente');
+  }
+
+  setActiveTab(tab: string) {
+    this.activeTab = tab;
   }
 }

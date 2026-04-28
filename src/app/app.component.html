@@ -1,3 +1,14 @@
 <ion-app>
-  <ion-router-outlet></ion-router-outlet>
+  <div class="app-shell">
+    <app-home-navbar></app-home-navbar>
+
+    <div class="app-content">
+      <ion-router-outlet></ion-router-outlet>
+    </div>
+
+    <app-bottom-nav
+      [activeTab]="activeTab"
+      (tabChange)="setActiveTab($event)"
+    ></app-bottom-nav>
+  </div>
 </ion-app>

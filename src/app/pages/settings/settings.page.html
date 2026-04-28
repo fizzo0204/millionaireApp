@@ -1,0 +1,12 @@
+<ion-content class="ion-padding">
+  <h2>⚙️ Impostazioni</h2>
+
+  <div class="setting-item">
+    <span>🎵 Musica</span>
+
+    <ion-toggle
+      [checked]="musicEnabled"
+      (ionChange)="toggleMusic()"
+    ></ion-toggle>
+  </div>
+</ion-content>

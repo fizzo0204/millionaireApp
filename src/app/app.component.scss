@@ -1,0 +1,32 @@
+.app-shell {
+  min-height: 100vh;
+  height: 100vh;
+  background: linear-gradient(180deg, #05284c 0%, #021c35 100%);
+  color: #fff;
+  font-family: "Poppins", sans-serif;
+  padding: 18px 14px 24px;
+  padding-top: calc(env(safe-area-inset-top) + 18px);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 24px);
+  display: flex;
+  flex-direction: column;
+}
+
+app-home-navbar,
+app-bottom-nav {
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.app-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  margin: 18px 0;
+}
+
+ion-router-outlet {
+  position: relative;
+  display: block;
+  height: 100%;
+}

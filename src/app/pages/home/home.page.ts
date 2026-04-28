@@ -9,6 +9,7 @@ import { CoinsService } from 'src/app/services/coins.service';
 import { HomeNavbarComponent } from 'src/app/components/home-navbar/home-navbar.component';
 import { BottomNavComponent } from 'src/app/components/bottom-nav/bottom-nav.component';
 import { LivesService } from 'src/app/services/lives';
+import { AudioService } from 'src/app/services/audio';
 
 @Component({
   selector: 'app-home',
@@ -99,6 +100,7 @@ export class HomePage implements OnInit, OnDestroy {
     private ads: AdsService,
     private coinsService: CoinsService,
     private livesService: LivesService,
+    private audioService: AudioService,
   ) {
     this.coins$ = this.coinsService.coins$;
     this.lives$ = this.livesService.lives$;
@@ -119,6 +121,8 @@ export class HomePage implements OnInit, OnDestroy {
 
       this.previousLives = lives;
     });
+
+    this.audioService.initHomeMusic();
   }
 
   selectCategory(categoryId: string) {
@@ -155,9 +159,14 @@ export class HomePage implements OnInit, OnDestroy {
     }, 900);
   }
 
+  async playMusic() {
+    await this.audioService.playMusic();
+  }
+
   ngOnDestroy() {
     this.userSub?.unsubscribe();
     this.ads.hideBanner();
     this.livesSub?.unsubscribe();
+    this.audioService.stopMusic();
   }
 }
