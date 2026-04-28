@@ -23,10 +23,15 @@ app-bottom-nav {
   position: relative;
   overflow: hidden;
   margin: 18px 0;
+
+  /* 🔥 fix ghost pages */
+  isolation: isolate;
 }
 
-ion-router-outlet {
-  position: relative;
-  display: block;
-  height: 100%;
+app-bottom-nav {
+  margin-bottom: calc(env(safe-area-inset-bottom) + 30px);
+}
+
+ion-page {
+  background: transparent !important;
 }

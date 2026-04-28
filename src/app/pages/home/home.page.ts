@@ -167,6 +167,6 @@ export class HomePage implements OnInit, OnDestroy {
     this.userSub?.unsubscribe();
     this.ads.hideBanner();
     this.livesSub?.unsubscribe();
-    this.audioService.stopMusic();
+    // this.audioService.stopMusic();
   }
 }

@@ -1,12 +1,24 @@
-<ion-content class="ion-padding">
-  <h2>⚙️ Impostazioni</h2>
+<ion-content class="settings-content">
+  <div class="page-fade">
+    <div class="settings-header">
+      <h2>⚙️ Impostazioni</h2>
+      <p>Personalizza la tua esperienza di gioco</p>
+    </div>
 
-  <div class="setting-item">
-    <span>🎵 Musica</span>
+    <div class="settings-card">
+      <div class="setting-info">
+        <div class="setting-icon">🎵</div>
 
-    <ion-toggle
-      [checked]="musicEnabled"
-      (ionChange)="toggleMusic()"
-    ></ion-toggle>
+        <div>
+          <h3>Musica</h3>
+          <p>Attiva o disattiva la musica di sottofondo</p>
+        </div>
+      </div>
+
+      <ion-toggle
+        [checked]="musicEnabled"
+        (ionChange)="toggleMusic()"
+      ></ion-toggle>
+    </div>
   </div>
 </ion-content>

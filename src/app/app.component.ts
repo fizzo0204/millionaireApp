@@ -6,6 +6,7 @@ import { AuthService } from './services/auth.service';
 
 import { HomeNavbarComponent } from './components/home-navbar/home-navbar.component';
 import { BottomNavComponent } from './components/bottom-nav/bottom-nav.component';
+import { AudioService } from './services/audio';
 
 @Component({
   selector: 'app-root',
@@ -20,6 +21,7 @@ export class AppComponent {
   constructor(
     private platform: Platform,
     private auth: AuthService,
+    private audioService: AudioService,
   ) {
     this.initializeApp();
   }
@@ -32,9 +34,17 @@ export class AppComponent {
     console.log(isMobile ? '📱 Piattaforma mobile' : '💻 Web/PWA');
 
     console.log('🧩 Ionic components definiti correttamente');
+
+    // 🎵 audio
+    this.audioService.initHomeMusic();
+    this.audioService.playMusic();
   }
 
   setActiveTab(tab: string) {
     this.activeTab = tab;
+  }
+
+  async playMusic() {
+    await this.audioService.playMusic();
   }
 }

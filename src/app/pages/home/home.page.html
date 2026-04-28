@@ -1,69 +1,71 @@
-<ion-content class="home-content" (click)="playMusic()">
+<ion-content class="home-content">
   <app-anonymous-modal *ngIf="showAnonModal"></app-anonymous-modal>
 
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-icon">🧠</div>
-      <div class="stat-value">12</div>
-      <div class="stat-label">Quiz giocati</div>
-    </div>
+  <div class="page-fade">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">🧠</div>
+        <div class="stat-value">12</div>
+        <div class="stat-label">Quiz giocati</div>
+      </div>
 
-    <div
-      class="stat-card lives-card"
-      [class.life-pulse]="lifeRecoveredPulse"
-      (click)="testSpendLife()"
-    >
-      <div class="stat-icon">❤️</div>
-      <div class="life-float" *ngIf="lifeRecoveredPulse">+1</div>
-      <div class="stat-value">{{ lives$ | async }}</div>
-      <div class="stat-label">Vite</div>
+      <div
+        class="stat-card lives-card"
+        [class.life-pulse]="lifeRecoveredPulse"
+        (click)="testSpendLife()"
+      >
+        <div class="stat-icon">❤️</div>
+        <div class="life-float" *ngIf="lifeRecoveredPulse">+1</div>
+        <div class="stat-value">{{ lives$ | async }}</div>
+        <div class="stat-label">Vite</div>
 
-      <div class="life-timer" *ngIf="livesCountdown$ | async as countdown">
-        +1 tra {{ countdown }}
+        <div class="life-timer" *ngIf="livesCountdown$ | async as countdown">
+          +1 tra {{ countdown }}
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">🪙</div>
+        <div class="stat-value">{{ coins$ | async }}</div>
+        <div class="stat-label">Monete</div>
       </div>
     </div>
 
-    <div class="stat-card">
-      <div class="stat-icon">🪙</div>
-      <div class="stat-value">{{ coins$ | async }}</div>
-      <div class="stat-label">Monete</div>
+    <div class="section-title">
+      <span>🎯</span>
+      <h2>Categorie disponibili</h2>
     </div>
-  </div>
 
-  <div class="section-title">
-    <span>🎯</span>
-    <h2>Categorie disponibili</h2>
-  </div>
+    <div class="categories-grid">
+      <div
+        class="category-card"
+        *ngFor="let cat of categories"
+        [ngClass]="cat.className"
+        (click)="selectCategory(cat.id)"
+      >
+        <div class="category-icon">{{ cat.icon }}</div>
 
-  <div class="categories-grid">
-    <div
-      class="category-card"
-      *ngFor="let cat of categories"
-      [ngClass]="cat.className"
-      (click)="selectCategory(cat.id)"
-    >
-      <div class="category-icon">{{ cat.icon }}</div>
-
-      <div class="category-text">
-        <h3>{{ cat.title }}</h3>
-        <p>{{ cat.description }}</p>
+        <div class="category-text">
+          <h3>{{ cat.title }}</h3>
+          <p>{{ cat.description }}</p>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="reward-panel">
-    <div class="reward-copy">
-      <div class="reward-title">
-        <span>🪙</span>
-        <strong>Vuoi più monete?</strong>
+    <div class="reward-panel">
+      <div class="reward-copy">
+        <div class="reward-title">
+          <span>🪙</span>
+          <strong>Vuoi più monete?</strong>
+        </div>
+        <p>Guarda un video e ottieni ricompense!</p>
       </div>
-      <p>Guarda un video e ottieni ricompense!</p>
-    </div>
 
-    <ion-button expand="block" class="reward-button" (click)="watchAd()">
-      <span>🎁</span>
-      Guarda video e guadagna 10 monete
-      <ion-icon name="chevron-forward-outline"></ion-icon>
-    </ion-button>
+      <ion-button expand="block" class="reward-button" (click)="watchAd()">
+        <span>🎁</span>
+        Guarda video e guadagna 10 monete
+        <ion-icon name="chevron-forward-outline"></ion-icon>
+      </ion-button>
+    </div>
   </div>
 </ion-content>

@@ -1,9 +1,9 @@
 <ion-app>
-  <div class="app-shell">
+  <div class="app-shell" (click)="playMusic()">
     <app-home-navbar></app-home-navbar>
 
     <div class="app-content">
-      <ion-router-outlet></ion-router-outlet>
+      <ion-router-outlet [animated]="false"></ion-router-outlet>
     </div>
 
     <app-bottom-nav

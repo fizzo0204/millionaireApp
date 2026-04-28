@@ -32,6 +32,16 @@ ion-router-outlet {
   display: block;
 }
 
+ion-app {
+  background: linear-gradient(180deg, #05284c 0%, #021c35 100%);
+  color: #fff;
+  font-family: "Poppins", sans-serif;
+}
+
+ion-content {
+  --background: transparent;
+}
+
 /* ============================
    🟦 MODALE ANONIMO — OVERLAY
    ============================ */
