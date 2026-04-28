@@ -2,16 +2,7 @@
   <app-anonymous-modal *ngIf="showAnonModal"></app-anonymous-modal>
 
   <div class="page-shell">
-    <div class="navbar">
-      <div class="title">
-        <span class="crown">👑</span>
-        <span>Millionaire Quiz</span>
-      </div>
-
-      <div class="navbar-right">
-        <app-login-button></app-login-button>
-      </div>
-    </div>
+    <app-home-navbar></app-home-navbar>
 
     <div class="stats-grid">
       <div class="stat-card">
@@ -20,10 +11,21 @@
         <div class="stat-label">Quiz giocati</div>
       </div>
 
-      <div class="stat-card">
-        <div class="stat-icon">🏆</div>
-        <div class="stat-value">80%</div>
-        <div class="stat-label">Miglior punteggio</div>
+      <div
+        class="stat-card lives-card"
+        [class.life-pulse]="lifeRecoveredPulse"
+        (click)="testSpendLife()"
+      >
+        <div class="stat-icon">❤️</div>
+
+        <div class="life-float" *ngIf="lifeRecoveredPulse">+1</div>
+
+        <div class="stat-value">{{ lives$ | async }}</div>
+        <div class="stat-label">Vite</div>
+
+        <div class="life-timer" *ngIf="livesCountdown$ | async as countdown">
+          +1 tra {{ countdown }}
+        </div>
       </div>
 
       <div class="stat-card">
@@ -70,46 +72,9 @@
       </ion-button>
     </div>
 
-    <div class="bottom-nav">
-      <button
-        type="button"
-        class="nav-item"
-        [class.active]="activeTab === 'home'"
-        (click)="setActiveTab('home')"
-      >
-        <ion-icon name="home-outline"></ion-icon>
-        <span>Home</span>
-      </button>
-
-      <button
-        type="button"
-        class="nav-item"
-        [class.active]="activeTab === 'classifica'"
-        (click)="setActiveTab('classifica')"
-      >
-        <ion-icon name="trophy-outline"></ion-icon>
-        <span>Classifica</span>
-      </button>
-
-      <button
-        type="button"
-        class="nav-item"
-        [class.active]="activeTab === 'negozio'"
-        (click)="setActiveTab('negozio')"
-      >
-        <ion-icon name="cart-outline"></ion-icon>
-        <span>Negozio</span>
-      </button>
-
-      <button
-        type="button"
-        class="nav-item"
-        [class.active]="activeTab === 'impostazioni'"
-        (click)="setActiveTab('impostazioni')"
-      >
-        <ion-icon name="settings-outline"></ion-icon>
-        <span>Impostazioni</span>
-      </button>
-    </div>
+    <app-bottom-nav
+      [activeTab]="activeTab"
+      (tabChange)="setActiveTab($event)"
+    ></app-bottom-nav>
   </div>
 </ion-content>

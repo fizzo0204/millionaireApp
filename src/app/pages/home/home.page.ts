@@ -2,12 +2,13 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { Subscription, Observable } from 'rxjs';
-
-import { LoginButtonComponent } from '../../components/login-button/login-button.component';
 import { AnonymousModalComponent } from '../../components/anonymous-modal/anonymous-modal.component';
 import { AuthService } from 'src/app/services/auth.service';
 import { AdsService } from 'src/app/services/ads.service';
 import { CoinsService } from 'src/app/services/coins.service';
+import { HomeNavbarComponent } from 'src/app/components/home-navbar/home-navbar.component';
+import { BottomNavComponent } from 'src/app/components/bottom-nav/bottom-nav.component';
+import { LivesService } from 'src/app/services/lives';
 
 @Component({
   selector: 'app-home',
@@ -15,7 +16,8 @@ import { CoinsService } from 'src/app/services/coins.service';
   imports: [
     IonicModule,
     CommonModule,
-    LoginButtonComponent,
+    HomeNavbarComponent,
+    BottomNavComponent,
     AnonymousModalComponent,
   ],
   templateUrl: './home.page.html',
@@ -23,9 +25,14 @@ import { CoinsService } from 'src/app/services/coins.service';
 })
 export class HomePage implements OnInit, OnDestroy {
   private userSub?: Subscription;
+  private livesSub?: Subscription;
+  private previousLives?: number;
   showAnonModal = false;
+  lifeRecoveredPulse = false;
 
   coins$: Observable<number>;
+  lives$: Observable<number>;
+  livesCountdown$: Observable<string>;
   activeTab = 'home';
 
   categories = [
@@ -91,8 +98,11 @@ export class HomePage implements OnInit, OnDestroy {
     private auth: AuthService,
     private ads: AdsService,
     private coinsService: CoinsService,
+    private livesService: LivesService,
   ) {
     this.coins$ = this.coinsService.coins$;
+    this.lives$ = this.livesService.lives$;
+    this.livesCountdown$ = this.livesService.countdown$;
   }
 
   ngOnInit() {
@@ -100,6 +110,14 @@ export class HomePage implements OnInit, OnDestroy {
 
     this.userSub = this.auth.user$.subscribe((user) => {
       this.showAnonModal = !!user?.isAnonymous;
+    });
+
+    this.livesSub = this.lives$.subscribe((lives) => {
+      if (this.previousLives !== undefined && lives > this.previousLives) {
+        this.triggerLifePulse();
+      }
+
+      this.previousLives = lives;
     });
   }
 
@@ -121,8 +139,25 @@ export class HomePage implements OnInit, OnDestroy {
     }
   }
 
+  async testSpendLife() {
+    await this.livesService.spendLife();
+  }
+
+  async testResetLives() {
+    await this.livesService.resetLives();
+  }
+
+  triggerLifePulse() {
+    this.lifeRecoveredPulse = true;
+
+    setTimeout(() => {
+      this.lifeRecoveredPulse = false;
+    }, 900);
+  }
+
   ngOnDestroy() {
     this.userSub?.unsubscribe();
     this.ads.hideBanner();
+    this.livesSub?.unsubscribe();
   }
 }

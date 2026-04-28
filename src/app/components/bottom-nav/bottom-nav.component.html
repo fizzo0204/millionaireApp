@@ -1,0 +1,41 @@
+<div class="bottom-nav">
+  <button
+    type="button"
+    class="nav-item"
+    [class.active]="activeTab === 'home'"
+    (click)="setActiveTab('home')"
+  >
+    <ion-icon name="home-outline"></ion-icon>
+    <span>Home</span>
+  </button>
+
+  <button
+    type="button"
+    class="nav-item"
+    [class.active]="activeTab === 'classifica'"
+    (click)="setActiveTab('classifica')"
+  >
+    <ion-icon name="trophy-outline"></ion-icon>
+    <span>Classifica</span>
+  </button>
+
+  <button
+    type="button"
+    class="nav-item"
+    [class.active]="activeTab === 'negozio'"
+    (click)="setActiveTab('negozio')"
+  >
+    <ion-icon name="cart-outline"></ion-icon>
+    <span>Negozio</span>
+  </button>
+
+  <button
+    type="button"
+    class="nav-item"
+    [class.active]="activeTab === 'impostazioni'"
+    (click)="setActiveTab('impostazioni')"
+  >
+    <ion-icon name="settings-outline"></ion-icon>
+    <span>Impostazioni</span>
+  </button>
+</div>

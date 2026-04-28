@@ -1,0 +1,45 @@
+.navbar {
+  width: 100%;
+  min-height: 74px;
+  background: linear-gradient(180deg, #fff35c 0%, #ffcc00 100%);
+  color: #020817;
+  border-radius: 18px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  box-shadow:
+    0 6px 0 rgba(129, 90, 0, 0.7),
+    0 12px 22px rgba(0, 0, 0, 0.35);
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 1rem;
+  line-height: 1;
+  font-weight: 900;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.title span:last-child {
+  overflow: visible;
+  text-overflow: unset;
+  white-space: nowrap;
+}
+
+.crown {
+  font-size: 1.45rem;
+  flex-shrink: 0;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 1;
+  min-width: 0;
+}
