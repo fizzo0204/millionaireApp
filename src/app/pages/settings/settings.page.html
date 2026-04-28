@@ -22,6 +22,22 @@
     </div>
   </div>
 
+  <div class="settings-card">
+    <div class="setting-info">
+      <div class="setting-icon">🔊</div>
+
+      <div>
+        <h3>Suoni</h3>
+        <p>Attiva o disattiva i suoni dei click</p>
+      </div>
+    </div>
+
+    <ion-toggle
+      [checked]="clickEnabled"
+      (ionChange)="toggleClick()"
+    ></ion-toggle>
+  </div>
+
   <ion-button expand="block" color="danger" (click)="logout()">
     Logout
   </ion-button>

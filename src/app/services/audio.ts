@@ -5,16 +5,29 @@ import { Injectable } from '@angular/core';
 })
 export class AudioService {
   private music?: HTMLAudioElement;
+  private clickSound?: HTMLAudioElement;
+  private clickEnabled = true;
+  private readonly CLICK_ENABLED_KEY = 'click_enabled';
+
   private musicEnabled = true;
   private readonly MUSIC_ENABLED_KEY = 'music_enabled';
+
   private fadeInterval?: ReturnType<typeof setInterval>;
 
   constructor() {
+    const clickSaved = localStorage.getItem(this.CLICK_ENABLED_KEY);
+
+    if (clickSaved !== null) {
+      this.clickEnabled = clickSaved === 'true';
+    }
+
     const saved = localStorage.getItem(this.MUSIC_ENABLED_KEY);
 
     if (saved !== null) {
       this.musicEnabled = saved === 'true';
     }
+
+    this.initClickSound();
   }
 
   initHomeMusic() {
@@ -23,6 +36,13 @@ export class AudioService {
     this.music = new Audio('assets/audio/homeMusic.mp3');
     this.music.loop = true;
     this.music.volume = 0;
+  }
+
+  private initClickSound() {
+    if (this.clickSound) return;
+
+    this.clickSound = new Audio('assets/audio/click.mp3');
+    this.clickSound.volume = 0.5;
   }
 
   async playMusic() {
@@ -40,6 +60,28 @@ export class AudioService {
     } catch {
       console.log('🎵 Autoplay bloccato: serve un tap utente');
     }
+  }
+
+  playClick() {
+    if (!this.clickEnabled) return;
+
+    if (!this.clickSound) {
+      this.initClickSound();
+    }
+
+    if (!this.clickSound) return;
+
+    this.clickSound.currentTime = 0;
+    this.clickSound.play().catch(() => {});
+  }
+
+  setClickEnabled(enabled: boolean) {
+    this.clickEnabled = enabled;
+    localStorage.setItem(this.CLICK_ENABLED_KEY, String(enabled));
+  }
+
+  isClickEnabled(): boolean {
+    return this.clickEnabled;
   }
 
   setMusicEnabled(enabled: boolean) {

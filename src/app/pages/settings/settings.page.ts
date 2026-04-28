@@ -13,17 +13,24 @@ import { AuthService } from 'src/app/services/auth.service';
 })
 export class SettingsPage {
   musicEnabled = true;
+  clickEnabled = true;
 
   constructor(
     private audioService: AudioService,
     private authService: AuthService,
   ) {
     this.musicEnabled = this.audioService.isMusicEnabled();
+    this.clickEnabled = this.audioService.isClickEnabled();
   }
 
   toggleMusic() {
     this.musicEnabled = !this.musicEnabled;
     this.audioService.setMusicEnabled(this.musicEnabled);
+  }
+
+  toggleClick() {
+    this.clickEnabled = !this.clickEnabled;
+    this.audioService.setClickEnabled(this.clickEnabled);
   }
 
   logout() {

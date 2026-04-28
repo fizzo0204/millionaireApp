@@ -47,4 +47,9 @@ export class AppComponent {
   async playMusic() {
     await this.audioService.playMusic();
   }
+
+  async handleGlobalClick() {
+    await this.audioService.playMusic();
+    this.audioService.playClick();
+  }
 }
