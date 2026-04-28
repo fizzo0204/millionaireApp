@@ -1,7 +1,7 @@
 <ion-content class="home-content">
   <app-anonymous-modal *ngIf="showAnonModal"></app-anonymous-modal>
 
-  <div class="page-fade">
+  <div class="page-fade" *ngIf="!showAnonModal">
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-icon">🧠</div>

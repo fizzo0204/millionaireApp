@@ -7,8 +7,12 @@
     </div>
 
     <app-bottom-nav
+      *ngIf="user$ | async as user; else noNav"
       [activeTab]="activeTab"
       (tabChange)="setActiveTab($event)"
+      [hidden]="user?.isAnonymous"
     ></app-bottom-nav>
+
+    <ng-template #noNav></ng-template>
   </div>
 </ion-app>

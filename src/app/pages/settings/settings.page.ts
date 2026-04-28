@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 
 import { AudioService } from 'src/app/services/audio';
@@ -18,6 +19,7 @@ export class SettingsPage {
   constructor(
     private audioService: AudioService,
     private authService: AuthService,
+    private router: Router,
   ) {
     this.musicEnabled = this.audioService.isMusicEnabled();
     this.clickEnabled = this.audioService.isClickEnabled();
@@ -33,7 +35,8 @@ export class SettingsPage {
     this.audioService.setClickEnabled(this.clickEnabled);
   }
 
-  logout() {
-    this.authService.logout();
+  async logout() {
+    await this.authService.logout();
+    await this.router.navigateByUrl('/home');
   }
 }
