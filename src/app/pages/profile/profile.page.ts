@@ -16,60 +16,24 @@ import { AuthService } from 'src/app/services/auth.service';
 export class ProfilePage {
   user$: Observable<User | null> = this.auth.user$;
 
-  joinDate = 'Giocatore da Maggio 2025';
+  joinDate = this.getJoinDate();
 
-  level = 3;
-  title = 'Quiz Master';
-  currentXp = 620;
-  maxXp = 1000;
+  quizPlayed = 125;
+  correctPercentage = 68;
+  streakDays = 7;
+  bestScore = 9;
 
   selectedAvatar = localStorage.getItem('profile_avatar') || 'letter';
   tempSelectedAvatar = this.selectedAvatar;
+
   showAvatarModal = false;
+  showAchievementsModal = false;
 
   avatars = [
     { id: 'letter', label: 'Iniziale', minLevel: 1 },
     { id: 'crown', label: 'Corona', icon: '👑', minLevel: 3 },
     { id: 'brain', label: 'Genio', icon: '🧠', minLevel: 5 },
     { id: 'trophy', label: 'Campione', icon: '🏆', minLevel: 10 },
-  ];
-
-  stats = [
-    { icon: '🏆', value: '125', label: 'Quiz giocati' },
-    { icon: '🎯', value: '68%', label: '% corrette' },
-    { icon: '🔥', value: '7', label: 'Giorni di streak' },
-    { icon: '⭐', value: '9/10', label: 'Miglior punteggio' },
-  ];
-
-  achievements = [
-    {
-      icon: '🏆',
-      title: 'Perfetto!',
-      description: 'Fai 10/10 in un quiz',
-      completed: true,
-      progress: '',
-    },
-    {
-      icon: '🎯',
-      title: 'Costante',
-      description: 'Gioca per 3 giorni di fila',
-      completed: true,
-      progress: '',
-    },
-    {
-      icon: '⚡',
-      title: 'Veloce',
-      description: 'Rispondi in meno di 10s',
-      completed: true,
-      progress: '',
-    },
-    {
-      icon: '🔒',
-      title: 'Esperto',
-      description: 'Gioca 100 quiz',
-      completed: false,
-      progress: '125/100',
-    },
   ];
 
   recentResults = [
@@ -97,6 +61,127 @@ export class ProfilePage {
   ];
 
   constructor(private auth: AuthService) {}
+
+  get level(): number {
+    return Math.max(1, Math.floor(this.quizPlayed / 20) + 1);
+  }
+
+  get currentXp(): number {
+    return (this.quizPlayed % 20) * 50;
+  }
+
+  get maxXp(): number {
+    return 1000;
+  }
+
+  get title(): string {
+    if (this.level >= 10) return 'Leggenda del Quiz';
+    if (this.level >= 7) return 'Quiz Master';
+    if (this.level >= 4) return 'Esperto';
+    return 'Principiante';
+  }
+
+  get xpPercent(): number {
+    return Math.min(100, Math.round((this.currentXp / this.maxXp) * 100));
+  }
+
+  get stats() {
+    return [
+      { icon: '🏆', value: String(this.quizPlayed), label: 'Quiz giocati' },
+      { icon: '🎯', value: `${this.correctPercentage}%`, label: '% corrette' },
+      { icon: '🔥', value: String(this.streakDays), label: 'Giorni di streak' },
+      { icon: '⭐', value: `${this.bestScore}/10`, label: 'Miglior punteggio' },
+    ];
+  }
+
+  get achievements() {
+    return [
+      {
+        icon: this.bestScore >= 10 ? '🏆' : '🔒',
+        title: 'Perfetto!',
+        description: 'Fai 10/10 in un quiz',
+        completed: this.bestScore >= 10,
+        progress: `${this.bestScore}/10`,
+      },
+      {
+        icon: this.streakDays >= 3 ? '🎯' : '🔒',
+        title: 'Costante',
+        description: 'Gioca per 3 giorni di fila',
+        completed: this.streakDays >= 3,
+        progress: `${this.streakDays}/3`,
+      },
+      {
+        icon: this.correctPercentage >= 70 ? '⚡' : '🔒',
+        title: 'Preciso',
+        description: 'Raggiungi il 70% di risposte corrette',
+        completed: this.correctPercentage >= 70,
+        progress: `${this.correctPercentage}/70%`,
+      },
+      {
+        icon: this.quizPlayed >= 100 ? '👑' : '🔒',
+        title: 'Esperto',
+        description: 'Gioca 100 quiz',
+        completed: this.quizPlayed >= 100,
+        progress: `${this.quizPlayed}/100`,
+      },
+      {
+        icon: this.quizPlayed >= 10 ? '🚀' : '🔒',
+        title: 'Partenza',
+        description: 'Gioca 10 quiz',
+        completed: this.quizPlayed >= 10,
+        progress: `${this.quizPlayed}/10`,
+      },
+      {
+        icon: this.quizPlayed >= 50 ? '🔥' : '🔒',
+        title: 'Allenato',
+        description: 'Gioca 50 quiz',
+        completed: this.quizPlayed >= 50,
+        progress: `${this.quizPlayed}/50`,
+      },
+      {
+        icon: this.quizPlayed >= 200 ? '💎' : '🔒',
+        title: 'Veterano',
+        description: 'Gioca 200 quiz',
+        completed: this.quizPlayed >= 200,
+        progress: `${this.quizPlayed}/200`,
+      },
+      {
+        icon: this.streakDays >= 7 ? '📆' : '🔒',
+        title: 'Settimana d’oro',
+        description: 'Gioca per 7 giorni di fila',
+        completed: this.streakDays >= 7,
+        progress: `${this.streakDays}/7`,
+      },
+      {
+        icon: this.streakDays >= 30 ? '🌟' : '🔒',
+        title: 'Inarrestabile',
+        description: 'Gioca per 30 giorni di fila',
+        completed: this.streakDays >= 30,
+        progress: `${this.streakDays}/30`,
+      },
+      {
+        icon: this.correctPercentage >= 80 ? '🎯' : '🔒',
+        title: 'Cecchino',
+        description: 'Raggiungi l’80% di risposte corrette',
+        completed: this.correctPercentage >= 80,
+        progress: `${this.correctPercentage}/80%`,
+      },
+      {
+        icon: this.correctPercentage >= 90 ? '🧠' : '🔒',
+        title: 'Genio',
+        description: 'Raggiungi il 90% di risposte corrette',
+        completed: this.correctPercentage >= 90,
+        progress: `${this.correctPercentage}/90%`,
+      },
+      {
+        icon: this.level >= 10 ? '👑' : '🔒',
+        title: 'Re del quiz',
+        description: 'Raggiungi il livello 10',
+        completed: this.level >= 10,
+        progress: `${this.level}/10`,
+      },
+    ];
+  }
 
   getPlayerName(user: User | null): string {
     if (!user || user.isAnonymous) return 'Giocatore';
@@ -149,7 +234,37 @@ export class ProfilePage {
     this.showAvatarModal = false;
   }
 
-  get xpPercent(): number {
-    return Math.min(100, Math.round((this.currentXp / this.maxXp) * 100));
+  openAchievementsModal() {
+    this.showAchievementsModal = true;
+  }
+
+  closeAchievementsModal() {
+    this.showAchievementsModal = false;
+  }
+
+  private getJoinDate(): string {
+    const key = 'profile_join_date';
+
+    let stored = localStorage.getItem(key);
+
+    if (!stored) {
+      stored = new Date().toISOString();
+      localStorage.setItem(key, stored);
+    }
+
+    return this.formatJoinDate(stored);
+  }
+
+  private formatJoinDate(dateString: string): string {
+    const date = new Date(dateString);
+
+    return `Giocatore da ${date.toLocaleDateString('it-IT', {
+      month: 'long',
+      year: 'numeric',
+    })}`;
+  }
+
+  get achievementsPreview() {
+    return this.achievements.slice(0, 4);
   }
 }

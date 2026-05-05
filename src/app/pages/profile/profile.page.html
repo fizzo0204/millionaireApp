@@ -1,4 +1,7 @@
-<ion-content class="profile-content">
+<ion-content
+  class="profile-content"
+  [class.modal-open]="showAvatarModal || showAchievementsModal"
+>
   <div class="page-fade">
     @if (user$ | async; as user) {
     <!-- HEADER -->
@@ -34,7 +37,7 @@
         </div>
 
         <div class="xp-bar">
-          <div class="xp-fill" [style.width.%]="xpPercent"></div>
+          <div class="xp-fill" [style.--xp-width.%]="xpPercent"></div>
         </div>
       </div>
     </div>
@@ -57,11 +60,13 @@
     <!-- TROFEI -->
     <div class="section-row">
       <h3>Trofei</h3>
-      <button type="button">Vedi tutti</button>
+      <button type="button" (click)="openAchievementsModal()">
+        Vedi tutti
+      </button>
     </div>
 
     <div class="achievement-grid">
-      @for (achievement of achievements; track achievement.title) {
+      @for (achievement of achievementsPreview; track achievement.title) {
       <div class="achievement-card" [class.locked]="!achievement.completed">
         <div class="achievement-icon">{{ achievement.icon }}</div>
 
@@ -105,7 +110,7 @@
 
   <!-- 🔥 MODALE AVATAR -->
   @if (showAvatarModal && (user$ | async); as user) {
-  <div class="avatar-modal-backdrop" (click)="closeAvatarModal()">
+  <div class="avatar-modal-backdrop">
     <div class="avatar-modal" (click)="$event.stopPropagation()">
       <h3>Scegli avatar</h3>
 
@@ -133,6 +138,42 @@
         <button class="cancel-btn" (click)="closeAvatarModal()">Annulla</button>
 
         <button class="save-btn" (click)="saveAvatar()">Salva</button>
+      </div>
+    </div>
+  </div>
+  } @if (showAchievementsModal) {
+  <div class="avatar-modal-backdrop">
+    <div
+      class="avatar-modal achievements-modal"
+      (click)="$event.stopPropagation()"
+    >
+      <button
+        class="modal-close-btn"
+        type="button"
+        (click)="closeAchievementsModal()"
+      >
+        <ion-icon name="close-outline"></ion-icon>
+      </button>
+
+      <h3>Tutti i trofei</h3>
+
+      <div class="achievement-grid full">
+        @for (achievement of achievements; track achievement.title) {
+        <div class="achievement-card" [class.locked]="!achievement.completed">
+          <div class="achievement-icon">{{ achievement.icon }}</div>
+
+          <h4>{{ achievement.title }}</h4>
+          <p>{{ achievement.description }}</p>
+
+          @if (achievement.completed) {
+          <div class="achievement-status">
+            <ion-icon name="checkmark-circle"></ion-icon>
+          </div>
+          } @else {
+          <div class="achievement-progress">{{ achievement.progress }}</div>
+          }
+        </div>
+        }
       </div>
     </div>
   </div>

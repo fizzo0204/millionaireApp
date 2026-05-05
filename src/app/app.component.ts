@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, HostListener } from '@angular/core';
 import { IonicModule, Platform } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
@@ -19,6 +19,10 @@ import { BottomNavComponent } from './components/bottom-nav/bottom-nav.component
   styleUrls: ['app.component.scss'],
 })
 export class AppComponent implements OnDestroy {
+  @HostListener('document:pointerdown', ['$event'])
+  handleDocumentPointerDown(event: PointerEvent) {
+    this.handleGlobalPointerDown();
+  }
   activeTab = 'home';
   user$: Observable<User | null> = this.auth.user$;
 

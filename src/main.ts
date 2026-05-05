@@ -13,6 +13,7 @@ import {
   logOutOutline,
   createOutline,
   checkmarkCircle,
+  closeOutline,
 } from 'ionicons/icons';
 
 // ✅ IMPORTA TUTTI I LOADER
@@ -47,4 +48,5 @@ addIcons({
   'log-out-outline': logOutOutline,
   'create-outline': createOutline,
   'checkmark-circle': checkmarkCircle,
+  'close-outline': closeOutline,
 });
