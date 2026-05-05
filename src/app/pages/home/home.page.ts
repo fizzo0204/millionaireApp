@@ -6,6 +6,7 @@ import { Observable, Subscription } from 'rxjs';
 import { AnonymousModalComponent } from '../../components/anonymous-modal/anonymous-modal.component';
 import { AuthService } from 'src/app/services/auth.service';
 import { AdsService } from 'src/app/services/ads.service';
+import { AudioService } from 'src/app/services/audio';
 import { CoinsService } from 'src/app/services/coins.service';
 import { LivesService } from 'src/app/services/lives';
 
@@ -90,6 +91,7 @@ export class HomePage implements OnInit, OnDestroy {
   constructor(
     private auth: AuthService,
     private ads: AdsService,
+    private audioService: AudioService,
     private coinsService: CoinsService,
     private livesService: LivesService,
   ) {
@@ -123,7 +125,6 @@ export class HomePage implements OnInit, OnDestroy {
 
     if (reward) {
       await this.coinsService.addCoins(10);
-      console.log('⭐ Ricompensa ottenuta: +10 monete');
     }
   }
 

@@ -8,6 +8,7 @@ export class AudioService {
   private clickPool: HTMLAudioElement[] = [];
   private clickIndex = 0;
   private readonly CLICK_POOL_SIZE = 5;
+
   private clickEnabled = true;
   private readonly CLICK_ENABLED_KEY = 'click_enabled';
 
@@ -15,6 +16,7 @@ export class AudioService {
   private readonly MUSIC_ENABLED_KEY = 'music_enabled';
 
   private fadeInterval?: ReturnType<typeof setInterval>;
+  private isStartingMusic = false;
 
   constructor() {
     const clickSaved = localStorage.getItem(this.CLICK_ENABLED_KEY);
@@ -36,7 +38,9 @@ export class AudioService {
     if (this.music) return;
 
     this.music = new Audio('assets/audio/homeMusic.mp3');
+    this.music.setAttribute('playsinline', 'true');
     this.music.loop = true;
+    this.music.preload = 'auto';
     this.music.volume = 0;
   }
 
@@ -51,20 +55,36 @@ export class AudioService {
     });
   }
 
-  async playMusic() {
-    if (!this.musicEnabled) return;
+  async playMusic(): Promise<boolean> {
+    if (!this.musicEnabled) return false;
+
+    if (this.isStartingMusic) return false;
 
     if (!this.music) {
       this.initHomeMusic();
     }
 
-    if (!this.music || !this.music.paused) return;
+    if (!this.music) return false;
+
+    if (!this.music.paused) return true;
+
+    this.isStartingMusic = true;
 
     try {
       await this.music.play();
-      this.fadeIn();
+
+      if (this.music.volume === 0) {
+        this.fadeIn();
+      } else {
+        this.music.volume = 0.35;
+      }
+
+      return true;
     } catch {
-      console.log('🎵 Autoplay bloccato: serve un tap utente');
+      console.log('🎵 Autoplay bloccato');
+      return false;
+    } finally {
+      this.isStartingMusic = false;
     }
   }
 
@@ -95,7 +115,9 @@ export class AudioService {
     this.musicEnabled = enabled;
     localStorage.setItem(this.MUSIC_ENABLED_KEY, String(enabled));
 
-    if (!enabled) {
+    if (enabled) {
+      this.playMusic();
+    } else {
       this.stopMusic();
     }
   }
@@ -104,11 +126,28 @@ export class AudioService {
     return this.musicEnabled;
   }
 
+  pauseMusic() {
+    if (this.fadeInterval) {
+      clearInterval(this.fadeInterval);
+      this.fadeInterval = undefined;
+    }
+
+    if (!this.music) return;
+
+    this.music.pause();
+  }
+
   stopMusic() {
+    if (this.fadeInterval) {
+      clearInterval(this.fadeInterval);
+      this.fadeInterval = undefined;
+    }
+
     if (!this.music) return;
 
     this.music.pause();
     this.music.currentTime = 0;
+    this.music.volume = 0.35;
   }
 
   isPlaying(): boolean {

@@ -6,7 +6,10 @@ import {
   BannerAdPosition,
   RewardAdOptions,
   AdMobRewardItem,
+  RewardAdPluginEvents,
 } from '@capacitor-community/admob';
+
+import { AudioService } from 'src/app/services/audio';
 
 @Injectable({
   providedIn: 'root',
@@ -14,7 +17,7 @@ import {
 export class AdsService {
   private bannerVisible = false;
 
-  constructor() {
+  constructor(private audioService: AudioService) {
     this.initialize();
   }
 
@@ -22,14 +25,11 @@ export class AdsService {
     await AdMob.initialize();
   }
 
-  /** --------------------
-   *  BANNER
-   * -------------------- */
   async showBanner() {
     if (this.bannerVisible) return;
 
     const options: BannerAdOptions = {
-      adId: 'ca-app-pub-3940256099942544/6300978111', // TEST BANNER
+      adId: 'ca-app-pub-3940256099942544/6300978111',
       adSize: BannerAdSize.BANNER,
       position: BannerAdPosition.BOTTOM_CENTER,
     };
@@ -43,30 +43,64 @@ export class AdsService {
     this.bannerVisible = false;
   }
 
-  /** --------------------
-   *  REWARDED VIDEO
-   * -------------------- */
   async showRewardedAd(): Promise<boolean> {
+    let hasReward = false;
+
+    let showedListener: any;
+    let rewardedListener: any;
+    let dismissedListener: any;
+
     try {
       const options: RewardAdOptions = {
-        adId: 'ca-app-pub-3940256099942544/5224354917', // TEST REWARDED
+        adId: 'ca-app-pub-3940256099942544/5224354917',
       };
 
-      // 1️⃣ Prepariamo il video (QUI mettiamo l'adId)
+      const dismissedPromise = new Promise<void>(async (resolve) => {
+        showedListener = await AdMob.addListener(
+          RewardAdPluginEvents.Showed,
+          () => {
+            this.audioService.pauseMusic();
+          },
+        );
+
+        rewardedListener = await AdMob.addListener(
+          RewardAdPluginEvents.Rewarded,
+          (reward: AdMobRewardItem) => {
+            if (reward && reward.amount > 0) {
+              hasReward = true;
+              console.log('🎉 Reward ottenuto:', reward);
+            }
+          },
+        );
+
+        dismissedListener = await AdMob.addListener(
+          RewardAdPluginEvents.Dismissed,
+          async () => {
+            await this.audioService.playMusic();
+            resolve();
+          },
+        );
+      });
+
       await AdMob.prepareRewardVideoAd(options);
+      await AdMob.showRewardVideoAd();
 
-      // 2️⃣ Mostriamo il video (senza parametri)
-      const reward: AdMobRewardItem = await AdMob.showRewardVideoAd();
+      await dismissedPromise;
 
-      // reward → { amount: number, type: string }
-      if (reward && reward.amount > 0) {
-        console.log('🎉 Reward ottenuto:', reward);
-        return true;
-      }
+      showedListener?.remove();
+      rewardedListener?.remove();
+      dismissedListener?.remove();
 
-      return false;
+      return hasReward;
     } catch (err) {
       console.error('❌ Errore rewarded video:', err);
+
+      showedListener?.remove();
+      rewardedListener?.remove();
+      dismissedListener?.remove();
+
+      await this.audioService.playMusic();
+
       return false;
     }
   }

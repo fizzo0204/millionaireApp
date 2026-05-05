@@ -28,6 +28,10 @@ export class BottomNavComponent {
         await this.router.navigateByUrl('/home');
       }
 
+      if (tab === 'negozio') {
+        await this.router.navigateByUrl('/shop');
+      }
+
       if (tab === 'impostazioni') {
         await this.router.navigateByUrl('/settings');
       }

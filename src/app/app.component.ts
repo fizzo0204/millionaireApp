@@ -23,6 +23,8 @@ export class AppComponent implements OnDestroy {
   user$: Observable<User | null> = this.auth.user$;
 
   private routerSub?: Subscription;
+  private musicStarted = false;
+  private isMobile = false;
 
   constructor(
     private platform: Platform,
@@ -36,17 +38,24 @@ export class AppComponent implements OnDestroy {
 
   async initializeApp() {
     await this.platform.ready();
-    console.log('✅ App avviata');
 
-    const isMobile = Capacitor.getPlatform() !== 'web';
-    console.log(isMobile ? '📱 Piattaforma mobile' : '💻 Web/PWA');
-
-    console.log('🧩 Ionic components definiti correttamente');
-
-    this.updateActiveTabFromUrl(this.router.url);
+    this.isMobile = Capacitor.getPlatform() !== 'web';
 
     this.audioService.initHomeMusic();
-    this.audioService.playMusic();
+
+    if (this.isMobile) {
+      this.musicStarted = true;
+      this.audioService.playMusic();
+    }
+  }
+
+  handleGlobalPointerDown() {
+    this.audioService.playClick();
+
+    if (!this.isMobile && !this.musicStarted) {
+      this.musicStarted = true;
+      this.audioService.playMusic();
+    }
   }
 
   private listenToRouteChanges() {
@@ -84,11 +93,6 @@ export class AppComponent implements OnDestroy {
 
   setActiveTab(tab: string) {
     this.activeTab = tab;
-  }
-
-  async handleGlobalClick() {
-    await this.audioService.playMusic();
-    this.audioService.playClick();
   }
 
   ngOnDestroy() {

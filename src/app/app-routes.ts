@@ -22,6 +22,11 @@ export const routes: Routes = [
       import('./pages/settings/settings.page').then((m) => m.SettingsPage),
   },
   {
+    path: 'shop',
+    loadComponent: () =>
+      import('./pages/shop/shop.page').then((m) => m.ShopPage),
+  },
+  {
     path: '**',
     redirectTo: 'home',
   },

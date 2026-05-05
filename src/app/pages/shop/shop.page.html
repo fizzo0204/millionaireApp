@@ -1,0 +1,93 @@
+<ion-content class="shop-content">
+  <div class="page-fade">
+    <div class="shop-header">
+      <h2>🛒 Negozio</h2>
+      <p>Guarda brevi video e ottieni ricompense gratis</p>
+    </div>
+
+    <div class="wallet-row">
+      <div class="wallet-card">
+        <span>🪙</span>
+        <strong>{{ coins$ | async }}</strong>
+        <small>Monete</small>
+      </div>
+
+      <div
+        class="wallet-card lives-wallet"
+        [class.life-pulse]="lifeRecoveredPulse"
+      >
+        <span>❤️</span>
+
+        <div class="life-float" *ngIf="lifeRecoveredPulse">+1</div>
+
+        <strong>{{ lives$ | async }}</strong>
+        <small>Vite</small>
+
+        <div class="life-timer" *ngIf="livesCountdown$ | async as countdown">
+          +1 tra {{ countdown }}
+        </div>
+      </div>
+    </div>
+
+    <div class="shop-grid">
+      <div class="shop-card coins-card">
+        <div class="badge">Gratis</div>
+
+        <div class="shop-icon">🪙</div>
+
+        <div class="shop-text">
+          <h3>+10 Monete</h3>
+          <p>Guarda un video e ricevi subito 10 monete.</p>
+        </div>
+
+        <ion-button
+          expand="block"
+          class="shop-button"
+          (click)="watchCoinsAd()"
+          [disabled]="coinsLoading || lifeLoading"
+        >
+          <ng-container *ngIf="!coinsLoading; else coinsLoad">
+            🎁 Guarda video
+          </ng-container>
+
+          <ng-template #coinsLoad>
+            <ion-spinner name="dots"></ion-spinner>
+          </ng-template>
+        </ion-button>
+      </div>
+
+      <div class="shop-card life-card" *ngIf="lives$ | async as lives">
+        <div class="badge" [class.full]="lives >= maxLives">
+          {{ lives >= maxLives ? "Pieno" : "Gratis" }}
+        </div>
+
+        <div class="shop-icon">❤️</div>
+
+        <div class="shop-text">
+          <h3>+1 Vita</h3>
+
+          <p>
+            Guarda un video e recupera una vita.
+            <br />
+            <strong>{{ lives }}/{{ maxLives }}</strong> vite disponibili.
+          </p>
+        </div>
+
+        <ion-button
+          expand="block"
+          class="shop-button"
+          (click)="watchLifeAd()"
+          [disabled]="lifeLoading || coinsLoading || lives >= maxLives"
+        >
+          <ng-container *ngIf="!lifeLoading; else lifeLoad">
+            🎁 Guarda video
+          </ng-container>
+
+          <ng-template #lifeLoad>
+            <ion-spinner name="dots"></ion-spinner>
+          </ng-template>
+        </ion-button>
+      </div>
+    </div>
+  </div>
+</ion-content>
