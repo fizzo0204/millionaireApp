@@ -5,7 +5,9 @@ import { Injectable } from '@angular/core';
 })
 export class AudioService {
   private music?: HTMLAudioElement;
-  private clickSound?: HTMLAudioElement;
+  private clickPool: HTMLAudioElement[] = [];
+  private clickIndex = 0;
+  private readonly CLICK_POOL_SIZE = 5;
   private clickEnabled = true;
   private readonly CLICK_ENABLED_KEY = 'click_enabled';
 
@@ -39,10 +41,14 @@ export class AudioService {
   }
 
   private initClickSound() {
-    if (this.clickSound) return;
+    if (this.clickPool.length > 0) return;
 
-    this.clickSound = new Audio('assets/audio/click.mp3');
-    this.clickSound.volume = 0.5;
+    this.clickPool = Array.from({ length: this.CLICK_POOL_SIZE }, () => {
+      const audio = new Audio('assets/audio/click.mp3');
+      audio.volume = 0.5;
+      audio.preload = 'auto';
+      return audio;
+    });
   }
 
   async playMusic() {
@@ -65,14 +71,15 @@ export class AudioService {
   playClick() {
     if (!this.clickEnabled) return;
 
-    if (!this.clickSound) {
-      this.initClickSound();
-    }
+    this.initClickSound();
 
-    if (!this.clickSound) return;
+    const sound = this.clickPool[this.clickIndex];
+    this.clickIndex = (this.clickIndex + 1) % this.CLICK_POOL_SIZE;
 
-    this.clickSound.currentTime = 0;
-    this.clickSound.play().catch(() => {});
+    if (!sound) return;
+
+    sound.currentTime = 0;
+    sound.play().catch(() => {});
   }
 
   setClickEnabled(enabled: boolean) {
