@@ -32,6 +32,10 @@ export class BottomNavComponent {
         await this.router.navigateByUrl('/shop');
       }
 
+      if (tab === 'profilo') {
+        await this.router.navigateByUrl('/profile');
+      }
+
       if (tab === 'impostazioni') {
         await this.router.navigateByUrl('/settings');
       }

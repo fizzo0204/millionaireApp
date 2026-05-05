@@ -12,21 +12,21 @@
   <button
     type="button"
     class="nav-item"
-    [class.active]="activeTab === 'classifica'"
-    (click)="setActiveTab('classifica')"
-  >
-    <ion-icon name="trophy-outline"></ion-icon>
-    <span>Classifica</span>
-  </button>
-
-  <button
-    type="button"
-    class="nav-item"
     [class.active]="activeTab === 'negozio'"
     (click)="setActiveTab('negozio')"
   >
     <ion-icon name="cart-outline"></ion-icon>
     <span>Negozio</span>
+  </button>
+
+  <button
+    type="button"
+    class="nav-item"
+    [class.active]="activeTab === 'profilo'"
+    (click)="setActiveTab('profilo')"
+  >
+    <ion-icon name="trophy-outline"></ion-icon>
+    <span>Profilo</span>
   </button>
 
   <button

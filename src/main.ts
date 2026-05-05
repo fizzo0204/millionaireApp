@@ -11,6 +11,8 @@ import {
   settingsOutline,
   chevronForwardOutline,
   logOutOutline,
+  createOutline,
+  checkmarkCircle,
 } from 'ionicons/icons';
 
 // ✅ IMPORTA TUTTI I LOADER
@@ -43,4 +45,6 @@ addIcons({
   'settings-outline': settingsOutline,
   'chevron-forward-outline': chevronForwardOutline,
   'log-out-outline': logOutOutline,
+  'create-outline': createOutline,
+  'checkmark-circle': checkmarkCircle,
 });

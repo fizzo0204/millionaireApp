@@ -1,0 +1,140 @@
+<ion-content class="profile-content">
+  <div class="page-fade">
+    @if (user$ | async; as user) {
+    <!-- HEADER -->
+    <div class="profile-header">
+      <div class="avatar-wrap" (click)="openAvatarModal()">
+        <div class="avatar">{{ getSelectedAvatarIcon(user) }}</div>
+
+        <div class="edit-badge">
+          <ion-icon name="create-outline"></ion-icon>
+        </div>
+      </div>
+
+      <div class="profile-info">
+        <h2>{{ getPlayerName(user) }}</h2>
+        <p>{{ joinDate }}</p>
+      </div>
+    </div>
+    }
+
+    <!-- LEVEL -->
+    <div class="level-card">
+      <div class="level-shield">
+        <span>Livello</span>
+        <strong>{{ level }}</strong>
+      </div>
+
+      <div class="level-info">
+        <h3>Livello {{ level }}</h3>
+        <p>{{ title }}</p>
+
+        <div class="xp-row">
+          <span>{{ currentXp }} / {{ maxXp }} XP</span>
+        </div>
+
+        <div class="xp-bar">
+          <div class="xp-fill" [style.width.%]="xpPercent"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="section-row">
+      <h3>Statistiche</h3>
+    </div>
+
+    <div class="stats-grid">
+      @for (stat of stats; track stat.label) {
+      <div class="stat-card">
+        <div class="stat-icon">{{ stat.icon }}</div>
+        <strong>{{ stat.value }}</strong>
+        <span>{{ stat.label }}</span>
+      </div>
+      }
+    </div>
+
+    <!-- TROFEI -->
+    <div class="section-row">
+      <h3>Trofei</h3>
+      <button type="button">Vedi tutti</button>
+    </div>
+
+    <div class="achievement-grid">
+      @for (achievement of achievements; track achievement.title) {
+      <div class="achievement-card" [class.locked]="!achievement.completed">
+        <div class="achievement-icon">{{ achievement.icon }}</div>
+
+        <h4>{{ achievement.title }}</h4>
+        <p>{{ achievement.description }}</p>
+
+        @if (achievement.completed) {
+        <div class="achievement-status">
+          <ion-icon name="checkmark-circle"></ion-icon>
+        </div>
+        } @else {
+        <div class="achievement-progress">{{ achievement.progress }}</div>
+        }
+      </div>
+      }
+    </div>
+
+    <!-- RISULTATI -->
+    <div class="section-row">
+      <h3>Ultimi risultati</h3>
+      <button type="button">Vedi tutto</button>
+    </div>
+
+    <div class="results-list">
+      @for (result of recentResults; track result.category) {
+      <div class="result-card">
+        <div class="result-icon">{{ result.icon }}</div>
+
+        <div class="result-info">
+          <h4>{{ result.category }}</h4>
+          <p>{{ result.meta }}</p>
+        </div>
+
+        <strong [ngClass]="result.className"> {{ result.score }} </strong>
+
+        <ion-icon name="chevron-forward-outline"></ion-icon>
+      </div>
+      }
+    </div>
+  </div>
+
+  <!-- 🔥 MODALE AVATAR -->
+  @if (showAvatarModal && (user$ | async); as user) {
+  <div class="avatar-modal-backdrop" (click)="closeAvatarModal()">
+    <div class="avatar-modal" (click)="$event.stopPropagation()">
+      <h3>Scegli avatar</h3>
+
+      <div class="avatar-grid">
+        @for (avatar of avatars; track avatar.id) {
+        <button
+          class="avatar-option"
+          type="button"
+          [class.active]="tempSelectedAvatar === avatar.id"
+          [class.locked]="!isAvatarUnlocked(avatar.minLevel)"
+          (click)="chooseTempAvatar(avatar.id)"
+        >
+          <div class="avatar-option-icon">
+            {{ getAvatarIcon(avatar.id, user) }}
+          </div>
+
+          @if (!isAvatarUnlocked(avatar.minLevel)) {
+          <small>Liv. {{ avatar.minLevel }}</small>
+          }
+        </button>
+        }
+      </div>
+
+      <div class="avatar-actions">
+        <button class="cancel-btn" (click)="closeAvatarModal()">Annulla</button>
+
+        <button class="save-btn" (click)="saveAvatar()">Salva</button>
+      </div>
+    </div>
+  </div>
+  }
+</ion-content>

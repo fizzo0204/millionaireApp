@@ -73,18 +73,23 @@ export class AppComponent implements OnDestroy {
   private updateActiveTabFromUrl(url: string) {
     const cleanUrl = url.split('?')[0];
 
+    if (cleanUrl.startsWith('/shop')) {
+      this.activeTab = 'negozio';
+      return;
+    }
+
     if (cleanUrl.startsWith('/settings')) {
       this.activeTab = 'impostazioni';
       return;
     }
 
-    if (cleanUrl.startsWith('/leaderboard')) {
-      this.activeTab = 'classifica';
+    if (cleanUrl.startsWith('/profile')) {
+      this.activeTab = 'profilo';
       return;
     }
 
-    if (cleanUrl.startsWith('/shop')) {
-      this.activeTab = 'negozio';
+    if (cleanUrl.startsWith('/leaderboard')) {
+      this.activeTab = 'classifica';
       return;
     }
 
