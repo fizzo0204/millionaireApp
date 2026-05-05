@@ -1,36 +1,33 @@
-<ng-container *ngIf="user$ | async as user">
-  <div class="user-info" *ngIf="!user.isAnonymous; else anon">
-    <img
-      *ngIf="user.photoURL"
-      [src]="user.photoURL"
-      alt="user"
-      referrerpolicy="no-referrer"
-    />
+<ng-container>
+  @if (user$ | async; as user) {
+    @if (!user.isAnonymous) {
+      <div class="user-info">
+        @if (user.photoURL) {
+          <img [src]="user.photoURL" alt="user" referrerpolicy="no-referrer" />
+        }
 
-    <span class="username">{{ getFirstName(user) }}</span>
-  </div>
+        <span class="username">{{ getFirstName(user) }}</span>
+      </div>
+    } @else {
+      <ion-button
+        fill="solid"
+        class="login-btn"
+        (click)="handleClick(user)"
+        [disabled]="loading$ | async"
+      >
+        @if (!(loading$ | async)) {
+          <div class="login-content">
+            <div class="user-label">Utente</div>
 
-  <ng-template #anon>
-    <ion-button
-      fill="solid"
-      class="login-btn"
-      (click)="handleClick(user)"
-      [disabled]="loading$ | async"
-    >
-      <ng-container *ngIf="!(loading$ | async); else load">
-        <div class="login-content">
-          <div class="user-label">Utente</div>
-
-          <div class="google-login">
-            <ion-icon name="logo-google"></ion-icon>
-            <span>Accedi</span>
+            <div class="google-login">
+              <ion-icon name="logo-google"></ion-icon>
+              <span>Accedi</span>
+            </div>
           </div>
-        </div>
-      </ng-container>
-
-      <ng-template #load>
-        <ion-spinner name="dots"></ion-spinner>
-      </ng-template>
-    </ion-button>
-  </ng-template>
+        } @else {
+          <ion-spinner name="dots"></ion-spinner>
+        }
+      </ion-button>
+    }
+  }
 </ng-container>

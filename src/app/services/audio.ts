@@ -37,18 +37,21 @@ export class AudioService {
   initHomeMusic() {
     if (this.music) return;
 
-    this.music = new Audio('assets/audio/homeMusic.mp3');
+    this.music = new Audio('assets/audio/homeMusic.m4a');
+
     this.music.setAttribute('playsinline', 'true');
     this.music.loop = true;
     this.music.preload = 'auto';
     this.music.volume = 0;
+
+    this.music.load();
   }
 
   private initClickSound() {
     if (this.clickPool.length > 0) return;
 
     this.clickPool = Array.from({ length: this.CLICK_POOL_SIZE }, () => {
-      const audio = new Audio('assets/audio/click.mp3');
+      const audio = new Audio('assets/audio/click.m4a');
       audio.volume = 0.5;
       audio.preload = 'auto';
       return audio;

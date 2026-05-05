@@ -18,14 +18,16 @@
       >
         <span>❤️</span>
 
-        <div class="life-float" *ngIf="lifeRecoveredPulse">+1</div>
+        @if (lifeRecoveredPulse) {
+        <div class="life-float">+1</div>
+        }
 
         <strong>{{ lives$ | async }}</strong>
         <small>Vite</small>
 
-        <div class="life-timer" *ngIf="livesCountdown$ | async as countdown">
-          +1 tra {{ countdown }}
-        </div>
+        @if (livesCountdown$ | async; as countdown) {
+        <div class="life-timer">+1 tra {{ countdown }}</div>
+        }
       </div>
     </div>
 
@@ -46,17 +48,14 @@
           (click)="watchCoinsAd()"
           [disabled]="coinsLoading || lifeLoading"
         >
-          <ng-container *ngIf="!coinsLoading; else coinsLoad">
-            🎁 Guarda video
-          </ng-container>
-
-          <ng-template #coinsLoad>
-            <ion-spinner name="dots"></ion-spinner>
-          </ng-template>
+          @if (!coinsLoading) { 🎁 Guarda video } @else {
+          <ion-spinner name="dots"></ion-spinner>
+          }
         </ion-button>
       </div>
 
-      <div class="shop-card life-card" *ngIf="lives$ | async as lives">
+      @if (lives$ | async; as lives) {
+      <div class="shop-card life-card">
         <div class="badge" [class.full]="lives >= maxLives">
           {{ lives >= maxLives ? "Pieno" : "Gratis" }}
         </div>
@@ -79,15 +78,12 @@
           (click)="watchLifeAd()"
           [disabled]="lifeLoading || coinsLoading || lives >= maxLives"
         >
-          <ng-container *ngIf="!lifeLoading; else lifeLoad">
-            🎁 Guarda video
-          </ng-container>
-
-          <ng-template #lifeLoad>
-            <ion-spinner name="dots"></ion-spinner>
-          </ng-template>
+          @if (!lifeLoading) { 🎁 Guarda video } @else {
+          <ion-spinner name="dots"></ion-spinner>
+          }
         </ion-button>
       </div>
+      }
     </div>
   </div>
 </ion-content>

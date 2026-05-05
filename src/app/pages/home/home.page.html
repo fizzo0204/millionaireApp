@@ -1,7 +1,8 @@
 <ion-content class="home-content">
-  <app-anonymous-modal *ngIf="showAnonModal"></app-anonymous-modal>
-
-  <div class="page-fade" *ngIf="!showAnonModal">
+  @if (showAnonModal) {
+  <app-anonymous-modal></app-anonymous-modal>
+  } @if (!showAnonModal) {
+  <div class="page-fade">
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-icon">🧠</div>
@@ -15,14 +16,17 @@
         (click)="testSpendLife()"
       >
         <div class="stat-icon">❤️</div>
-        <div class="life-float" *ngIf="lifeRecoveredPulse">+1</div>
+
+        @if (lifeRecoveredPulse) {
+        <div class="life-float">+1</div>
+        }
 
         <div class="stat-value">{{ lives$ | async }}</div>
         <div class="stat-label">Vite</div>
 
-        <div class="life-timer" *ngIf="livesCountdown$ | async as countdown">
-          +1 tra {{ countdown }}
-        </div>
+        @if (livesCountdown$ | async; as countdown) {
+        <div class="life-timer">+1 tra {{ countdown }}</div>
+        }
       </div>
 
       <div class="stat-card">
@@ -38,9 +42,9 @@
     </div>
 
     <div class="categories-grid">
+      @for (cat of categories; track cat) {
       <div
         class="category-card"
-        *ngFor="let cat of categories"
         [ngClass]="cat.className"
         (click)="selectCategory(cat.id)"
       >
@@ -51,6 +55,7 @@
           <p>{{ cat.description }}</p>
         </div>
       </div>
+      }
     </div>
 
     <div class="reward-panel">
@@ -69,4 +74,5 @@
       </ion-button>
     </div>
   </div>
+  }
 </ion-content>

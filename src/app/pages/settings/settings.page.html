@@ -5,40 +5,54 @@
       <p>Personalizza la tua esperienza di gioco</p>
     </div>
 
-    <div class="settings-card">
-      <div class="setting-info">
-        <div class="setting-icon">🎵</div>
+    <div class="settings-list">
+      <div class="settings-card">
+        <div class="setting-info">
+          <div class="setting-icon">🎵</div>
 
-        <div>
-          <h3>Musica</h3>
-          <p>Attiva o disattiva la musica di sottofondo</p>
+          <div>
+            <h3>Musica</h3>
+            <p>Attiva o disattiva la musica di sottofondo</p>
+          </div>
         </div>
+
+        <ion-toggle
+          [checked]="musicEnabled"
+          (ionChange)="toggleMusic()"
+        ></ion-toggle>
       </div>
 
-      <ion-toggle
-        [checked]="musicEnabled"
-        (ionChange)="toggleMusic()"
-      ></ion-toggle>
-    </div>
-  </div>
+      <div class="settings-card">
+        <div class="setting-info">
+          <div class="setting-icon">🔊</div>
 
-  <div class="settings-card">
-    <div class="setting-info">
-      <div class="setting-icon">🔊</div>
+          <div>
+            <h3>Suoni</h3>
+            <p>Attiva o disattiva i suoni dei click</p>
+          </div>
+        </div>
 
-      <div>
-        <h3>Suoni</h3>
-        <p>Attiva o disattiva i suoni dei click</p>
+        <ion-toggle
+          [checked]="clickEnabled"
+          (ionChange)="toggleClick()"
+        ></ion-toggle>
       </div>
+
+      <button class="logout-card" type="button" (click)="logout()">
+        <div class="logout-icon">
+          <ion-icon name="log-out-outline"></ion-icon>
+        </div>
+
+        <div class="logout-text">
+          <h3>Logout</h3>
+          <p>Esci dal tuo account</p>
+        </div>
+
+        <ion-icon
+          class="logout-arrow"
+          name="chevron-forward-outline"
+        ></ion-icon>
+      </button>
     </div>
-
-    <ion-toggle
-      [checked]="clickEnabled"
-      (ionChange)="toggleClick()"
-    ></ion-toggle>
   </div>
-
-  <ion-button expand="block" color="danger" (click)="logout()">
-    Logout
-  </ion-button>
 </ion-content>

@@ -10,6 +10,7 @@ import {
   cartOutline,
   settingsOutline,
   chevronForwardOutline,
+  logOutOutline,
 } from 'ionicons/icons';
 
 // ✅ IMPORTA TUTTI I LOADER
@@ -41,4 +42,5 @@ addIcons({
   'cart-outline': cartOutline,
   'settings-outline': settingsOutline,
   'chevron-forward-outline': chevronForwardOutline,
+  'log-out-outline': logOutOutline,
 });
