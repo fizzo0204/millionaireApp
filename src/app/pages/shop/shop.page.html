@@ -6,8 +6,14 @@
     </div>
 
     <div class="wallet-row">
-      <div class="wallet-card">
+      <div
+        class="wallet-card coins-wallet"
+        [class.coin-pulse]="coinRewardPulse"
+      >
         <span>🪙</span>
+
+        <div class="coin-float" *ngIf="coinRewardPulse">+10</div>
+
         <strong>{{ coins$ | async }}</strong>
         <small>Monete</small>
       </div>

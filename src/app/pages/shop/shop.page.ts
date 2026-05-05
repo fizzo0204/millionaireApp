@@ -18,6 +18,7 @@ import { LivesService } from 'src/app/services/lives';
 export class ShopPage implements OnInit, OnDestroy {
   private livesSub?: Subscription;
   private previousLives?: number;
+  coinRewardPulse = false;
 
   readonly maxLives = 5;
 
@@ -61,9 +62,21 @@ export class ShopPage implements OnInit, OnDestroy {
 
     if (reward) {
       await this.coinsService.addCoins(10);
+      if (reward) {
+        await this.coinsService.addCoins(10);
+        this.triggerCoinPulse();
+      }
     }
 
     this.coinsLoading = false;
+  }
+
+  triggerCoinPulse() {
+    this.coinRewardPulse = true;
+
+    setTimeout(() => {
+      this.coinRewardPulse = false;
+    }, 900);
   }
 
   async watchLifeAd() {
