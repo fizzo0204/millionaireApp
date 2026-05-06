@@ -3,6 +3,8 @@ import { IonicModule, Platform } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
+import type { PluginListenerHandle } from '@capacitor/core';
 import { Observable, Subscription, filter } from 'rxjs';
 import { User } from 'firebase/auth';
 
@@ -39,6 +41,8 @@ export class AppComponent implements OnDestroy {
   hideBottomNav = false;
 
   private routerSub?: Subscription;
+  private appStateListener?: PluginListenerHandle;
+
   private musicStarted = false;
   private isMobile = false;
 
@@ -65,10 +69,29 @@ export class AppComponent implements OnDestroy {
 
     this.audioService.initHomeMusic();
 
+    await this.listenToAppState();
+
     if (this.isMobile) {
       this.musicStarted = true;
       await this.audioService.playMusic();
     }
+  }
+
+  private async listenToAppState() {
+    this.appStateListener = await CapacitorApp.addListener(
+      'appStateChange',
+      ({ isActive }) => {
+        if (isActive) {
+          if (this.musicStarted) {
+            this.audioService.playMusic();
+          }
+
+          return;
+        }
+
+        this.audioService.pauseMusic();
+      },
+    );
   }
 
   handleGlobalPointerDown() {
@@ -131,5 +154,6 @@ export class AppComponent implements OnDestroy {
 
   ngOnDestroy() {
     this.routerSub?.unsubscribe();
+    this.appStateListener?.remove();
   }
 }
