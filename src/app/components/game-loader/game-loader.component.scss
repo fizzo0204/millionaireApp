@@ -1,70 +1,56 @@
 .game-loader {
   width: 100%;
   min-height: 60vh;
-
   display: grid;
   place-items: center;
-
   padding: 24px;
 }
 
 .loader-card {
   position: relative;
   overflow: hidden;
-
   width: 100%;
   max-width: 340px;
-
   padding: 28px 22px;
-
   border-radius: 28px;
   text-align: center;
-
   background: radial-gradient(circle at top, #063f7d, #001a33);
-
   border: 1px solid rgba(96, 165, 250, 0.35);
-
   box-shadow:
-    0 0 24px rgba(56, 189, 248, 0.2),
-    0 20px 40px rgba(0, 0, 0, 0.42);
+    0 0 30px rgba(59, 130, 246, 0.18),
+    0 16px 32px rgba(0, 0, 0, 0.36);
 }
 
 .loader-glow {
   position: absolute;
-
   top: -70px;
   right: -70px;
-
   width: 180px;
   height: 180px;
-
   border-radius: 50%;
-
-  background: rgba(96, 165, 250, 0.12);
+  background: rgba(96, 165, 250, 0.1);
 }
 
 .loader-icon {
   position: relative;
   z-index: 2;
+  margin-bottom: 12px;
+  animation: logoPulse 1.4s ease-in-out infinite;
+}
 
-  font-size: 3.4rem;
-
-  margin-bottom: 10px;
-
-  animation: loaderPulse 1.4s ease-in-out infinite;
+.loader-logo {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
 }
 
 .loader-card h2 {
   position: relative;
   z-index: 2;
-
   margin: 0;
-
   color: #ffea00;
-
   font-size: 1.5rem;
   font-weight: 900;
-
   text-shadow:
     0 2px 0 rgba(129, 90, 0, 0.7),
     0 8px 14px rgba(0, 0, 0, 0.32);
@@ -73,11 +59,8 @@
 .loader-card p {
   position: relative;
   z-index: 2;
-
   margin: 10px 0 22px;
-
   color: #dbeafe;
-
   font-size: 0.85rem;
   line-height: 1.4;
   font-weight: 700;
@@ -86,15 +69,10 @@
 .loader-bar {
   position: relative;
   z-index: 2;
-
   height: 16px;
-
   overflow: hidden;
-
   border-radius: 999px;
-
   background: rgba(2, 8, 23, 0.72);
-
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.08),
     0 4px 10px rgba(0, 0, 0, 0.3);
@@ -103,15 +81,11 @@
 .loader-fill {
   height: 100%;
   width: 20%;
-
   border-radius: inherit;
-
   background: linear-gradient(90deg, #ffea00, #ffcc00);
-
   box-shadow:
     0 0 12px rgba(255, 234, 0, 0.45),
     0 0 24px rgba(255, 204, 0, 0.22);
-
   animation: loadingBar 1.8s ease-in-out infinite;
 }
 
@@ -129,14 +103,14 @@
   }
 }
 
-@keyframes loaderPulse {
+@keyframes logoPulse {
   0%,
   100% {
     transform: scale(1);
   }
 
   50% {
-    transform: scale(1.08);
+    transform: scale(1.05);
   }
 }
 
@@ -145,8 +119,9 @@
     padding: 24px 18px;
   }
 
-  .loader-icon {
-    font-size: 3rem;
+  .loader-logo {
+    width: 118px;
+    height: 118px;
   }
 
   .loader-card h2 {
