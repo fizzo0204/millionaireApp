@@ -1,0 +1,51 @@
+<ion-content class="difficulty-content">
+  <div class="page-fade">
+    <div class="difficulty-hero" [ngClass]="categoryClass">
+      <button class="hero-back-btn" type="button" (click)="goBack()">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
+
+      <div class="hero-main">
+        <div class="hero-badge">?</div>
+
+        <h1>Quiz</h1>
+
+        <div class="hero-ribbon">
+          <span>⭐</span>
+          Scegli la difficoltà
+          <span>⭐</span>
+        </div>
+      </div>
+
+      <div class="hero-divider"></div>
+
+      <div class="category-preview">
+        <div class="category-circle">{{ categoryIcon }}</div>
+
+        <div class="category-name">{{ categoryTitle }}</div>
+      </div>
+    </div>
+
+    <div class="difficulty-grid">
+      @for (difficulty of difficulties; track difficulty.id) {
+      <button
+        class="difficulty-card"
+        [ngClass]="difficulty.className"
+        type="button"
+        (click)="selectDifficulty(difficulty.id)"
+      >
+        <div class="difficulty-badge">{{ difficulty.icon }}</div>
+
+        <h2>{{ difficulty.title }}</h2>
+
+        <p>{{ difficulty.subtitle }}</p>
+
+        <div class="difficulty-meta">
+          <span>+{{ difficulty.xp }} XP</span>
+          <span>Liv. {{ difficulty.range }}</span>
+        </div>
+      </button>
+      }
+    </div>
+  </div>
+</ion-content>

@@ -14,6 +14,7 @@ import {
   createOutline,
   checkmarkCircle,
   closeOutline,
+  arrowBackOutline,
 } from 'ionicons/icons';
 
 // ✅ IMPORTA TUTTI I LOADER
@@ -49,4 +50,5 @@ addIcons({
   'create-outline': createOutline,
   'checkmark-circle': checkmarkCircle,
   'close-outline': closeOutline,
+  'arrow-back-outline': arrowBackOutline,
 });

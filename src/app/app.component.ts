@@ -7,9 +7,9 @@ import { Observable, Subscription, filter } from 'rxjs';
 import { User } from 'firebase/auth';
 
 import { AuthService } from './services/auth.service';
-import { AudioService } from './services/audio';
 import { HomeNavbarComponent } from './components/home-navbar/home-navbar.component';
 import { BottomNavComponent } from './components/bottom-nav/bottom-nav.component';
+import { AudioService } from './services/audio';
 
 @Component({
   selector: 'app-root',
@@ -29,6 +29,7 @@ export class AppComponent implements OnDestroy {
   private routerSub?: Subscription;
   private musicStarted = false;
   private isMobile = false;
+  hideBottomNav = false;
 
   constructor(
     private platform: Platform,
@@ -76,6 +77,7 @@ export class AppComponent implements OnDestroy {
 
   private updateActiveTabFromUrl(url: string) {
     const cleanUrl = url.split('?')[0];
+    this.hideBottomNav = cleanUrl.startsWith('/difficulty');
 
     if (cleanUrl.startsWith('/shop')) {
       this.activeTab = 'negozio';

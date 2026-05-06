@@ -10,7 +10,7 @@
       <app-bottom-nav
         [activeTab]="activeTab"
         (tabChange)="setActiveTab($event)"
-        [hidden]="user?.isAnonymous"
+        [hidden]="user?.isAnonymous || hideBottomNav"
       ></app-bottom-nav>
     } @else {}
   </div>

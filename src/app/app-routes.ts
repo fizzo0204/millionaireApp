@@ -32,6 +32,13 @@ export const routes: Routes = [
       import('./pages/profile/profile.page').then((m) => m.ProfilePage),
   },
   {
+    path: 'difficulty/:categoryId',
+    loadComponent: () =>
+      import('./pages/difficulty/difficulty.page').then(
+        (m) => m.DifficultyPage,
+      ),
+  },
+  {
     path: '**',
     redirectTo: 'home',
   },

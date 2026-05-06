@@ -2,13 +2,13 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { Observable, Subscription } from 'rxjs';
-
+import { Router } from '@angular/router';
 import { AnonymousModalComponent } from '../../components/anonymous-modal/anonymous-modal.component';
 import { AuthService } from 'src/app/services/auth.service';
 import { AdsService } from 'src/app/services/ads.service';
-import { AudioService } from 'src/app/services/audio';
 import { CoinsService } from 'src/app/services/coins.service';
 import { LivesService } from 'src/app/services/lives';
+import { AudioService } from 'src/app/services/audio';
 
 @Component({
   selector: 'app-home',
@@ -94,6 +94,7 @@ export class HomePage implements OnInit, OnDestroy {
     private audioService: AudioService,
     private coinsService: CoinsService,
     private livesService: LivesService,
+    private router: Router,
   ) {
     this.coins$ = this.coinsService.coins$;
     this.lives$ = this.livesService.lives$;
@@ -117,7 +118,7 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   selectCategory(categoryId: string) {
-    console.log(`🎮 Categoria selezionata: ${categoryId}`);
+    this.router.navigateByUrl(`/difficulty/${categoryId}`);
   }
 
   async watchAd() {
