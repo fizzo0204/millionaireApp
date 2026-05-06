@@ -8,8 +8,7 @@ import {
   AdMobRewardItem,
   RewardAdPluginEvents,
 } from '@capacitor-community/admob';
-
-import { AudioService } from 'src/app/services/audio';
+import { AudioService } from './audio';
 
 @Injectable({
   providedIn: 'root',

@@ -21,6 +21,7 @@ import {
   checkmarkCircle,
   closeOutline,
   arrowBackOutline,
+  lockClosedOutline,
 } from 'ionicons/icons';
 
 import { defineCustomElements as ionicElements } from '@ionic/core/loader';
@@ -58,4 +59,5 @@ addIcons({
   'checkmark-circle': checkmarkCircle,
   'close-outline': closeOutline,
   'arrow-back-outline': arrowBackOutline,
+  'lock-closed-outline': lockClosedOutline,
 });

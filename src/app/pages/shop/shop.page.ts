@@ -4,9 +4,9 @@ import { CommonModule } from '@angular/common';
 import { Observable, Subscription } from 'rxjs';
 
 import { AdsService } from 'src/app/services/ads.service';
-import { AudioService } from 'src/app/services/audio';
 import { CoinsService } from 'src/app/services/coins.service';
 import { LivesService } from 'src/app/services/lives';
+import { AudioService } from 'src/app/services/audio';
 
 @Component({
   selector: 'app-shop',

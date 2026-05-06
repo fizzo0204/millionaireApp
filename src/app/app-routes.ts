@@ -39,6 +39,11 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'quiz/:categoryId/:difficultyId',
+    loadComponent: () =>
+      import('./pages/quiz/quiz.page').then((m) => m.QuizPage),
+  },
+  {
     path: '**',
     redirectTo: 'home',
   },

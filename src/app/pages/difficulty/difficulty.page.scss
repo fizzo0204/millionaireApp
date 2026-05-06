@@ -10,12 +10,16 @@
   border-radius: 26px;
   position: relative;
   overflow: hidden;
+
   display: grid;
   grid-template-columns: 52px 1fr 1px 96px;
   align-items: center;
   gap: 12px;
+
   background: linear-gradient(135deg, rgba(7, 44, 82, 0.96), #031f3d);
+
   border: 1px solid rgba(96, 165, 250, 0.28);
+
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.05),
     0 10px 24px rgba(0, 0, 0, 0.3);
@@ -38,11 +42,15 @@
   border: 0;
   border-radius: 50%;
   z-index: 2;
+
   display: grid;
   place-items: center;
+
   color: #fff;
+
   background: rgba(96, 165, 250, 0.16);
   border: 1px solid rgba(96, 165, 250, 0.42);
+
   box-shadow:
     0 0 16px rgba(56, 189, 248, 0.35),
     inset 0 0 0 1px rgba(255, 255, 255, 0.06);
@@ -55,6 +63,7 @@
 .hero-main {
   position: relative;
   z-index: 2;
+
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -65,25 +74,34 @@
   height: 52px;
   margin-bottom: 3px;
   border-radius: 50%;
+
   display: grid;
   place-items: center;
+
   font-size: 1.85rem;
   font-weight: 900;
   color: #ff3f7f;
+
   background: rgba(255, 255, 255, 0.13);
+
   border: 2px solid rgba(236, 72, 153, 0.75);
+
   box-shadow:
     0 0 18px rgba(236, 72, 153, 0.36),
     inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+
   animation: badgePulse 1.8s ease-in-out infinite;
 }
 
 .hero-main h1 {
   margin: 0;
+
   font-size: 1.8rem;
   line-height: 1;
+
   font-weight: 900;
   color: #ffea00;
+
   text-align: center;
 
   text-shadow:
@@ -95,16 +113,22 @@
   margin-top: 8px;
   padding: 7px 13px;
   border-radius: 999px;
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
+
   white-space: nowrap;
+
   color: #031f3d;
   font-size: 0.68rem;
   font-weight: 900;
+
   background: linear-gradient(180deg, #dbeafe, #60a5fa);
+
   border: 1px solid rgba(255, 255, 255, 0.42);
+
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.55),
     0 4px 0 rgba(30, 64, 175, 0.65),
@@ -115,6 +139,7 @@
   width: 1px;
   height: 92px;
   z-index: 2;
+
   background: linear-gradient(
     180deg,
     transparent,
@@ -126,6 +151,7 @@
 .category-preview {
   position: relative;
   z-index: 2;
+
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -136,10 +162,14 @@
   width: 62px;
   height: 62px;
   border-radius: 50%;
+
   display: grid;
   place-items: center;
+
   font-size: 2rem;
+
   background: rgba(255, 255, 255, 0.16);
+
   box-shadow:
     inset 0 0 0 3px rgba(255, 255, 255, 0.12),
     0 8px 16px rgba(0, 0, 0, 0.28);
@@ -149,10 +179,13 @@
   margin-top: -5px;
   padding: 5px 12px;
   border-radius: 999px;
+
   font-size: 0.72rem;
   font-weight: 900;
   color: #fff;
+
   background: rgba(7, 44, 82, 0.95);
+
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.08),
     0 5px 10px rgba(0, 0, 0, 0.25);
@@ -163,30 +196,37 @@
 .difficulty-hero.sport .category-name {
   background: linear-gradient(135deg, #22c55e, #15803d);
 }
+
 .difficulty-hero.cinema .category-circle,
 .difficulty-hero.cinema .category-name {
   background: linear-gradient(135deg, #f97316, #c2410c);
 }
+
 .difficulty-hero.storia .category-circle,
 .difficulty-hero.storia .category-name {
   background: linear-gradient(135deg, #10b981, #047857);
 }
+
 .difficulty-hero.geografia .category-circle,
 .difficulty-hero.geografia .category-name {
   background: linear-gradient(135deg, #fb923c, #f97316);
 }
+
 .difficulty-hero.scienza .category-circle,
 .difficulty-hero.scienza .category-name {
   background: linear-gradient(135deg, #ec4899, #be185d);
 }
+
 .difficulty-hero.musica .category-circle,
 .difficulty-hero.musica .category-name {
   background: linear-gradient(135deg, #22d3ee, #0284c7);
 }
+
 .difficulty-hero.tecnologia .category-circle,
 .difficulty-hero.tecnologia .category-name {
   background: linear-gradient(135deg, #facc15, #d97706);
 }
+
 .difficulty-hero.altro .category-circle,
 .difficulty-hero.altro .category-name,
 .difficulty-hero.default .category-circle,
@@ -198,6 +238,7 @@
   0%,
   100% {
     transform: scale(1);
+
     box-shadow:
       0 0 18px rgba(236, 72, 153, 0.36),
       inset 0 0 0 2px rgba(255, 255, 255, 0.08);
@@ -205,6 +246,7 @@
 
   50% {
     transform: scale(1.06);
+
     box-shadow:
       0 0 26px rgba(236, 72, 153, 0.58),
       inset 0 0 0 2px rgba(255, 255, 255, 0.12);
@@ -224,22 +266,28 @@
   padding: 14px 10px;
   border: 0;
   border-radius: 22px;
+
   position: relative;
   overflow: hidden;
+
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
+
   text-align: center;
   color: #fff;
   cursor: pointer;
+
   box-shadow:
     inset 0 0 0 2px rgba(255, 255, 255, 0.09),
     0 10px 18px rgba(0, 0, 0, 0.28);
+
   transition:
     transform 0.16s ease,
-    filter 0.16s ease;
+    filter 0.16s ease,
+    opacity 0.2s ease;
 }
 
 .difficulty-card:active {
@@ -267,10 +315,14 @@
   width: 58px;
   height: 58px;
   border-radius: 50%;
+
   display: grid;
   place-items: center;
+
   font-size: 1.8rem;
+
   background: rgba(255, 255, 255, 0.22);
+
   box-shadow:
     inset 0 0 0 2px rgba(255, 255, 255, 0.12),
     0 7px 14px rgba(0, 0, 0, 0.22);
@@ -278,6 +330,7 @@
 
 .difficulty-card h2 {
   margin: 0;
+
   font-size: 1.25rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -286,6 +339,7 @@
 .difficulty-card p {
   margin: 0;
   min-height: 34px;
+
   font-size: 0.72rem;
   line-height: 1.15;
   color: #f8fafc;
@@ -302,8 +356,10 @@
   span {
     padding: 4px 8px;
     border-radius: 999px;
+
     font-size: 0.62rem;
     font-weight: 900;
+
     color: #111827;
     background: rgba(255, 255, 255, 0.88);
   }
@@ -326,12 +382,186 @@
   background: linear-gradient(135deg, #a855f7, #4c1d95);
 }
 
+/* LOCKED */
+.difficulty-card.locked {
+  opacity: 0.62;
+  filter: grayscale(0.22);
+  cursor: default;
+
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.04),
+    0 8px 16px rgba(0, 0, 0, 0.22);
+}
+
+.difficulty-card.locked:active {
+  transform: none;
+  filter: grayscale(0.22);
+}
+
+.difficulty-card.locked .difficulty-badge {
+  width: 70px;
+  height: 70px;
+
+  font-size: 2.5rem;
+
+  background: rgba(255, 255, 255, 0.1);
+
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.04),
+    0 5px 10px rgba(0, 0, 0, 0.2);
+}
+
+.difficulty-card.locked h2,
+.difficulty-card.locked p,
+.difficulty-card.locked .difficulty-meta {
+  opacity: 0.65;
+}
+
+/* COMPLETED */
+.difficulty-card.completed {
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.14),
+    0 0 22px rgba(255, 234, 0, 0.2),
+    0 10px 18px rgba(0, 0, 0, 0.28);
+}
+
+.difficulty-card.completed .difficulty-badge {
+  background: rgba(255, 255, 255, 0.3);
+
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.18),
+    0 0 18px rgba(255, 234, 0, 0.3);
+}
+
+/* NO LIVES MODAL */
+.no-lives-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+
+  display: grid;
+  place-items: center;
+
+  padding: 24px;
+
+  background: rgba(2, 8, 23, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.no-lives-modal {
+  position: relative;
+
+  width: 100%;
+  max-width: 360px;
+
+  padding: 24px 20px 20px;
+  border-radius: 28px;
+
+  text-align: center;
+
+  background: radial-gradient(circle at top, #063f7d, #001a33);
+
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+
+  animation: modalPop 280ms cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+
+.no-lives-icon {
+  font-size: 4rem;
+  margin-bottom: 10px;
+}
+
+.no-lives-modal h2 {
+  margin: 0 0 10px;
+
+  color: #ffea00;
+  font-size: 1.5rem;
+  font-weight: 900;
+}
+
+.no-lives-modal p {
+  margin: 0 0 18px;
+
+  color: #dbeafe;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+.watch-life-btn {
+  width: 100%;
+  min-height: 52px;
+
+  border: 0;
+  border-radius: 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  color: #fff;
+
+  font-size: 0.82rem;
+  font-weight: 900;
+
+  background: linear-gradient(135deg, #a855f7, #7e22ce);
+
+  box-shadow:
+    0 6px 0 rgba(88, 28, 135, 0.8),
+    0 12px 18px rgba(0, 0, 0, 0.28);
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+
+  width: 36px;
+  height: 36px;
+
+  border: 0;
+  border-radius: 50%;
+
+  display: grid;
+  place-items: center;
+
+  color: #fff;
+
+  background: rgba(255, 255, 255, 0.12);
+
+  ion-icon {
+    font-size: 1.2rem;
+  }
+}
+
+@keyframes modalPop {
+  from {
+    transform: translateY(24px) scale(0.94);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
 /* SMALL DEVICES */
 @media (max-width: 390px) {
+  .difficulty-card.locked .difficulty-badge {
+    width: 60px;
+    height: 60px;
+    font-size: 2rem;
+  }
+
   .difficulty-hero {
     margin-top: 24px;
     min-height: 132px;
     padding: 12px;
+
     grid-template-columns: 44px 1fr 1px 78px;
     gap: 9px;
   }

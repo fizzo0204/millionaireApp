@@ -1,0 +1,247 @@
+<ion-content class="quiz-content">
+  <div class="page-fade">
+    @if (loading) {
+    <div class="loading-state">
+      <div class="loading-icon">🎯</div>
+      <h2>Caricamento domande...</h2>
+    </div>
+    } @else if (!currentQuestion) {
+    <div class="empty-state">
+      <h2>⏳ Domande in arrivo</h2>
+      <p>
+        Questa difficoltà non è ancora disponibile. Torna presto: stiamo
+        preparando nuove domande!
+      </p>
+
+      <button type="button" (click)="goBack()">Torna alle difficoltà</button>
+    </div>
+    } @else {
+    <div class="quiz-topbar">
+      <button class="back-btn" type="button" (click)="goBack()">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
+
+      <div class="quiz-pill">
+        <span>{{ categoryIcon }}</span>
+        <strong>{{ categoryTitle }}</strong>
+      </div>
+
+      <div class="quiz-pill">
+        <span>Difficoltà:</span>
+        <strong class="difficulty">{{ difficultyTitle }}</strong>
+      </div>
+
+      <div class="coins-pill">🪙 {{ coins$ | async }}</div>
+    </div>
+
+    <div class="progress-section">
+      <div class="progress-copy">
+        <strong>
+          Domanda {{ currentIndex + 1 }} di {{ questions.length }}
+        </strong>
+      </div>
+
+      <div class="timer-circle">
+        <svg viewBox="0 0 36 36">
+          <path
+            class="timer-bg"
+            d="M18 2.0845
+                 a 15.9155 15.9155 0 0 1 0 31.831
+                 a 15.9155 15.9155 0 0 1 0 -31.831"
+          />
+          <path
+            class="timer-fill"
+            [attr.stroke-dasharray]="timerPercent + ', 100'"
+            d="M18 2.0845
+                 a 15.9155 15.9155 0 0 1 0 31.831
+                 a 15.9155 15.9155 0 0 1 0 -31.831"
+          />
+        </svg>
+
+        <div>
+          <strong>{{ timeLeft }}</strong>
+          <span>sec</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="progress-bar">
+      <div class="progress-fill" [style.width.%]="progressPercent"></div>
+    </div>
+
+    <div class="question-card">
+      <h1>{{ currentQuestion.question }}</h1>
+    </div>
+
+    <div class="answers-list">
+      @for (answer of currentQuestion.answers; track answer; let i = $index) {
+      <button
+        class="answer-card"
+        type="button"
+        [class.hidden]="hiddenAnswers.includes(i)"
+        [class.correct]="getAnswerClass(i) === 'correct'"
+        [class.wrong]="getAnswerClass(i) === 'wrong'"
+        (click)="selectAnswer(i)"
+      >
+        <span class="answer-letter">{{ answerLetters[i] }}</span>
+        <span class="answer-text">{{ answer }}</span>
+      </button>
+      }
+    </div>
+
+    @if (showAudienceHint) {
+    <div class="audience-box">
+      <h3>👥 Il pubblico pensa...</h3>
+
+      <div class="audience-bars">
+        @for (percent of audiencePercentages; track $index; let i = $index) {
+        <div class="audience-row">
+          <span>{{ answerLetters[i] }}</span>
+
+          <div class="audience-track">
+            <div class="audience-fill" [style.width.%]="percent"></div>
+          </div>
+
+          <strong>{{ percent }}%</strong>
+        </div>
+        }
+      </div>
+    </div>
+    }
+
+    <div class="helps-title">Aiuti disponibili</div>
+
+    <div class="helps-grid">
+      @for (help of helps; track help.id) {
+      <button
+        class="help-card"
+        type="button"
+        [class.used]="usedHelps.includes(help.id)"
+        [disabled]="usedHelps.includes(help.id) || answered || showTimeModal"
+        (click)="useHelp(help.id)"
+      >
+        <div class="help-icon">{{ help.icon }}</div>
+        <strong>{{ help.title }}</strong>
+        <span>🪙 {{ help.cost }}</span>
+      </button>
+      }
+    </div>
+
+    <div class="quiz-footer">
+      <div class="lives-box">
+        <span>Vite</span>
+
+        <div>
+          @if (lives$ | async; as lives) { @for (_ of [].constructor(lives);
+          track $index) { ❤️ } }
+        </div>
+      </div>
+
+      <button
+        class="next-btn"
+        type="button"
+        [disabled]="!answered || !isCorrect"
+        (click)="nextQuestion()"
+      >
+        Prossima domanda
+        <ion-icon name="chevron-forward-outline"></ion-icon>
+      </button>
+    </div>
+    }
+  </div>
+
+  @if (showWrongModal) {
+  <div class="quiz-modal-backdrop">
+    <div class="wrong-modal">
+      <div class="wrong-icon">💔</div>
+
+      <h2>Risposta errata!</h2>
+
+      @if (currentQuestion?.explanation) {
+      <p>{{ currentQuestion?.explanation }}</p>
+      }
+
+      <div class="wrong-actions">
+        <button class="ad-btn" type="button" (click)="watchAdAndContinue()">
+          ▶ Guarda pubblicità e continua
+        </button>
+
+        <button class="life-btn" type="button" (click)="loseLifeAndContinue()">
+          Perdi una vita
+        </button>
+      </div>
+    </div>
+  </div>
+  } @if (showTimeModal) {
+  <div class="quiz-modal-backdrop">
+    <div class="wrong-modal time-modal">
+      <div class="wrong-icon">⏰</div>
+
+      <h2>Tempo scaduto!</h2>
+
+      <p>
+        Il tempo per questa domanda è finito. Guarda un video per ottenere
+        <strong>+10 secondi</strong> e continuare sulla stessa domanda.
+      </p>
+
+      <div class="wrong-actions">
+        <button class="ad-btn" type="button" (click)="watchAdForMoreTime()">
+          ▶ Guarda pubblicità e ottieni +10s
+        </button>
+
+        <button
+          class="life-btn"
+          type="button"
+          (click)="loseLifeAfterTimeExpired()"
+        >
+          Perdi una vita
+        </button>
+      </div>
+    </div>
+  </div>
+  } @if (showExitModal) {
+  <div class="quiz-modal-backdrop">
+    <div class="wrong-modal exit-modal">
+      <div class="wrong-icon">🚪</div>
+
+      <h2>Vuoi uscire?</h2>
+
+      <p>
+        Se abbandoni il quiz perderai una vita. Puoi restare e continuare con il
+        timer attuale.
+      </p>
+
+      <div class="wrong-actions">
+        <button class="ad-btn" type="button" (click)="closeExitModal()">
+          Continua il quiz
+        </button>
+
+        <button class="life-btn" type="button" (click)="confirmExitQuiz()">
+          Esci e perdi una vita
+        </button>
+      </div>
+    </div>
+  </div>
+  } @if (showCoinsModal) {
+  <div class="quiz-modal-backdrop">
+    <div class="coins-modal">
+      <button class="modal-close" type="button" (click)="closeCoinsModal()">
+        <ion-icon name="close-outline"></ion-icon>
+      </button>
+
+      <div class="coin-big">🪙</div>
+
+      <h2>Monete insufficienti</h2>
+
+      <p>
+        Questo aiuto costa {{ neededCoins }} monete. Guarda una pubblicità per
+        guadagnare 10 monete.
+      </p>
+
+      <button class="ad-btn" type="button" (click)="watchAdForCoins()">
+        ▶ Guarda video e ottieni 10 monete
+      </button>
+    </div>
+  </div>
+  }
+</ion-content>

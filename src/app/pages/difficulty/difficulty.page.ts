@@ -2,7 +2,25 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { ActivatedRoute, Router } from '@angular/router';
-import { QuestionsService } from 'src/app/services/questions.service';
+
+import {
+  DifficultyId,
+  ProgressService,
+} from 'src/app/services/progress.service';
+import { LivesService } from 'src/app/services/lives';
+import { AdsService } from 'src/app/services/ads.service';
+
+type DifficultyItem = {
+  id: DifficultyId;
+  title: string;
+  subtitle: string;
+  icon: string;
+  xp: number;
+  range: string;
+  className: string;
+  locked: boolean;
+  completed: boolean;
+};
 
 @Component({
   selector: 'app-difficulty',
@@ -14,14 +32,19 @@ import { QuestionsService } from 'src/app/services/questions.service';
 export class DifficultyPage {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private questionsService = inject(QuestionsService);
+  private progressService = inject(ProgressService);
+  private livesService = inject(LivesService);
+  private ads = inject(AdsService);
 
   categoryId = '';
   categoryTitle = 'Quiz';
   categoryIcon = '❓';
   categoryClass = 'default';
 
-  difficulties = [
+  showNoLivesModal = false;
+  lifeLoading = false;
+
+  difficulties: DifficultyItem[] = [
     {
       id: 'easy',
       title: 'Easy',
@@ -30,6 +53,8 @@ export class DifficultyPage {
       xp: 100,
       range: '1-30',
       className: 'easy',
+      locked: false,
+      completed: false,
     },
     {
       id: 'medium',
@@ -39,6 +64,8 @@ export class DifficultyPage {
       xp: 200,
       range: '31-60',
       className: 'medium',
+      locked: true,
+      completed: false,
     },
     {
       id: 'hard',
@@ -48,6 +75,8 @@ export class DifficultyPage {
       xp: 400,
       range: '61-100',
       className: 'hard',
+      locked: true,
+      completed: false,
     },
     {
       id: 'extreme',
@@ -57,6 +86,8 @@ export class DifficultyPage {
       xp: 800,
       range: '100+',
       className: 'extreme',
+      locked: true,
+      completed: false,
     },
   ];
 
@@ -65,55 +96,23 @@ export class DifficultyPage {
     this.setupCategory();
   }
 
+  async ionViewWillEnter() {
+    await this.loadDifficultyProgress();
+  }
+
   setupCategory() {
     const categories: Record<
       string,
-      {
-        title: string;
-        icon: string;
-        className: string;
-      }
+      { title: string; icon: string; className: string }
     > = {
-      sport: {
-        title: 'Sport',
-        icon: '⚽',
-        className: 'sport',
-      },
-      cinema: {
-        title: 'Cinema',
-        icon: '🎬',
-        className: 'cinema',
-      },
-      storia: {
-        title: 'Storia',
-        icon: '🏛️',
-        className: 'storia',
-      },
-      geografia: {
-        title: 'Geografia',
-        icon: '🌍',
-        className: 'geografia',
-      },
-      scienza: {
-        title: 'Scienze',
-        icon: '🔬',
-        className: 'scienza',
-      },
-      musica: {
-        title: 'Musica',
-        icon: '🎵',
-        className: 'musica',
-      },
-      tecnologia: {
-        title: 'Tecnologia',
-        icon: '💡',
-        className: 'tecnologia',
-      },
-      altro: {
-        title: 'Altro',
-        icon: '⭐',
-        className: 'altro',
-      },
+      sport: { title: 'Sport', icon: '⚽', className: 'sport' },
+      cinema: { title: 'Cinema', icon: '🎬', className: 'cinema' },
+      storia: { title: 'Storia', icon: '🏛️', className: 'storia' },
+      geografia: { title: 'Geografia', icon: '🌍', className: 'geografia' },
+      scienza: { title: 'Scienze', icon: '🔬', className: 'scienza' },
+      musica: { title: 'Musica', icon: '🎵', className: 'musica' },
+      tecnologia: { title: 'Tecnologia', icon: '💡', className: 'tecnologia' },
+      altro: { title: 'Altro', icon: '⭐', className: 'altro' },
     };
 
     const category = categories[this.categoryId];
@@ -123,17 +122,62 @@ export class DifficultyPage {
     this.categoryClass = category?.className || 'default';
   }
 
+  async loadDifficultyProgress() {
+    const updatedDifficulties: DifficultyItem[] = [];
+
+    for (const difficulty of this.difficulties) {
+      const completed = await this.progressService.isDifficultyCompleted(
+        this.categoryId,
+        difficulty.id,
+      );
+
+      const unlocked = await this.progressService.isDifficultyUnlocked(
+        this.categoryId,
+        difficulty.id,
+      );
+
+      updatedDifficulties.push({
+        ...difficulty,
+        completed,
+        locked: !unlocked,
+      });
+    }
+
+    this.difficulties = updatedDifficulties;
+  }
+
   goBack() {
     this.router.navigateByUrl('/home');
   }
 
-  async selectDifficulty(difficultyId: string) {
-    const questions = await this.questionsService.getQuestions(
-      this.categoryId,
-      difficultyId,
-      10,
-    );
+  selectDifficulty(difficulty: DifficultyItem) {
+    if (difficulty.locked) return;
 
-    console.log('Domande caricate:', questions);
+    if (this.livesService.getLives() <= 0) {
+      this.showNoLivesModal = true;
+      return;
+    }
+
+    this.router.navigateByUrl(`/quiz/${this.categoryId}/${difficulty.id}`);
+  }
+
+  closeNoLivesModal() {
+    if (this.lifeLoading) return;
+    this.showNoLivesModal = false;
+  }
+
+  async watchAdForLife() {
+    if (this.lifeLoading) return;
+
+    this.lifeLoading = true;
+
+    const reward = await this.ads.showRewardedAd();
+
+    if (reward) {
+      await this.livesService.addLife(1);
+      this.showNoLivesModal = false;
+    }
+
+    this.lifeLoading = false;
   }
 }

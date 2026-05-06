@@ -77,7 +77,8 @@ export class AppComponent implements OnDestroy {
 
   private updateActiveTabFromUrl(url: string) {
     const cleanUrl = url.split('?')[0];
-    this.hideBottomNav = cleanUrl.startsWith('/difficulty');
+    this.hideBottomNav =
+      cleanUrl.startsWith('/difficulty') || cleanUrl.startsWith('/quiz');
 
     if (cleanUrl.startsWith('/shop')) {
       this.activeTab = 'negozio';

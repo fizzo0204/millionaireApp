@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
-
-import { AudioService } from 'src/app/services/audio';
+import { ProgressService } from 'src/app/services/progress.service';
 import { AuthService } from 'src/app/services/auth.service';
+import { AudioService } from 'src/app/services/audio';
 
 @Component({
   selector: 'app-settings',
@@ -20,6 +20,7 @@ export class SettingsPage {
     private audioService: AudioService,
     private authService: AuthService,
     private router: Router,
+    private progressService: ProgressService,
   ) {
     this.musicEnabled = this.audioService.isMusicEnabled();
     this.clickEnabled = this.audioService.isClickEnabled();
@@ -38,5 +39,11 @@ export class SettingsPage {
   async logout() {
     await this.authService.logout();
     await this.router.navigateByUrl('/home');
+  }
+
+  // TEST
+  async resetProgress() {
+    await this.progressService.resetProgress();
+    alert('Progressi difficoltà resettati');
   }
 }
