@@ -1,8 +1,14 @@
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideIonicAngular } from '@ionic/angular/standalone';
 import { provideRouter } from '@angular/router';
+
+import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
+import { provideFirestore, getFirestore } from '@angular/fire/firestore';
+
 import { AppComponent } from './app/app.component';
 import { routes } from './app/app-routes';
+import { environment } from './environments/environment';
+
 import { addIcons } from 'ionicons';
 import {
   homeOutline,
@@ -17,11 +23,9 @@ import {
   arrowBackOutline,
 } from 'ionicons/icons';
 
-// ✅ IMPORTA TUTTI I LOADER
 import { defineCustomElements as ionicElements } from '@ionic/core/loader';
 import { defineCustomElements as pwaElements } from '@ionic/pwa-elements/loader';
 
-// 👇 REGISTRA I WEB COMPONENTS PRIMA DEL BOOTSTRAP
 ionicElements(window);
 pwaElements(window);
 
@@ -32,11 +36,14 @@ bootstrapApplication(AppComponent, {
       animated: true,
     }),
     provideRouter(routes),
+
+    provideFirebaseApp(() => initializeApp(environment.firebase)),
+    provideFirestore(() => getFirestore()),
   ],
 })
   .then(() => {
     console.log('✅ Angular + Ionic bootstrap completato');
-    console.log('🧩 Ionic components definiti correttamente');
+    console.log('🔥 Firebase + Firestore configurati');
   })
   .catch((err) => console.error('❌ Errore Bootstrap:', err));
 

@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { ActivatedRoute, Router } from '@angular/router';
+import { QuestionsService } from 'src/app/services/questions.service';
 
 @Component({
   selector: 'app-difficulty',
@@ -13,6 +14,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 export class DifficultyPage {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private questionsService = inject(QuestionsService);
 
   categoryId = '';
   categoryTitle = 'Quiz';
@@ -125,8 +127,13 @@ export class DifficultyPage {
     this.router.navigateByUrl('/home');
   }
 
-  selectDifficulty(difficultyId: string) {
-    console.log('Categoria:', this.categoryId);
-    console.log('Difficoltà:', difficultyId);
+  async selectDifficulty(difficultyId: string) {
+    const questions = await this.questionsService.getQuestions(
+      this.categoryId,
+      difficultyId,
+      10,
+    );
+
+    console.log('Domande caricate:', questions);
   }
 }
