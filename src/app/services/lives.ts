@@ -11,7 +11,7 @@ export class LivesService {
 
   private readonly MAX_LIVES = 5;
   // private readonly RECOVERY_TIME = 30 * 60 * 1000; // 30 minuti
-  private readonly RECOVERY_TIME = 10000;
+  private readonly RECOVERY_TIME = 15000;
 
   private livesSubject = new BehaviorSubject<number>(this.MAX_LIVES);
   lives$ = this.livesSubject.asObservable();

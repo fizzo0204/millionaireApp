@@ -10,26 +10,37 @@ import { AuthService } from './services/auth.service';
 import { HomeNavbarComponent } from './components/home-navbar/home-navbar.component';
 import { BottomNavComponent } from './components/bottom-nav/bottom-nav.component';
 import { AudioService } from './services/audio';
+import { GameLoaderComponent } from './components/game-loader/game-loader.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [IonicModule, CommonModule, HomeNavbarComponent, BottomNavComponent],
+  imports: [
+    IonicModule,
+    CommonModule,
+    HomeNavbarComponent,
+    BottomNavComponent,
+    GameLoaderComponent,
+  ],
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],
 })
 export class AppComponent implements OnDestroy {
   @HostListener('document:pointerdown', ['$event'])
   handleDocumentPointerDown(event: PointerEvent) {
+    if (this.showAppLoader) return;
     this.handleGlobalPointerDown();
   }
+
   activeTab = 'home';
   user$: Observable<User | null> = this.auth.user$;
+
+  showAppLoader = true;
+  hideBottomNav = false;
 
   private routerSub?: Subscription;
   private musicStarted = false;
   private isMobile = false;
-  hideBottomNav = false;
 
   constructor(
     private platform: Platform,
@@ -42,6 +53,12 @@ export class AppComponent implements OnDestroy {
   }
 
   async initializeApp() {
+    await Promise.all([this.prepareApp(), this.wait(2200)]);
+
+    this.showAppLoader = false;
+  }
+
+  private async prepareApp() {
     await this.platform.ready();
 
     this.isMobile = Capacitor.getPlatform() !== 'web';
@@ -50,7 +67,7 @@ export class AppComponent implements OnDestroy {
 
     if (this.isMobile) {
       this.musicStarted = true;
-      this.audioService.playMusic();
+      await this.audioService.playMusic();
     }
   }
 
@@ -77,6 +94,7 @@ export class AppComponent implements OnDestroy {
 
   private updateActiveTabFromUrl(url: string) {
     const cleanUrl = url.split('?')[0];
+
     this.hideBottomNav =
       cleanUrl.startsWith('/difficulty') || cleanUrl.startsWith('/quiz');
 
@@ -105,6 +123,10 @@ export class AppComponent implements OnDestroy {
 
   setActiveTab(tab: string) {
     this.activeTab = tab;
+  }
+
+  private wait(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   ngOnDestroy() {

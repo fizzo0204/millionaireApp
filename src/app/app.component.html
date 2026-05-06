@@ -1,17 +1,27 @@
 <ion-app>
-  <div class="app-shell">
-    <app-home-navbar></app-home-navbar>
-
-    <div class="app-content">
-      <ion-router-outlet [animated]="false"></ion-router-outlet>
+  @if (showAppLoader) {
+    <div class="app-loader-screen">
+      <app-game-loader
+        icon="👑"
+        title="Millionaire Quiz"
+        subtitle="Preparazione della partita..."
+      ></app-game-loader>
     </div>
+  } @else {
+    <div class="app-shell">
+      <app-home-navbar></app-home-navbar>
 
-    @if (user$ | async; as user) {
-      <app-bottom-nav
-        [activeTab]="activeTab"
-        (tabChange)="setActiveTab($event)"
-        [hidden]="user?.isAnonymous || hideBottomNav"
-      ></app-bottom-nav>
-    } @else {}
-  </div>
+      <div class="app-content">
+        <ion-router-outlet [animated]="false"></ion-router-outlet>
+      </div>
+
+      @if (user$ | async; as user) {
+        <app-bottom-nav
+          [activeTab]="activeTab"
+          (tabChange)="setActiveTab($event)"
+          [hidden]="user?.isAnonymous || hideBottomNav"
+        ></app-bottom-nav>
+      }
+    </div>
+  }
 </ion-app>

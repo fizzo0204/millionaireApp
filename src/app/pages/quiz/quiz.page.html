@@ -1,10 +1,11 @@
 <ion-content class="quiz-content">
   <div class="page-fade">
     @if (loading) {
-    <div class="loading-state">
-      <div class="loading-icon">🎯</div>
-      <h2>Caricamento domande...</h2>
-    </div>
+    <app-game-loader
+      icon="🎯"
+      title="Preparazione quiz..."
+      subtitle="Stiamo caricando le domande migliori per te"
+    ></app-game-loader>
     } @else if (!currentQuestion) {
     <div class="empty-state">
       <h2>⏳ Domande in arrivo</h2>

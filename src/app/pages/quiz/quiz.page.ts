@@ -2,6 +2,8 @@ import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { ActivatedRoute, Router } from '@angular/router';
+import { App as CapacitorApp } from '@capacitor/app';
+import type { PluginListenerHandle } from '@capacitor/core';
 
 import { ProgressService } from 'src/app/services/progress.service';
 import {
@@ -11,13 +13,14 @@ import {
 import { CoinsService } from 'src/app/services/coins.service';
 import { LivesService } from 'src/app/services/lives';
 import { AdsService } from 'src/app/services/ads.service';
+import { GameLoaderComponent } from 'src/app/components/game-loader/game-loader.component';
 
 type HelpId = 'fifty' | 'switch' | 'audience';
 
 @Component({
   selector: 'app-quiz',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonicModule, GameLoaderComponent],
   templateUrl: './quiz.page.html',
   styleUrls: ['./quiz.page.scss'],
 })
@@ -29,6 +32,11 @@ export class QuizPage implements OnInit, OnDestroy {
   private livesService = inject(LivesService);
   private ads = inject(AdsService);
   private progressService = inject(ProgressService);
+
+  private appStateListener?: PluginListenerHandle;
+  private adInProgress = false;
+  private lifeLostForLeaving = false;
+  private navigatingAway = false;
 
   categoryId = '';
   difficultyId = '';
@@ -83,6 +91,7 @@ export class QuizPage implements OnInit, OnDestroy {
     this.difficultyId = this.route.snapshot.paramMap.get('difficultyId') || '';
 
     this.setupLabels();
+    await this.listenToAppState();
     await this.loadQuestions();
   }
 
@@ -93,11 +102,16 @@ export class QuizPage implements OnInit, OnDestroy {
   async loadQuestions() {
     this.loading = true;
 
-    this.questions = await this.questionsService.getQuestions(
-      this.categoryId,
-      this.difficultyId,
-      10,
-    );
+    const [questions] = await Promise.all([
+      this.questionsService.getQuestions(
+        this.categoryId,
+        this.difficultyId,
+        10,
+      ),
+      this.wait(1400),
+    ]);
+
+    this.questions = questions;
 
     this.loading = false;
 
@@ -112,6 +126,41 @@ export class QuizPage implements OnInit, OnDestroy {
 
     this.resetQuestionState();
     this.startTimer();
+  }
+
+  private wait(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private async listenToAppState() {
+    this.appStateListener = await CapacitorApp.addListener(
+      'appStateChange',
+      async ({ isActive }) => {
+        if (!isActive) {
+          await this.handleAppBackgrounded();
+        }
+      },
+    );
+  }
+
+  private async handleAppBackgrounded() {
+    if (this.adInProgress) return;
+    if (this.lifeLostForLeaving) return;
+    if (this.navigatingAway) return;
+    if (this.loading || !this.currentQuestion) return;
+
+    const isInsideActiveQuestion =
+      !this.answered || this.showTimeModal || this.showExitModal;
+
+    if (!isInsideActiveQuestion) return;
+
+    this.lifeLostForLeaving = true;
+    this.navigatingAway = true;
+
+    await this.livesService.spendLife();
+
+    this.stopTimer();
+    this.router.navigateByUrl(`/difficulty/${this.categoryId}`);
   }
 
   setupLabels() {
@@ -281,6 +330,7 @@ export class QuizPage implements OnInit, OnDestroy {
       );
     }
 
+    this.navigatingAway = true;
     this.router.navigateByUrl(`/difficulty/${this.categoryId}`);
   }
 
@@ -302,6 +352,7 @@ export class QuizPage implements OnInit, OnDestroy {
     this.showTimeModal = false;
     this.showExitModal = false;
     this.showAudienceHint = false;
+    this.lifeLostForLeaving = false;
     this.timeLeft = this.maxTime;
   }
 
@@ -312,24 +363,36 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   async watchAdAndContinue() {
-    const reward = await this.ads.showRewardedAd();
+    this.adInProgress = true;
 
-    if (reward) {
-      this.showWrongModal = false;
-      this.nextQuestion();
+    try {
+      const reward = await this.ads.showRewardedAd();
+
+      if (reward) {
+        this.showWrongModal = false;
+        this.nextQuestion();
+      }
+    } finally {
+      this.adInProgress = false;
     }
   }
 
   async watchAdForMoreTime() {
-    const reward = await this.ads.showRewardedAd();
+    this.adInProgress = true;
 
-    if (reward) {
-      this.showTimeModal = false;
-      this.answered = false;
-      this.isCorrect = false;
-      this.selectedAnswerIndex = null;
-      this.timeLeft = 10;
-      this.startTimer();
+    try {
+      const reward = await this.ads.showRewardedAd();
+
+      if (reward) {
+        this.showTimeModal = false;
+        this.answered = false;
+        this.isCorrect = false;
+        this.selectedAnswerIndex = null;
+        this.timeLeft = 10;
+        this.startTimer();
+      }
+    } finally {
+      this.adInProgress = false;
     }
   }
 
@@ -342,13 +405,19 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   async watchAdForCoins() {
-    const reward = await this.ads.showRewardedAd();
+    this.adInProgress = true;
 
-    if (reward) {
-      await this.coinsService.addCoins(10);
+    try {
+      const reward = await this.ads.showRewardedAd();
+
+      if (reward) {
+        await this.coinsService.addCoins(10);
+      }
+
+      this.showCoinsModal = false;
+    } finally {
+      this.adInProgress = false;
     }
-
-    this.showCoinsModal = false;
   }
 
   closeCoinsModal() {
@@ -357,6 +426,7 @@ export class QuizPage implements OnInit, OnDestroy {
 
   goBack() {
     if (this.loading || !this.currentQuestion) {
+      this.navigatingAway = true;
       this.router.navigateByUrl(`/difficulty/${this.categoryId}`);
       return;
     }
@@ -377,6 +447,7 @@ export class QuizPage implements OnInit, OnDestroy {
 
     this.showExitModal = false;
     this.stopTimer();
+    this.navigatingAway = true;
     this.router.navigateByUrl(`/difficulty/${this.categoryId}`);
   }
 
@@ -404,5 +475,6 @@ export class QuizPage implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.stopTimer();
+    this.appStateListener?.remove();
   }
 }

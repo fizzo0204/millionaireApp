@@ -35,3 +35,11 @@ app-bottom-nav {
 ion-page {
   background: transparent !important;
 }
+
+.app-loader-screen {
+  min-height: 100vh;
+  height: 100vh;
+  background: linear-gradient(180deg, #05284c 0%, #021c35 100%);
+  display: grid;
+  place-items: center;
+}
