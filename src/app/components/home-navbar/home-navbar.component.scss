@@ -40,31 +40,23 @@
 
 .navbar-brand-logo {
   display: block;
-
   width: 215px;
   height: auto;
-
   margin-left: 0;
-
   object-fit: contain;
   transform-origin: left center;
-
   filter: drop-shadow(0 0 10px rgba(255, 204, 0, 0.42))
     drop-shadow(0 7px 12px rgba(0, 0, 0, 0.28));
-
   animation: navbarLogoPulse 2.4s ease-in-out infinite;
 }
 
 .navbar-right {
   margin-left: auto;
-
   position: relative;
   z-index: 4;
-
   display: flex;
   align-items: center;
   justify-content: flex-end;
-
   flex-shrink: 0;
 }
 

@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">millionaireApp</string>
-    <string name="title_activity_main">millionaireApp</string>
+    <string name="app_name">TurtleMind</string>
+    <string name="title_activity_main">TurtleMind</string>
     <string name="package_name">io.ionic.starter</string>
     <string name="custom_url_scheme">io.ionic.starter</string>
     <string name="server_client_id">
