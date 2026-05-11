@@ -27,6 +27,7 @@ export interface UserStats {
   wrongAnswers: number;
   bestScore: number;
   streakDays: number;
+  lastQuizPlayedAt: unknown;
   xp: number;
   level: number;
   coins: number;
@@ -72,6 +73,7 @@ export class UserStatsService {
     level: 1,
     coins: 20,
     lives: 5,
+    lastQuizPlayedAt: null,
   };
 
   async ensureUserProfile(user: User): Promise<void> {
@@ -106,6 +108,23 @@ export class UserStatsService {
     return docData(userRef) as Observable<AppUserProfile | undefined>;
   }
 
+  private getStartOfToday(): Date {
+    const today = new Date();
+
+    today.setHours(0, 0, 0, 0);
+
+    return today;
+  }
+
+  private getStartOfYesterday(): Date {
+    const yesterday = new Date();
+
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+
+    return yesterday;
+  }
+
   async recordQuizResult(
     uid: string,
     correctAnswers: number,
@@ -123,6 +142,27 @@ export class UserStatsService {
 
       const currentBestScore = stats?.bestScore ?? 0;
       const currentXp = stats?.xp ?? 0;
+      const currentStreakDays = stats?.streakDays ?? 0;
+      const lastQuizPlayedAt = stats?.lastQuizPlayedAt;
+      const todayStart = this.getStartOfToday();
+      const yesterdayStart = this.getStartOfYesterday();
+
+      let updatedStreakDays = currentStreakDays;
+
+      if (!lastQuizPlayedAt?.toDate) {
+        updatedStreakDays = 1;
+      } else {
+        const lastPlayedDate = lastQuizPlayedAt.toDate();
+        lastPlayedDate.setHours(0, 0, 0, 0);
+
+        if (lastPlayedDate.getTime() === todayStart.getTime()) {
+          updatedStreakDays = currentStreakDays;
+        } else if (lastPlayedDate.getTime() === yesterdayStart.getTime()) {
+          updatedStreakDays = currentStreakDays + 1;
+        } else {
+          updatedStreakDays = 1;
+        }
+      }
 
       const xpEarned = correctAnswers * 10;
       const updatedXp = currentXp + xpEarned;
@@ -131,16 +171,13 @@ export class UserStatsService {
 
       transaction.update(userRef, {
         'stats.quizPlayed': increment(1),
-
         'stats.correctAnswers': increment(correctAnswers),
-
         'stats.wrongAnswers': increment(totalQuestions - correctAnswers),
-
         'stats.xp': increment(xpEarned),
-
         'stats.level': updatedLevel,
-
         'stats.bestScore': Math.max(currentBestScore, correctAnswers),
+        'stats.streakDays': updatedStreakDays,
+        'stats.lastQuizPlayedAt': serverTimestamp(),
       });
     });
   }
