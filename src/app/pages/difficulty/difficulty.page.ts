@@ -2,7 +2,8 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { ActivatedRoute, Router } from '@angular/router';
-
+import { firstValueFrom } from 'rxjs';
+import { AuthService } from 'src/app/services/auth.service';
 import {
   DifficultyId,
   ProgressService,
@@ -35,6 +36,7 @@ export class DifficultyPage {
   private progressService = inject(ProgressService);
   private livesService = inject(LivesService);
   private ads = inject(AdsService);
+  private auth = inject(AuthService);
 
   categoryId = '';
   categoryTitle = 'Quiz';
@@ -123,6 +125,36 @@ export class DifficultyPage {
   }
 
   async loadDifficultyProgress() {
+    const user = await firstValueFrom(this.auth.user$);
+
+    if (user && !user.isAnonymous) {
+      const onlineProgress = await this.progressService.getUserCategoryProgress(
+        user.uid,
+        this.categoryId,
+      );
+
+      this.difficulties = this.difficulties.map((difficulty) => {
+        const completed = onlineProgress.completedDifficulties.includes(
+          difficulty.id,
+        );
+
+        const previousDifficulty = this.getPreviousDifficulty(difficulty.id);
+
+        const unlocked =
+          difficulty.id === 'easy' ||
+          (previousDifficulty !== null &&
+            onlineProgress.completedDifficulties.includes(previousDifficulty));
+
+        return {
+          ...difficulty,
+          completed,
+          locked: !unlocked,
+        };
+      });
+
+      return;
+    }
+
     const updatedDifficulties: DifficultyItem[] = [];
 
     for (const difficulty of this.difficulties) {
@@ -144,6 +176,17 @@ export class DifficultyPage {
     }
 
     this.difficulties = updatedDifficulties;
+  }
+
+  private getPreviousDifficulty(
+    difficultyId: DifficultyId,
+  ): DifficultyId | null {
+    const order: DifficultyId[] = ['easy', 'medium', 'hard', 'extreme'];
+    const index = order.indexOf(difficultyId);
+
+    if (index <= 0) return null;
+
+    return order[index - 1];
   }
 
   goBack() {

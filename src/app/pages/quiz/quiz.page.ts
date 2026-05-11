@@ -333,6 +333,7 @@ export class QuizPage implements OnInit, OnDestroy {
         this.difficultyId as any,
       );
     }
+
     const user = await firstValueFrom(this.auth.user$);
 
     if (user && !user.isAnonymous) {
@@ -341,6 +342,14 @@ export class QuizPage implements OnInit, OnDestroy {
         this.correctAnswers,
         this.questions.length,
       );
+
+      if (allQuestionsCorrect) {
+        await this.progressService.completeUserDifficulty(
+          user.uid,
+          this.categoryId,
+          this.difficultyId as any,
+        );
+      }
     }
 
     this.navigatingAway = true;
