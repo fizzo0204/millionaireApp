@@ -1,32 +1,47 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
-import * as localforage from 'localforage';
+import { Injectable, inject } from '@angular/core';
+import { BehaviorSubject, Subscription, firstValueFrom } from 'rxjs';
+import {
+  Firestore,
+  doc,
+  docData,
+  updateDoc,
+  increment,
+} from '@angular/fire/firestore';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class CoinsService {
-  private readonly STORAGE_KEY = 'coins';
+  private firestore = inject(Firestore);
+  private auth = inject(AuthService);
+
+  private userSub?: Subscription;
+  private coinsSub?: Subscription;
 
   private coinsSubject = new BehaviorSubject<number>(0);
   coins$ = this.coinsSubject.asObservable();
 
   constructor() {
-    this.init();
+    this.listenToUserCoins();
   }
 
-  // Inizializza le monete
-  private async init() {
-    const storedCoins = await localforage.getItem<number>(this.STORAGE_KEY);
+  private listenToUserCoins() {
+    this.userSub = this.auth.user$.subscribe((user) => {
+      this.coinsSub?.unsubscribe();
 
-    if (storedCoins === null) {
-      // primo avvio → diamo monete iniziali
-      const initialCoins = 20;
-      await localforage.setItem(this.STORAGE_KEY, initialCoins);
-      this.coinsSubject.next(initialCoins);
-    } else {
-      this.coinsSubject.next(storedCoins);
-    }
+      if (!user || user.isAnonymous) {
+        this.coinsSubject.next(0);
+        return;
+      }
+
+      const userRef = doc(this.firestore, `users/${user.uid}`);
+
+      this.coinsSub = docData(userRef).subscribe((profile: any) => {
+        const coins = profile?.stats?.coins ?? 20;
+        this.coinsSubject.next(coins);
+      });
+    });
   }
 
   // Ottieni valore corrente
@@ -36,9 +51,15 @@ export class CoinsService {
 
   // Aggiungi monete
   async addCoins(amount: number) {
-    const newAmount = this.getCoins() + amount;
-    await localforage.setItem(this.STORAGE_KEY, newAmount);
-    this.coinsSubject.next(newAmount);
+    const user = await firstValueFrom(this.auth.user$);
+
+    if (!user || user.isAnonymous) return;
+
+    const userRef = doc(this.firestore, `users/${user.uid}`);
+
+    await updateDoc(userRef, {
+      'stats.coins': increment(amount),
+    });
   }
 
   // Controlla se può spendere
@@ -48,18 +69,18 @@ export class CoinsService {
 
   // Spendi monete
   async spendCoins(amount: number): Promise<boolean> {
+    const user = await firstValueFrom(this.auth.user$);
+
+    if (!user || user.isAnonymous) return false;
+
     if (!this.canAfford(amount)) return false;
 
-    const newAmount = this.getCoins() - amount;
-    await localforage.setItem(this.STORAGE_KEY, newAmount);
-    this.coinsSubject.next(newAmount);
+    const userRef = doc(this.firestore, `users/${user.uid}`);
+
+    await updateDoc(userRef, {
+      'stats.coins': increment(-amount),
+    });
 
     return true;
-  }
-
-  // Reset (utile per debug)
-  async resetCoins() {
-    await localforage.setItem(this.STORAGE_KEY, 20);
-    this.coinsSubject.next(20);
   }
 }
