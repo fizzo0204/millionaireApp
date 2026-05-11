@@ -3,6 +3,7 @@ import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { Observable, Subscription } from 'rxjs';
 import { Router } from '@angular/router';
+
 import { AnonymousModalComponent } from '../../components/anonymous-modal/anonymous-modal.component';
 import { AuthService } from 'src/app/services/auth.service';
 import { AdsService } from 'src/app/services/ads.service';
@@ -22,7 +23,14 @@ export class HomePage implements OnInit, OnDestroy {
   private livesSub?: Subscription;
   private previousLives?: number;
 
+  readonly maxLives = 5;
+
   showAnonModal = false;
+
+  coinsLoading = false;
+  lifeLoading = false;
+
+  coinRewardPulse = false;
   lifeRecoveredPulse = false;
 
   coins$: Observable<number>;
@@ -121,16 +129,45 @@ export class HomePage implements OnInit, OnDestroy {
     this.router.navigateByUrl(`/difficulty/${categoryId}`);
   }
 
-  async watchAd() {
+  async watchCoinsAd() {
+    if (this.coinsLoading || this.lifeLoading) return;
+
+    this.coinsLoading = true;
+
     const reward = await this.ads.showRewardedAd();
 
     if (reward) {
       await this.coinsService.addCoins(10);
+      this.triggerCoinPulse();
     }
+
+    this.coinsLoading = false;
   }
 
-  async testSpendLife() {
-    await this.livesService.spendLife();
+  async watchLifeAd() {
+    if (this.lifeLoading || this.coinsLoading) return;
+
+    if (this.livesService.getLives() >= this.maxLives) {
+      return;
+    }
+
+    this.lifeLoading = true;
+
+    const reward = await this.ads.showRewardedAd();
+
+    if (reward) {
+      await this.livesService.addLife(1);
+    }
+
+    this.lifeLoading = false;
+  }
+
+  triggerCoinPulse() {
+    this.coinRewardPulse = true;
+
+    setTimeout(() => {
+      this.coinRewardPulse = false;
+    }, 900);
   }
 
   triggerLifePulse() {

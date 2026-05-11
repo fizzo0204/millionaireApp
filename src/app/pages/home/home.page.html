@@ -10,11 +10,7 @@
         <div class="stat-label">Quiz giocati</div>
       </div>
 
-      <div
-        class="stat-card lives-card"
-        [class.life-pulse]="lifeRecoveredPulse"
-        (click)="testSpendLife()"
-      >
+      <div class="stat-card lives-card" [class.life-pulse]="lifeRecoveredPulse">
         <div class="stat-icon">❤️</div>
 
         @if (lifeRecoveredPulse) {
@@ -29,8 +25,13 @@
         }
       </div>
 
-      <div class="stat-card">
+      <div class="stat-card coins-card" [class.coin-pulse]="coinRewardPulse">
         <div class="stat-icon">🪙</div>
+
+        @if (coinRewardPulse) {
+        <div class="coin-float">+10</div>
+        }
+
         <div class="stat-value">{{ coins$ | async }}</div>
         <div class="stat-label">Monete</div>
       </div>
@@ -58,20 +59,59 @@
       }
     </div>
 
-    <div class="reward-panel">
-      <div class="reward-copy">
-        <div class="reward-title">
-          <span>🪙</span>
-          <strong>Vuoi più monete?</strong>
+    <div class="reward-grid">
+      <div class="reward-card coins-reward">
+        <div class="reward-card-top">
+          <div class="reward-icon">🪙</div>
+
+          <div class="reward-copy">
+            <strong>Più monete?</strong>
+            <p>Guarda un video e ottieni 10 monete.</p>
+          </div>
         </div>
-        <p>Guarda un video e ottieni ricompense!</p>
+
+        <button
+          class="reward-mini-btn"
+          type="button"
+          (click)="watchCoinsAd()"
+          [disabled]="coinsLoading || lifeLoading"
+        >
+          @if (!coinsLoading) { 🎁 Ottieni } @else {
+          <ion-spinner name="dots"></ion-spinner>
+          }
+        </button>
       </div>
 
-      <ion-button expand="block" class="reward-button" (click)="watchAd()">
-        <span>🎁</span>
-        Guarda video e guadagna 10 monete
-        <ion-icon name="chevron-forward-outline"></ion-icon>
-      </ion-button>
+      @if (lives$ | async; as lives) {
+      <div class="reward-card lives-reward" [class.full]="lives >= maxLives">
+        <div class="reward-card-top">
+          <div class="reward-icon">❤️</div>
+
+          <div class="reward-copy">
+            <strong>
+              @if (lives >= maxLives) { Vite piene! } @else { Serve una vita? }
+            </strong>
+
+            <p>
+              @if (lives >= maxLives) { Hai già {{ lives }}/{{ maxLives }} vite.
+              } @else { Guarda un video e recupera +1 vita. }
+            </p>
+          </div>
+        </div>
+
+        <button
+          class="reward-mini-btn"
+          type="button"
+          (click)="watchLifeAd()"
+          [disabled]="lifeLoading || coinsLoading || lives >= maxLives"
+        >
+          @if (lives >= maxLives) { +1 Vita } @else if (!lifeLoading) { ▶
+          Recupera } @else {
+          <ion-spinner name="dots"></ion-spinner>
+          }
+        </button>
+      </div>
+      }
     </div>
   </div>
   }
