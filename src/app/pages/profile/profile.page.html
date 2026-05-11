@@ -96,20 +96,29 @@
     </div>
 
     <div class="results-list">
-      @for (result of recentResults; track result.category) {
+      @if (recentResults$ | async; as recentResults) { @for (result of
+      recentResults; track $index) {
       <div class="result-card">
-        <div class="result-icon">{{ result.icon }}</div>
+        <div class="result-icon">{{ getCategoryIcon(result.categoryId) }}</div>
 
         <div class="result-info">
-          <h4>{{ result.category }}</h4>
-          <p>{{ result.meta }}</p>
+          <h4>{{ getCategoryTitle(result.categoryId) }}</h4>
+
+          <p>
+            {{ result.difficultyId | titlecase }} • {{ result.correctAnswers
+            }}/{{ result.totalQuestions }}
+          </p>
         </div>
 
-        <strong [ngClass]="result.className"> {{ result.score }} </strong>
+        <strong [ngClass]="getResultClass(result)">
+          {{ result.correctAnswers }}/{{ result.totalQuestions }}
+        </strong>
 
         <ion-icon name="chevron-forward-outline"></ion-icon>
       </div>
-      }
+      } @if (recentResults.length === 0) {
+      <div class="empty-results">Nessun quiz giocato</div>
+      } }
     </div>
   </div>
 

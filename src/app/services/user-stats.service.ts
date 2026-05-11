@@ -1,16 +1,23 @@
 import { Injectable, inject } from '@angular/core';
-import { docData, Firestore } from '@angular/fire/firestore';
 import {
+  Firestore,
   doc,
   getDoc,
   setDoc,
   updateDoc,
   serverTimestamp,
+  increment,
+  runTransaction,
+  docData,
+  collection,
+  addDoc,
+  collectionData,
+  query,
+  orderBy,
+  limit,
 } from '@angular/fire/firestore';
-import { increment } from '@angular/fire/firestore';
 import { User } from 'firebase/auth';
 import { Observable } from 'rxjs';
-import { runTransaction } from '@angular/fire/firestore';
 
 export interface UserStats {
   quizPlayed: number;
@@ -35,6 +42,16 @@ export interface AppUserProfile {
   lastLoginAt: unknown;
 
   stats: UserStats;
+}
+
+export interface QuizHistoryItem {
+  categoryId: string;
+  difficultyId: string;
+
+  correctAnswers: number;
+  totalQuestions: number;
+
+  playedAt: unknown;
 }
 
 @Injectable({
@@ -124,5 +141,40 @@ export class UserStatsService {
         'stats.bestScore': Math.max(currentBestScore, correctAnswers),
       });
     });
+  }
+
+  async recordQuizHistory(
+    uid: string,
+    categoryId: string,
+    difficultyId: string,
+    correctAnswers: number,
+    totalQuestions: number,
+  ): Promise<void> {
+    const historyRef = collection(this.firestore, `users/${uid}/quizHistory`);
+
+    await addDoc(historyRef, {
+      categoryId,
+      difficultyId,
+      correctAnswers,
+      totalQuestions,
+      playedAt: serverTimestamp(),
+    });
+  }
+
+  getRecentQuizHistory(
+    uid: string,
+    maxResults: number = 5,
+  ): Observable<QuizHistoryItem[]> {
+    const historyRef = collection(this.firestore, `users/${uid}/quizHistory`);
+
+    const historyQuery = query(
+      historyRef,
+      orderBy('playedAt', 'desc'),
+      limit(maxResults),
+    );
+
+    return collectionData(historyQuery, {
+      idField: 'id',
+    }) as Observable<QuizHistoryItem[]>;
   }
 }

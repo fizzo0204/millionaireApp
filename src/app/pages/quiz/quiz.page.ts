@@ -335,6 +335,13 @@ export class QuizPage implements OnInit, OnDestroy {
         this.correctAnswers,
         this.questions.length,
       );
+      await this.userStatsService.recordQuizHistory(
+        user.uid,
+        this.categoryId,
+        this.difficultyId,
+        this.correctAnswers,
+        this.questions.length,
+      );
 
       if (allQuestionsCorrect) {
         await this.progressService.completeUserDifficulty(

@@ -6,6 +6,7 @@ import { map, Observable, of, switchMap } from 'rxjs';
 import {
   UserStatsService,
   AppUserProfile,
+  QuizHistoryItem,
 } from 'src/app/services/user-stats.service';
 
 import { AuthService } from 'src/app/services/auth.service';
@@ -28,8 +29,19 @@ export class ProfilePage {
       return this.userStatsService.getUserProfile(user.uid);
     }),
   );
+
   readonly profileStats$ = this.profile$.pipe(
     map((profile) => profile?.stats ?? this.userStatsService.defaultStats),
+  );
+
+  recentResults$: Observable<QuizHistoryItem[]> = this.user$.pipe(
+    switchMap((user) => {
+      if (!user || user.isAnonymous) {
+        return of([]);
+      }
+
+      return this.userStatsService.getRecentQuizHistory(user.uid, 5);
+    }),
   );
 
   joinDate = this.getJoinDate();
@@ -45,30 +57,6 @@ export class ProfilePage {
     { id: 'crown', label: 'Corona', icon: '👑', minLevel: 3 },
     { id: 'brain', label: 'Genio', icon: '🧠', minLevel: 5 },
     { id: 'trophy', label: 'Campione', icon: '🏆', minLevel: 10 },
-  ];
-
-  recentResults = [
-    {
-      icon: '🧠',
-      category: 'Scienze',
-      meta: '15 Mag 2025 • 10 domande',
-      score: '8/10',
-      className: 'good',
-    },
-    {
-      icon: '⚽',
-      category: 'Sport',
-      meta: '15 Mag 2025 • 10 domande',
-      score: '7/10',
-      className: 'medium',
-    },
-    {
-      icon: '🎬',
-      category: 'Cinema',
-      meta: '14 Mag 2025 • 10 domande',
-      score: '9/10',
-      className: 'good',
-    },
   ];
 
   constructor(
@@ -121,6 +109,47 @@ export class ProfilePage {
         label: 'Miglior punteggio',
       },
     ];
+  }
+
+  getCategoryIcon(categoryId: string): string {
+    const icons: Record<string, string> = {
+      sport: '⚽',
+      cinema: '🎬',
+      storia: '🏛️',
+      geografia: '🌍',
+      scienza: '🔬',
+      musica: '🎵',
+      tecnologia: '💡',
+      altro: '⭐',
+    };
+
+    return icons[categoryId] || '❓';
+  }
+
+  getCategoryTitle(categoryId: string): string {
+    const titles: Record<string, string> = {
+      sport: 'Sport',
+      cinema: 'Cinema',
+      storia: 'Storia',
+      geografia: 'Geografia',
+      scienza: 'Scienze',
+      musica: 'Musica',
+      tecnologia: 'Tecnologia',
+      altro: 'Altro',
+    };
+
+    return titles[categoryId] || 'Quiz';
+  }
+
+  getResultClass(result: QuizHistoryItem): string {
+    const percentage =
+      result.totalQuestions <= 0
+        ? 0
+        : (result.correctAnswers / result.totalQuestions) * 100;
+
+    if (percentage >= 80) return 'good';
+    if (percentage >= 50) return 'medium';
+    return 'bad';
   }
 
   getAchievements(realStats: AppUserProfile['stats']) {
