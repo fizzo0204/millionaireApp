@@ -40,10 +40,4 @@ export class SettingsPage {
     await this.authService.logout();
     await this.router.navigateByUrl('/home');
   }
-
-  // TEST
-  async resetProgress() {
-    await this.progressService.resetProgress();
-    alert('Progressi difficoltà resettati');
-  }
 }

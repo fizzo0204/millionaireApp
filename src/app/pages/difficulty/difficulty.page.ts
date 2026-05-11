@@ -127,66 +127,31 @@ export class DifficultyPage {
   async loadDifficultyProgress() {
     const user = await firstValueFrom(this.auth.user$);
 
-    if (user && !user.isAnonymous) {
-      const onlineProgress = await this.progressService.getUserCategoryProgress(
-        user.uid,
-        this.categoryId,
-      );
-
-      this.difficulties = this.difficulties.map((difficulty) => {
-        const completed = onlineProgress.completedDifficulties.includes(
-          difficulty.id,
-        );
-
-        const previousDifficulty = this.getPreviousDifficulty(difficulty.id);
-
-        const unlocked =
-          difficulty.id === 'easy' ||
-          (previousDifficulty !== null &&
-            onlineProgress.completedDifficulties.includes(previousDifficulty));
-
-        return {
-          ...difficulty,
-          completed,
-          locked: !unlocked,
-        };
-      });
-
+    if (!user || user.isAnonymous) {
       return;
     }
 
-    const updatedDifficulties: DifficultyItem[] = [];
+    const onlineProgress = await this.progressService.getUserCategoryProgress(
+      user.uid,
+      this.categoryId,
+    );
 
-    for (const difficulty of this.difficulties) {
-      const completed = await this.progressService.isDifficultyCompleted(
-        this.categoryId,
+    this.difficulties = this.difficulties.map((difficulty) => {
+      const completed = onlineProgress.completedDifficulties.includes(
         difficulty.id,
       );
 
-      const unlocked = await this.progressService.isDifficultyUnlocked(
-        this.categoryId,
+      const unlocked = this.progressService.isDifficultyUnlockedFromProgress(
         difficulty.id,
+        onlineProgress.completedDifficulties,
       );
 
-      updatedDifficulties.push({
+      return {
         ...difficulty,
         completed,
         locked: !unlocked,
-      });
-    }
-
-    this.difficulties = updatedDifficulties;
-  }
-
-  private getPreviousDifficulty(
-    difficultyId: DifficultyId,
-  ): DifficultyId | null {
-    const order: DifficultyId[] = ['easy', 'medium', 'hard', 'extreme'];
-    const index = order.indexOf(difficultyId);
-
-    if (index <= 0) return null;
-
-    return order[index - 1];
+      };
+    });
   }
 
   goBack() {

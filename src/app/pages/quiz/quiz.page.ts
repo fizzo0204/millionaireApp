@@ -327,13 +327,6 @@ export class QuizPage implements OnInit, OnDestroy {
       this.questions.length > 0 &&
       this.correctAnswers === this.questions.length;
 
-    if (allQuestionsCorrect) {
-      await this.progressService.completeDifficulty(
-        this.categoryId,
-        this.difficultyId as any,
-      );
-    }
-
     const user = await firstValueFrom(this.auth.user$);
 
     if (user && !user.isAnonymous) {
