@@ -1,8 +1,12 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
-import { Observable } from 'rxjs';
 import { User } from 'firebase/auth';
+import { map, Observable, of, switchMap } from 'rxjs';
+import {
+  UserStatsService,
+  AppUserProfile,
+} from 'src/app/services/user-stats.service';
 
 import { AuthService } from 'src/app/services/auth.service';
 
@@ -15,6 +19,18 @@ import { AuthService } from 'src/app/services/auth.service';
 })
 export class ProfilePage {
   user$: Observable<User | null> = this.auth.user$;
+  profile$: Observable<AppUserProfile | undefined> = this.user$.pipe(
+    switchMap((user) => {
+      if (!user || user.isAnonymous) {
+        return of(undefined);
+      }
+
+      return this.userStatsService.getUserProfile(user.uid);
+    }),
+  );
+  readonly profileStats$ = this.profile$.pipe(
+    map((profile) => profile?.stats ?? this.userStatsService.defaultStats),
+  );
 
   joinDate = this.getJoinDate();
 
@@ -60,7 +76,10 @@ export class ProfilePage {
     },
   ];
 
-  constructor(private auth: AuthService) {}
+  constructor(
+    private auth: AuthService,
+    private userStatsService: UserStatsService,
+  ) {}
 
   get level(): number {
     return Math.max(1, Math.floor(this.quizPlayed / 20) + 1);
@@ -68,6 +87,10 @@ export class ProfilePage {
 
   get currentXp(): number {
     return (this.quizPlayed % 20) * 50;
+  }
+
+  getXpPercent(xp: number): number {
+    return Math.min(100, Math.round((xp / this.maxXp) * 100));
   }
 
   get maxXp(): number {
@@ -85,12 +108,35 @@ export class ProfilePage {
     return Math.min(100, Math.round((this.currentXp / this.maxXp) * 100));
   }
 
-  get stats() {
+  getStats(realStats: AppUserProfile['stats']) {
+    const totalAnswers = realStats.correctAnswers + realStats.wrongAnswers;
+
+    const correctPercentage =
+      totalAnswers <= 0
+        ? 0
+        : Math.round((realStats.correctAnswers / totalAnswers) * 100);
+
     return [
-      { icon: '🏆', value: String(this.quizPlayed), label: 'Quiz giocati' },
-      { icon: '🎯', value: `${this.correctPercentage}%`, label: '% corrette' },
-      { icon: '🔥', value: String(this.streakDays), label: 'Giorni di streak' },
-      { icon: '⭐', value: `${this.bestScore}/10`, label: 'Miglior punteggio' },
+      {
+        icon: '🏆',
+        value: String(realStats.quizPlayed),
+        label: 'Quiz giocati',
+      },
+      {
+        icon: '🎯',
+        value: `${correctPercentage}%`,
+        label: '% corrette',
+      },
+      {
+        icon: '🔥',
+        value: String(realStats.streakDays),
+        label: 'Giorni di streak',
+      },
+      {
+        icon: '⭐',
+        value: `${realStats.bestScore}/10`,
+        label: 'Miglior punteggio',
+      },
     ];
   }
 

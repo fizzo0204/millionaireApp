@@ -22,22 +22,26 @@
     }
 
     <!-- LEVEL -->
+    @if (profileStats$ | async; as realStats) {
     <div class="level-card">
       <div class="level-shield">
         <span>Livello</span>
-        <strong>{{ level }}</strong>
+        <strong>{{ realStats.level }}</strong>
       </div>
 
       <div class="level-info">
-        <h3>Livello {{ level }}</h3>
+        <h3>Livello {{ realStats.level }}</h3>
         <p>{{ title }}</p>
 
         <div class="xp-row">
-          <span>{{ currentXp }} / {{ maxXp }} XP</span>
+          <span>{{ realStats.xp }} / {{ maxXp }} XP</span>
         </div>
 
         <div class="xp-bar">
-          <div class="xp-fill" [style.--xp-width.%]="xpPercent"></div>
+          <div
+            class="xp-fill"
+            [style.--xp-width.%]="getXpPercent(realStats.xp)"
+          ></div>
         </div>
       </div>
     </div>
@@ -48,7 +52,7 @@
     </div>
 
     <div class="stats-grid">
-      @for (stat of stats; track stat.label) {
+      @for (stat of getStats(realStats); track stat.label) {
       <div class="stat-card">
         <div class="stat-icon">{{ stat.icon }}</div>
         <strong>{{ stat.value }}</strong>
@@ -106,8 +110,8 @@
       </div>
       }
     </div>
+    }
   </div>
-
   <!-- 🔥 MODALE AVATAR -->
   @if (showAvatarModal && (user$ | async); as user) {
   <div class="avatar-modal-backdrop">

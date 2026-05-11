@@ -4,7 +4,7 @@ import { IonicModule } from '@ionic/angular';
 import { ActivatedRoute, Router } from '@angular/router';
 import { App as CapacitorApp } from '@capacitor/app';
 import type { PluginListenerHandle } from '@capacitor/core';
-
+import { UserStatsService } from 'src/app/services/user-stats.service';
 import { ProgressService } from 'src/app/services/progress.service';
 import {
   QuestionsService,
@@ -14,6 +14,8 @@ import { CoinsService } from 'src/app/services/coins.service';
 import { LivesService } from 'src/app/services/lives';
 import { AdsService } from 'src/app/services/ads.service';
 import { GameLoaderComponent } from 'src/app/components/game-loader/game-loader.component';
+import { AuthService } from 'src/app/services/auth.service';
+import { firstValueFrom } from 'rxjs';
 
 type HelpId = 'fifty' | 'switch' | 'audience';
 
@@ -32,6 +34,8 @@ export class QuizPage implements OnInit, OnDestroy {
   private livesService = inject(LivesService);
   private ads = inject(AdsService);
   private progressService = inject(ProgressService);
+  private userStatsService = inject(UserStatsService);
+  private auth = inject(AuthService);
 
   private appStateListener?: PluginListenerHandle;
   private adInProgress = false;
@@ -327,6 +331,15 @@ export class QuizPage implements OnInit, OnDestroy {
       await this.progressService.completeDifficulty(
         this.categoryId,
         this.difficultyId as any,
+      );
+    }
+    const user = await firstValueFrom(this.auth.user$);
+
+    if (user && !user.isAnonymous) {
+      await this.userStatsService.recordQuizResult(
+        user.uid,
+        this.correctAnswers,
+        this.questions.length,
       );
     }
 

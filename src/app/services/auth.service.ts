@@ -15,6 +15,7 @@ import {
 import { initializeApp } from 'firebase/app';
 import { environment } from 'src/environments/environment';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
+import { UserStatsService } from './user-stats.service';
 
 const app = initializeApp(environment.firebase);
 const auth: Auth = getAuth(app);
@@ -31,7 +32,7 @@ export class AuthService {
 
   private initialAuthResolved = false;
 
-  constructor() {
+  constructor(private userStatsService: UserStatsService) {
     onAuthStateChanged(auth, async (user) => {
       console.log(
         '👤 Stato auth cambiato →',
@@ -39,6 +40,9 @@ export class AuthService {
       );
 
       this.userSubject.next(user);
+      if (user && !user.isAnonymous) {
+        await this.userStatsService.ensureUserProfile(user);
+      }
 
       if (!this.initialAuthResolved) {
         this.initialAuthResolved = true;
