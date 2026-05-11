@@ -1,0 +1,33 @@
+<ion-content fullscreen class="levels-page">
+  <div class="levels-header">
+    <button class="back-btn" type="button" (click)="goBack()">
+      <ion-icon name="arrow-back-outline"></ion-icon>
+    </button>
+
+    <div>
+      <h1>Livelli</h1>
+      <p>{{ difficultyId | titlecase }}</p>
+    </div>
+  </div>
+
+  <div class="levels-grid">
+    @for (level of levels; track level.number) {
+    <button
+      class="level-card"
+      type="button"
+      [class.locked]="level.locked"
+      [class.completed]="level.completed"
+      [disabled]="level.locked"
+      (click)="openLevel(level)"
+    >
+      <div class="level-status">
+        @if (level.locked) { 🔒 } @else if (level.completed) { ✓ } @else { ⭐ }
+      </div>
+
+      <span>Livello</span>
+
+      <strong>{{ level.number }}</strong>
+    </button>
+    }
+  </div>
+</ion-content>

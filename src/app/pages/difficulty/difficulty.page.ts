@@ -166,7 +166,7 @@ export class DifficultyPage {
       return;
     }
 
-    this.router.navigateByUrl(`/quiz/${this.categoryId}/${difficulty.id}`);
+    this.router.navigateByUrl(`/levels/${this.categoryId}/${difficulty.id}`);
   }
 
   closeNoLivesModal() {

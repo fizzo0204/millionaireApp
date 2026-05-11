@@ -39,9 +39,14 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'quiz/:categoryId/:difficultyId',
+    path: 'quiz/:categoryId/:difficultyId/:levelNumber',
     loadComponent: () =>
       import('./pages/quiz/quiz.page').then((m) => m.QuizPage),
+  },
+  {
+    path: 'levels/:categoryId/:difficultyId',
+    loadComponent: () =>
+      import('./pages/levels/levels.page').then((m) => m.LevelsPage),
   },
   {
     path: '**',

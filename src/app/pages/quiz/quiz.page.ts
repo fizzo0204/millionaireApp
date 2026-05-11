@@ -44,6 +44,8 @@ export class QuizPage implements OnInit, OnDestroy {
 
   categoryId = '';
   difficultyId = '';
+  levelNumber = 1;
+  levelAlreadyCompleted = false;
 
   categoryTitle = 'Quiz';
   categoryIcon = '❓';
@@ -93,6 +95,9 @@ export class QuizPage implements OnInit, OnDestroy {
   async ngOnInit() {
     this.categoryId = this.route.snapshot.paramMap.get('categoryId') || '';
     this.difficultyId = this.route.snapshot.paramMap.get('difficultyId') || '';
+    this.levelNumber = Number(
+      this.route.snapshot.paramMap.get('levelNumber') || 1,
+    );
 
     this.setupLabels();
     await this.listenToAppState();
@@ -110,7 +115,8 @@ export class QuizPage implements OnInit, OnDestroy {
       this.questionsService.getQuestions(
         this.categoryId,
         this.difficultyId,
-        10,
+        this.levelNumber,
+        1,
       ),
       this.wait(1400),
     ]);
@@ -330,30 +336,56 @@ export class QuizPage implements OnInit, OnDestroy {
     const user = await firstValueFrom(this.auth.user$);
 
     if (user && !user.isAnonymous) {
-      await this.userStatsService.recordQuizResult(
-        user.uid,
-        this.correctAnswers,
-        this.questions.length,
-      );
-      await this.userStatsService.recordQuizHistory(
+      const levelAlreadyCompleted = await this.progressService.isLevelCompleted(
         user.uid,
         this.categoryId,
-        this.difficultyId,
-        this.correctAnswers,
-        this.questions.length,
+        this.difficultyId as any,
+        this.levelNumber,
       );
 
-      if (allQuestionsCorrect) {
-        await this.progressService.completeUserDifficulty(
+      if (allQuestionsCorrect && !levelAlreadyCompleted) {
+        await this.userStatsService.recordQuizResult(
+          user.uid,
+          this.correctAnswers,
+          this.questions.length,
+        );
+
+        await this.userStatsService.recordQuizHistory(
+          user.uid,
+          this.categoryId,
+          this.difficultyId,
+          this.correctAnswers,
+          this.questions.length,
+        );
+
+        await this.progressService.completeLevel(
           user.uid,
           this.categoryId,
           this.difficultyId as any,
+          this.levelNumber,
         );
+
+        const difficultyCompleted =
+          await this.progressService.isDifficultyFullyCompleted(
+            user.uid,
+            this.categoryId,
+            this.difficultyId as any,
+          );
+
+        if (difficultyCompleted) {
+          await this.progressService.completeUserDifficulty(
+            user.uid,
+            this.categoryId,
+            this.difficultyId as any,
+          );
+        }
       }
     }
 
     this.navigatingAway = true;
-    this.router.navigateByUrl(`/difficulty/${this.categoryId}`);
+    this.router.navigateByUrl(
+      `/levels/${this.categoryId}/${this.difficultyId}`,
+    );
   }
 
   markCurrentQuestionAsWrong() {

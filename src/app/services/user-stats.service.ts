@@ -15,6 +15,8 @@ import {
   query,
   orderBy,
   limit,
+  getDocs,
+  deleteDoc,
 } from '@angular/fire/firestore';
 import { User } from 'firebase/auth';
 import { Observable } from 'rxjs';
@@ -176,5 +178,32 @@ export class UserStatsService {
     return collectionData(historyQuery, {
       idField: 'id',
     }) as Observable<QuizHistoryItem[]>;
+  }
+
+  // TEST
+  async resetUserDebugData(uid: string): Promise<void> {
+    const userRef = doc(this.firestore, `users/${uid}`);
+
+    const collectionsToClear = ['completedLevels', 'quizHistory', 'progress'];
+
+    for (const collectionName of collectionsToClear) {
+      const collectionRef = collection(
+        this.firestore,
+        `users/${uid}/${collectionName}`,
+      );
+
+      const snapshot = await getDocs(collectionRef);
+
+      for (const document of snapshot.docs) {
+        await deleteDoc(document.ref);
+      }
+    }
+
+    await updateDoc(userRef, {
+      stats: {
+        ...this.defaultStats,
+        lastLifeUpdate: null,
+      },
+    });
   }
 }

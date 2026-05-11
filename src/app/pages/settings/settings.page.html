@@ -53,6 +53,28 @@
           name="chevron-forward-outline"
         ></ion-icon>
       </button>
+      <button
+        class="logout-card"
+        type="button"
+        (click)="resetDebugData()"
+        [disabled]="resetLoading"
+      >
+        <div class="logout-icon">🧹</div>
+
+        <div class="logout-text">
+          <h3>Reset debug</h3>
+          <p>Resetta progressi, XP, livelli e cronologia</p>
+        </div>
+
+        @if (!resetLoading) {
+        <ion-icon
+          class="logout-arrow"
+          name="chevron-forward-outline"
+        ></ion-icon>
+        } @else {
+        <ion-spinner name="dots"></ion-spinner>
+        }
+      </button>
     </div>
   </div>
 </ion-content>

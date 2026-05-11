@@ -1,6 +1,13 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore } from '@angular/fire/firestore';
-import { doc, getDoc, setDoc } from '@angular/fire/firestore';
+import {
+  Firestore,
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp,
+  collection,
+  getDocs,
+} from '@angular/fire/firestore';
 
 export type DifficultyId = 'easy' | 'medium' | 'hard' | 'extreme';
 
@@ -16,6 +23,105 @@ export class ProgressService {
 
   private getUserCategoryProgressRef(uid: string, categoryId: string) {
     return doc(this.firestore, `users/${uid}/progress/${categoryId}`);
+  }
+
+  getLevelId(
+    categoryId: string,
+    difficultyId: DifficultyId,
+    levelNumber: number,
+  ): string {
+    return `${categoryId}_${difficultyId}_${levelNumber}`;
+  }
+
+  private getCompletedLevelRef(
+    uid: string,
+    categoryId: string,
+    difficultyId: DifficultyId,
+    levelNumber: number,
+  ) {
+    const levelId = this.getLevelId(categoryId, difficultyId, levelNumber);
+
+    return doc(this.firestore, `users/${uid}/completedLevels/${levelId}`);
+  }
+
+  async isLevelCompleted(
+    uid: string,
+    categoryId: string,
+    difficultyId: DifficultyId,
+    levelNumber: number,
+  ): Promise<boolean> {
+    const levelRef = this.getCompletedLevelRef(
+      uid,
+      categoryId,
+      difficultyId,
+      levelNumber,
+    );
+
+    const snapshot = await getDoc(levelRef);
+
+    return snapshot.exists();
+  }
+
+  async completeLevel(
+    uid: string,
+    categoryId: string,
+    difficultyId: DifficultyId,
+    levelNumber: number,
+  ): Promise<void> {
+    const levelRef = this.getCompletedLevelRef(
+      uid,
+      categoryId,
+      difficultyId,
+      levelNumber,
+    );
+
+    await setDoc(
+      levelRef,
+      {
+        categoryId,
+        difficultyId,
+        levelNumber,
+        completedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  }
+
+  getDifficultyLevels(difficultyId: DifficultyId): number[] {
+    if (difficultyId === 'easy') {
+      return Array.from({ length: 30 }, (_, i) => i + 1);
+    }
+
+    if (difficultyId === 'medium') {
+      return Array.from({ length: 30 }, (_, i) => i + 31);
+    }
+
+    if (difficultyId === 'hard') {
+      return Array.from({ length: 40 }, (_, i) => i + 61);
+    }
+
+    return Array.from({ length: 50 }, (_, i) => i + 101);
+  }
+
+  async isDifficultyFullyCompleted(
+    uid: string,
+    categoryId: string,
+    difficultyId: DifficultyId,
+  ): Promise<boolean> {
+    const levels = this.getDifficultyLevels(difficultyId);
+
+    for (const levelNumber of levels) {
+      const completed = await this.isLevelCompleted(
+        uid,
+        categoryId,
+        difficultyId,
+        levelNumber,
+      );
+
+      if (!completed) return false;
+    }
+
+    return true;
   }
 
   async getUserCategoryProgress(
@@ -69,5 +175,25 @@ export class ProgressService {
     if (!previousDifficulty) return true;
 
     return completedDifficulties.includes(previousDifficulty);
+  }
+
+  async getCompletedLevelNumbers(
+    uid: string,
+    categoryId: string,
+    difficultyId: DifficultyId,
+  ): Promise<number[]> {
+    const levelsRef = collection(
+      this.firestore,
+      `users/${uid}/completedLevels`,
+    );
+    const snapshot = await getDocs(levelsRef);
+
+    return snapshot.docs
+      .map((docSnap) => docSnap.data() as any)
+      .filter(
+        (data) =>
+          data.categoryId === categoryId && data.difficultyId === difficultyId,
+      )
+      .map((data) => data.levelNumber as number);
   }
 }

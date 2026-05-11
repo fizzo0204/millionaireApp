@@ -17,6 +17,7 @@ export interface QuizQuestion {
   id?: string;
   category: string;
   difficulty: string;
+  levelNumber: number;
   question: string;
   answers: string[];
   correctIndex: number;
@@ -34,7 +35,8 @@ export class QuestionsService {
   getQuestions(
     category: string,
     difficulty: string,
-    amount: number = 10,
+    levelNumber: number,
+    amount: number = 1,
   ): Promise<QuizQuestion[]> {
     return runInInjectionContext(this.injector, async () => {
       const questionsRef = collection(this.firestore, 'questions');
@@ -43,6 +45,7 @@ export class QuestionsService {
         questionsRef,
         where('category', '==', category),
         where('difficulty', '==', difficulty),
+        where('levelNumber', '==', levelNumber),
         where('active', '==', true),
         limit(amount),
       );

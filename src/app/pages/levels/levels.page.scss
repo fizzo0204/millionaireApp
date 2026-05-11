@@ -1,0 +1,193 @@
+.levels-page {
+  color: #fff;
+}
+
+.levels-header {
+  margin: 28px 0 18px;
+  padding: 14px;
+  border-radius: 26px;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  background: linear-gradient(135deg, rgba(7, 44, 82, 0.96), #031f3d);
+  border: 1px solid rgba(96, 165, 250, 0.28);
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 10px 24px rgba(0, 0, 0, 0.3);
+}
+
+.back-btn {
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+
+  display: grid;
+  place-items: center;
+
+  color: #fff;
+  background: rgba(96, 165, 250, 0.16);
+  border: 1px solid rgba(96, 165, 250, 0.42);
+
+  box-shadow:
+    0 0 16px rgba(56, 189, 248, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+
+  ion-icon {
+    font-size: 1.5rem;
+  }
+}
+
+.levels-header h1 {
+  margin: 0;
+  color: #ffea00;
+  font-size: 1.55rem;
+  font-weight: 900;
+
+  text-shadow:
+    0 3px 0 rgba(129, 90, 0, 0.7),
+    0 8px 12px rgba(0, 0, 0, 0.35);
+}
+
+.levels-header p {
+  margin: 4px 0 0;
+  color: #dbeafe;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.levels-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  padding-bottom: 24px;
+}
+
+.level-card {
+  position: relative;
+  overflow: hidden;
+
+  min-height: 82px;
+  border: 0;
+  border-radius: 18px;
+  padding: 8px 4px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  color: #fff;
+  background: linear-gradient(135deg, #0ea5e9, #0757c8);
+
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.09),
+    0 8px 16px rgba(0, 0, 0, 0.26);
+
+  transition:
+    transform 0.14s ease,
+    filter 0.14s ease;
+}
+
+.level-card:active {
+  transform: scale(0.96);
+  filter: brightness(1.08);
+}
+
+.level-card span {
+  font-size: 0.58rem;
+  font-weight: 900;
+  color: #dbeafe;
+  text-transform: uppercase;
+}
+
+.level-card strong {
+  margin-top: 2px;
+  color: #ffea00;
+  font-size: 1.35rem;
+  font-weight: 1000;
+
+  text-shadow:
+    0 2px 0 rgba(129, 90, 0, 0.7),
+    0 6px 10px rgba(0, 0, 0, 0.3);
+}
+
+.level-status {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+
+  display: grid;
+  place-items: center;
+
+  font-size: 0.75rem;
+  font-weight: 1000;
+
+  color: #fff;
+  background: rgba(255, 255, 255, 0.18);
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+    0 4px 8px rgba(0, 0, 0, 0.22);
+}
+
+.level-card.locked {
+  opacity: 0.55;
+  filter: grayscale(0.25);
+  cursor: default;
+
+  background: linear-gradient(135deg, #334155, #0f172a);
+
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.04),
+    0 7px 14px rgba(0, 0, 0, 0.24);
+}
+
+.level-card.locked:active {
+  transform: none;
+  filter: grayscale(0.25);
+}
+
+.level-card.locked .level-status {
+  width: 30px;
+  height: 30px;
+  font-size: 1rem;
+
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.level-card.completed {
+  background: linear-gradient(135deg, #22c55e, #15803d);
+
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.14),
+    0 0 18px rgba(255, 234, 0, 0.18),
+    0 8px 16px rgba(0, 0, 0, 0.26);
+}
+
+.level-card.completed .level-status {
+  color: #052e16;
+  background: #ffea00;
+
+  box-shadow:
+    0 0 14px rgba(255, 234, 0, 0.45),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.38);
+}
+
+@media (max-width: 390px) {
+  .levels-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 9px;
+  }
+
+  .level-card {
+    min-height: 76px;
+  }
+}
