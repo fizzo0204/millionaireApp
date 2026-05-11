@@ -70,7 +70,9 @@ export class QuizPage implements OnInit, OnDestroy {
   showCoinsModal = false;
   showAudienceHint = false;
   showExitModal = false;
-
+  showRewardModal = false;
+  rewardXp = 0;
+  rewardMessage = '';
   neededCoins = 0;
   coins$ = this.coinsService.coins$;
   lives$ = this.livesService.lives$;
@@ -379,6 +381,12 @@ export class QuizPage implements OnInit, OnDestroy {
             this.difficultyId as any,
           );
         }
+
+        this.rewardXp = this.correctAnswers * 10;
+        this.rewardMessage = `Hai completato il livello ${this.levelNumber}!`;
+        this.showRewardModal = true;
+
+        return;
       }
     }
 
@@ -476,6 +484,15 @@ export class QuizPage implements OnInit, OnDestroy {
 
   closeCoinsModal() {
     this.showCoinsModal = false;
+  }
+
+  continueAfterReward() {
+    this.showRewardModal = false;
+    this.navigatingAway = true;
+
+    this.router.navigateByUrl(
+      `/levels/${this.categoryId}/${this.difficultyId}`,
+    );
   }
 
   goBack() {

@@ -244,5 +244,21 @@
       </button>
     </div>
   </div>
+  } @if (showRewardModal) {
+  <div class="modal-backdrop">
+    <div class="reward-modal">
+      <div class="reward-icon">🏆</div>
+
+      <h2>Livello completato!</h2>
+
+      <p>{{ rewardMessage }}</p>
+
+      <div class="reward-xp">+{{ rewardXp }} XP</div>
+
+      <button class="reward-btn" (click)="continueAfterReward()">
+        Continua
+      </button>
+    </div>
+  </div>
   }
 </ion-content>
