@@ -1,13 +1,25 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, interval, Subscription } from 'rxjs';
-import * as localforage from 'localforage';
+import { Injectable, inject } from '@angular/core';
+import { BehaviorSubject, interval, Subscription, firstValueFrom } from 'rxjs';
+import {
+  Firestore,
+  doc,
+  docData,
+  updateDoc,
+  serverTimestamp,
+  increment,
+} from '@angular/fire/firestore';
+
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class LivesService {
-  private readonly STORAGE_KEY = 'lives';
-  private readonly STORAGE_TIME_KEY = 'lives_last_update';
+  private firestore = inject(Firestore);
+  private auth = inject(AuthService);
+
+  private userSub?: Subscription;
+  private livesDocSub?: Subscription;
 
   private readonly MAX_LIVES = 5;
   // private readonly RECOVERY_TIME = 30 * 60 * 1000; // 30 minuti
@@ -22,36 +34,28 @@ export class LivesService {
   private timerSub?: Subscription;
 
   constructor() {
-    this.init();
+    this.listenToUserLives();
     this.startCountdown();
   }
 
-  private async init() {
-    const storedLives = await localforage.getItem<number>(this.STORAGE_KEY);
-    const lastUpdate = await localforage.getItem<number>(this.STORAGE_TIME_KEY);
+  private listenToUserLives() {
+    this.userSub = this.auth.user$.subscribe((user) => {
+      this.livesDocSub?.unsubscribe();
 
-    let lives = storedLives ?? this.MAX_LIVES;
-
-    if (lastUpdate && lives < this.MAX_LIVES) {
-      const now = Date.now();
-      const diff = now - lastUpdate;
-      const recoveredLives = Math.floor(diff / this.RECOVERY_TIME);
-
-      if (recoveredLives > 0) {
-        lives = Math.min(this.MAX_LIVES, lives + recoveredLives);
-
-        if (lives >= this.MAX_LIVES) {
-          await localforage.removeItem(this.STORAGE_TIME_KEY);
-        } else {
-          const newTimestamp = lastUpdate + recoveredLives * this.RECOVERY_TIME;
-          await localforage.setItem(this.STORAGE_TIME_KEY, newTimestamp);
-        }
+      if (!user || user.isAnonymous) {
+        this.livesSubject.next(this.MAX_LIVES);
+        this.countdownSubject.next('');
+        return;
       }
-    }
 
-    await localforage.setItem(this.STORAGE_KEY, lives);
-    this.livesSubject.next(lives);
-    await this.updateCountdown();
+      const userRef = doc(this.firestore, `users/${user.uid}`);
+
+      this.livesDocSub = docData(userRef).subscribe((profile: any) => {
+        const lives = profile?.stats?.lives ?? this.MAX_LIVES;
+
+        this.livesSubject.next(lives);
+      });
+    });
   }
 
   getLives(): number {
@@ -59,43 +63,39 @@ export class LivesService {
   }
 
   async spendLife(): Promise<boolean> {
+    const user = await firstValueFrom(this.auth.user$);
+
+    if (!user || user.isAnonymous) return false;
+
     const currentLives = this.getLives();
 
     if (currentLives <= 0) return false;
 
-    const newLives = currentLives - 1;
+    const userRef = doc(this.firestore, `users/${user.uid}`);
 
-    await localforage.setItem(this.STORAGE_KEY, newLives);
-
-    if (currentLives === this.MAX_LIVES) {
-      await localforage.setItem(this.STORAGE_TIME_KEY, Date.now());
-    }
-
-    this.livesSubject.next(newLives);
-    await this.updateCountdown();
+    await updateDoc(userRef, {
+      'stats.lives': increment(-1),
+      'stats.lastLifeUpdate': serverTimestamp(),
+    });
 
     return true;
   }
 
   async addLife(amount: number = 1) {
-    const updated = Math.min(this.MAX_LIVES, this.getLives() + amount);
+    const user = await firstValueFrom(this.auth.user$);
 
-    await localforage.setItem(this.STORAGE_KEY, updated);
+    if (!user || user.isAnonymous) return;
 
-    if (updated >= this.MAX_LIVES) {
-      await localforage.removeItem(this.STORAGE_TIME_KEY);
-    }
+    const currentLives = this.getLives();
+    const updatedLives = Math.min(this.MAX_LIVES, currentLives + amount);
 
-    this.livesSubject.next(updated);
-    await this.updateCountdown();
-  }
+    const userRef = doc(this.firestore, `users/${user.uid}`);
 
-  async resetLives() {
-    await localforage.setItem(this.STORAGE_KEY, this.MAX_LIVES);
-    await localforage.removeItem(this.STORAGE_TIME_KEY);
-
-    this.livesSubject.next(this.MAX_LIVES);
-    this.countdownSubject.next('');
+    await updateDoc(userRef, {
+      'stats.lives': updatedLives,
+      'stats.lastLifeUpdate':
+        updatedLives >= this.MAX_LIVES ? null : serverTimestamp(),
+    });
   }
 
   private startCountdown() {
@@ -108,42 +108,53 @@ export class LivesService {
   }
 
   private async recoverLivesIfNeeded() {
+    const user = await firstValueFrom(this.auth.user$);
+
+    if (!user || user.isAnonymous) return;
+
     const lives = this.getLives();
 
     if (lives >= this.MAX_LIVES) {
-      await localforage.removeItem(this.STORAGE_TIME_KEY);
       this.countdownSubject.next('');
       return;
     }
 
-    const lastUpdate = await localforage.getItem<number>(this.STORAGE_TIME_KEY);
+    const userRef = doc(this.firestore, `users/${user.uid}`);
+    const profile: any = await firstValueFrom(docData(userRef));
 
-    if (!lastUpdate) {
-      await localforage.setItem(this.STORAGE_TIME_KEY, Date.now());
-      return;
-    }
+    const lastLifeUpdate = profile?.stats?.lastLifeUpdate;
 
+    if (!lastLifeUpdate?.toDate) return;
+
+    const lastUpdateTime = lastLifeUpdate.toDate().getTime();
     const now = Date.now();
-    const diff = now - lastUpdate;
+
+    const diff = now - lastUpdateTime;
     const recoveredLives = Math.floor(diff / this.RECOVERY_TIME);
 
     if (recoveredLives <= 0) return;
 
-    const newLives = Math.min(this.MAX_LIVES, lives + recoveredLives);
+    const updatedLives = Math.min(this.MAX_LIVES, lives + recoveredLives);
 
-    await localforage.setItem(this.STORAGE_KEY, newLives);
-    this.livesSubject.next(newLives);
+    const newLastUpdate =
+      updatedLives >= this.MAX_LIVES
+        ? null
+        : new Date(lastUpdateTime + recoveredLives * this.RECOVERY_TIME);
 
-    if (newLives >= this.MAX_LIVES) {
-      await localforage.removeItem(this.STORAGE_TIME_KEY);
-      this.countdownSubject.next('');
-    } else {
-      const newTimestamp = lastUpdate + recoveredLives * this.RECOVERY_TIME;
-      await localforage.setItem(this.STORAGE_TIME_KEY, newTimestamp);
-    }
+    await updateDoc(userRef, {
+      'stats.lives': updatedLives,
+      'stats.lastLifeUpdate': newLastUpdate,
+    });
   }
 
   private async updateCountdown() {
+    const user = await firstValueFrom(this.auth.user$);
+
+    if (!user || user.isAnonymous) {
+      this.countdownSubject.next('');
+      return;
+    }
+
     const lives = this.getLives();
 
     if (lives >= this.MAX_LIVES) {
@@ -151,16 +162,19 @@ export class LivesService {
       return;
     }
 
-    const lastUpdate = await localforage.getItem<number>(this.STORAGE_TIME_KEY);
+    const userRef = doc(this.firestore, `users/${user.uid}`);
+    const profile: any = await firstValueFrom(docData(userRef));
 
-    if (!lastUpdate) {
+    const lastLifeUpdate = profile?.stats?.lastLifeUpdate;
+
+    if (!lastLifeUpdate?.toDate) {
       this.countdownSubject.next('');
       return;
     }
 
-    const now = Date.now();
-    const nextLifeAt = lastUpdate + this.RECOVERY_TIME;
-    const remaining = Math.max(0, nextLifeAt - now);
+    const lastUpdateTime = lastLifeUpdate.toDate().getTime();
+    const nextLifeAt = lastUpdateTime + this.RECOVERY_TIME;
+    const remaining = Math.max(0, nextLifeAt - Date.now());
 
     const minutes = Math.floor(remaining / 60000);
     const seconds = Math.floor((remaining % 60000) / 1000);
