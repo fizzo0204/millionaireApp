@@ -73,6 +73,7 @@ export class QuizPage implements OnInit, OnDestroy {
   showRewardModal = false;
   rewardXp = 0;
   rewardMessage = '';
+  rewardUnlockedMessage = '';
   neededCoins = 0;
   coins$ = this.coinsService.coins$;
   lives$ = this.livesService.lives$;
@@ -384,6 +385,7 @@ export class QuizPage implements OnInit, OnDestroy {
 
         this.rewardXp = this.correctAnswers * 10;
         this.rewardMessage = `Hai completato il livello ${this.levelNumber}!`;
+        this.rewardUnlockedMessage = `Livello ${this.levelNumber + 1} sbloccato`;
         this.showRewardModal = true;
 
         return;

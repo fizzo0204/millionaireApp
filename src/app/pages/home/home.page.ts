@@ -1,9 +1,12 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
-import { Observable, Subscription } from 'rxjs';
+import { Observable, Subscription, map, of, switchMap } from 'rxjs';
 import { Router } from '@angular/router';
-
+import {
+  UserStatsService,
+  AppUserProfile,
+} from 'src/app/services/user-stats.service';
 import { AnonymousModalComponent } from '../../components/anonymous-modal/anonymous-modal.component';
 import { AuthService } from 'src/app/services/auth.service';
 import { AdsService } from 'src/app/services/ads.service';
@@ -36,6 +39,17 @@ export class HomePage implements OnInit, OnDestroy {
   coins$: Observable<number>;
   lives$: Observable<number>;
   livesCountdown$: Observable<string>;
+  quizPlayed$: Observable<number> = this.auth.user$.pipe(
+    switchMap((user) => {
+      if (!user || user.isAnonymous) {
+        return of(0);
+      }
+
+      return this.userStatsService
+        .getUserProfile(user.uid)
+        .pipe(map((profile) => profile?.stats?.quizPlayed ?? 0));
+    }),
+  );
 
   categories = [
     {
@@ -103,6 +117,7 @@ export class HomePage implements OnInit, OnDestroy {
     private coinsService: CoinsService,
     private livesService: LivesService,
     private router: Router,
+    private userStatsService: UserStatsService,
   ) {
     this.coins$ = this.coinsService.coins$;
     this.lives$ = this.livesService.lives$;

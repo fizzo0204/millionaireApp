@@ -252,8 +252,10 @@
       <h2>Livello completato!</h2>
 
       <p>{{ rewardMessage }}</p>
+      <div class="reward-unlock">🔓 {{ rewardUnlockedMessage }}</div>
 
       <div class="reward-xp">+{{ rewardXp }} XP</div>
+      <div class="reward-streak">🔥 Continua così!</div>
 
       <button class="reward-btn" (click)="continueAfterReward()">
         Continua

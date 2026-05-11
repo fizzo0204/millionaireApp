@@ -119,7 +119,9 @@ export class AppComponent implements OnDestroy {
     const cleanUrl = url.split('?')[0];
 
     this.hideBottomNav =
-      cleanUrl.startsWith('/difficulty') || cleanUrl.startsWith('/quiz');
+      cleanUrl.startsWith('/difficulty') ||
+      cleanUrl.startsWith('/levels') ||
+      cleanUrl.startsWith('/quiz');
 
     if (cleanUrl.startsWith('/shop')) {
       this.activeTab = 'negozio';
