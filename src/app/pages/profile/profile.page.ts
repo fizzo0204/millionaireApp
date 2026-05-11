@@ -34,11 +34,6 @@ export class ProfilePage {
 
   joinDate = this.getJoinDate();
 
-  quizPlayed = 125;
-  correctPercentage = 68;
-  streakDays = 7;
-  bestScore = 9;
-
   selectedAvatar = localStorage.getItem('profile_avatar') || 'letter';
   tempSelectedAvatar = this.selectedAvatar;
 
@@ -81,14 +76,6 @@ export class ProfilePage {
     private userStatsService: UserStatsService,
   ) {}
 
-  get level(): number {
-    return Math.max(1, Math.floor(this.quizPlayed / 20) + 1);
-  }
-
-  get currentXp(): number {
-    return (this.quizPlayed % 20) * 50;
-  }
-
   getXpPercent(xp: number): number {
     return Math.min(100, Math.round((xp / this.maxXp) * 100));
   }
@@ -97,15 +84,11 @@ export class ProfilePage {
     return 1000;
   }
 
-  get title(): string {
-    if (this.level >= 10) return 'Leggenda del Quiz';
-    if (this.level >= 7) return 'Quiz Master';
-    if (this.level >= 4) return 'Esperto';
+  getTitle(level: number): string {
+    if (level >= 10) return 'Leggenda del Quiz';
+    if (level >= 7) return 'Quiz Master';
+    if (level >= 4) return 'Esperto';
     return 'Principiante';
-  }
-
-  get xpPercent(): number {
-    return Math.min(100, Math.round((this.currentXp / this.maxXp) * 100));
   }
 
   getStats(realStats: AppUserProfile['stats']) {
@@ -140,91 +123,98 @@ export class ProfilePage {
     ];
   }
 
-  get achievements() {
+  getAchievements(realStats: AppUserProfile['stats']) {
+    const totalAnswers = realStats.correctAnswers + realStats.wrongAnswers;
+
+    const correctPercentage =
+      totalAnswers <= 0
+        ? 0
+        : Math.round((realStats.correctAnswers / totalAnswers) * 100);
+
     return [
       {
-        icon: this.bestScore >= 10 ? '🏆' : '🔒',
+        icon: realStats.bestScore >= 10 ? '🏆' : '🔒',
         title: 'Perfetto!',
         description: 'Fai 10/10 in un quiz',
-        completed: this.bestScore >= 10,
-        progress: `${this.bestScore}/10`,
+        completed: realStats.bestScore >= 10,
+        progress: `${realStats.bestScore}/10`,
       },
       {
-        icon: this.streakDays >= 3 ? '🎯' : '🔒',
+        icon: realStats.streakDays >= 3 ? '🎯' : '🔒',
         title: 'Costante',
         description: 'Gioca per 3 giorni di fila',
-        completed: this.streakDays >= 3,
-        progress: `${this.streakDays}/3`,
+        completed: realStats.streakDays >= 3,
+        progress: `${realStats.streakDays}/3`,
       },
       {
-        icon: this.correctPercentage >= 70 ? '⚡' : '🔒',
+        icon: correctPercentage >= 70 ? '⚡' : '🔒',
         title: 'Preciso',
         description: 'Raggiungi il 70% di risposte corrette',
-        completed: this.correctPercentage >= 70,
-        progress: `${this.correctPercentage}/70%`,
+        completed: correctPercentage >= 70,
+        progress: `${correctPercentage}/70%`,
       },
       {
-        icon: this.quizPlayed >= 100 ? '👑' : '🔒',
+        icon: realStats.quizPlayed >= 100 ? '👑' : '🔒',
         title: 'Esperto',
         description: 'Gioca 100 quiz',
-        completed: this.quizPlayed >= 100,
-        progress: `${this.quizPlayed}/100`,
+        completed: realStats.quizPlayed >= 100,
+        progress: `${realStats.quizPlayed}/100`,
       },
       {
-        icon: this.quizPlayed >= 10 ? '🚀' : '🔒',
+        icon: realStats.quizPlayed >= 10 ? '🚀' : '🔒',
         title: 'Partenza',
         description: 'Gioca 10 quiz',
-        completed: this.quizPlayed >= 10,
-        progress: `${this.quizPlayed}/10`,
+        completed: realStats.quizPlayed >= 10,
+        progress: `${realStats.quizPlayed}/10`,
       },
       {
-        icon: this.quizPlayed >= 50 ? '🔥' : '🔒',
+        icon: realStats.quizPlayed >= 50 ? '🔥' : '🔒',
         title: 'Allenato',
         description: 'Gioca 50 quiz',
-        completed: this.quizPlayed >= 50,
-        progress: `${this.quizPlayed}/50`,
+        completed: realStats.quizPlayed >= 50,
+        progress: `${realStats.quizPlayed}/50`,
       },
       {
-        icon: this.quizPlayed >= 200 ? '💎' : '🔒',
+        icon: realStats.quizPlayed >= 200 ? '💎' : '🔒',
         title: 'Veterano',
         description: 'Gioca 200 quiz',
-        completed: this.quizPlayed >= 200,
-        progress: `${this.quizPlayed}/200`,
+        completed: realStats.quizPlayed >= 200,
+        progress: `${realStats.quizPlayed}/200`,
       },
       {
-        icon: this.streakDays >= 7 ? '📆' : '🔒',
+        icon: realStats.streakDays >= 7 ? '📆' : '🔒',
         title: 'Settimana d’oro',
         description: 'Gioca per 7 giorni di fila',
-        completed: this.streakDays >= 7,
-        progress: `${this.streakDays}/7`,
+        completed: realStats.streakDays >= 7,
+        progress: `${realStats.streakDays}/7`,
       },
       {
-        icon: this.streakDays >= 30 ? '🌟' : '🔒',
+        icon: realStats.streakDays >= 30 ? '🌟' : '🔒',
         title: 'Inarrestabile',
         description: 'Gioca per 30 giorni di fila',
-        completed: this.streakDays >= 30,
-        progress: `${this.streakDays}/30`,
+        completed: realStats.streakDays >= 30,
+        progress: `${realStats.streakDays}/30`,
       },
       {
-        icon: this.correctPercentage >= 80 ? '🎯' : '🔒',
+        icon: correctPercentage >= 80 ? '🎯' : '🔒',
         title: 'Cecchino',
         description: 'Raggiungi l’80% di risposte corrette',
-        completed: this.correctPercentage >= 80,
-        progress: `${this.correctPercentage}/80%`,
+        completed: correctPercentage >= 80,
+        progress: `${correctPercentage}/80%`,
       },
       {
-        icon: this.correctPercentage >= 90 ? '🧠' : '🔒',
+        icon: correctPercentage >= 90 ? '🧠' : '🔒',
         title: 'Genio',
         description: 'Raggiungi il 90% di risposte corrette',
-        completed: this.correctPercentage >= 90,
-        progress: `${this.correctPercentage}/90%`,
+        completed: correctPercentage >= 90,
+        progress: `${correctPercentage}/90%`,
       },
       {
-        icon: this.level >= 10 ? '👑' : '🔒',
+        icon: realStats.level >= 10 ? '👑' : '🔒',
         title: 'Re del quiz',
         description: 'Raggiungi il livello 10',
-        completed: this.level >= 10,
-        progress: `${this.level}/10`,
+        completed: realStats.level >= 10,
+        progress: `${realStats.level}/10`,
       },
     ];
   }
@@ -252,8 +242,8 @@ export class ProfilePage {
     return avatar.icon || this.getAvatarLetter(user);
   }
 
-  isAvatarUnlocked(minLevel: number): boolean {
-    return this.level >= minLevel;
+  isAvatarUnlocked(minLevel: number, currentLevel: number): boolean {
+    return currentLevel >= minLevel;
   }
 
   openAvatarModal() {
@@ -266,10 +256,12 @@ export class ProfilePage {
     this.tempSelectedAvatar = this.selectedAvatar;
   }
 
-  chooseTempAvatar(avatarId: string) {
+  chooseTempAvatar(avatarId: string, currentLevel: number) {
     const avatar = this.avatars.find((a) => a.id === avatarId);
 
-    if (!avatar || !this.isAvatarUnlocked(avatar.minLevel)) return;
+    if (!avatar || !this.isAvatarUnlocked(avatar.minLevel, currentLevel)) {
+      return;
+    }
 
     this.tempSelectedAvatar = avatarId;
   }
@@ -308,9 +300,5 @@ export class ProfilePage {
       month: 'long',
       year: 'numeric',
     })}`;
-  }
-
-  get achievementsPreview() {
-    return this.achievements.slice(0, 4);
   }
 }

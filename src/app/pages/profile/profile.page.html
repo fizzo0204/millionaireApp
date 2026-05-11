@@ -2,6 +2,7 @@
   class="profile-content"
   [class.modal-open]="showAvatarModal || showAchievementsModal"
 >
+  @if (profileStats$ | async; as realStats) {
   <div class="page-fade">
     @if (user$ | async; as user) {
     <!-- HEADER -->
@@ -22,7 +23,6 @@
     }
 
     <!-- LEVEL -->
-    @if (profileStats$ | async; as realStats) {
     <div class="level-card">
       <div class="level-shield">
         <span>Livello</span>
@@ -31,7 +31,7 @@
 
       <div class="level-info">
         <h3>Livello {{ realStats.level }}</h3>
-        <p>{{ title }}</p>
+        <p>{{ getTitle(realStats.level) }}</p>
 
         <div class="xp-row">
           <span>{{ realStats.xp }} / {{ maxXp }} XP</span>
@@ -70,7 +70,8 @@
     </div>
 
     <div class="achievement-grid">
-      @for (achievement of achievementsPreview; track achievement.title) {
+      @for (achievement of getAchievements(realStats).slice(0, 4); track
+      achievement.title) {
       <div class="achievement-card" [class.locked]="!achievement.completed">
         <div class="achievement-icon">{{ achievement.icon }}</div>
 
@@ -110,8 +111,8 @@
       </div>
       }
     </div>
-    }
   </div>
+
   <!-- 🔥 MODALE AVATAR -->
   @if (showAvatarModal && (user$ | async); as user) {
   <div class="avatar-modal-backdrop">
@@ -124,14 +125,14 @@
           class="avatar-option"
           type="button"
           [class.active]="tempSelectedAvatar === avatar.id"
-          [class.locked]="!isAvatarUnlocked(avatar.minLevel)"
-          (click)="chooseTempAvatar(avatar.id)"
+          [class.locked]="!isAvatarUnlocked(avatar.minLevel, realStats.level)"
+          (click)="chooseTempAvatar(avatar.id, realStats.level)"
         >
           <div class="avatar-option-icon">
             {{ getAvatarIcon(avatar.id, user) }}
           </div>
 
-          @if (!isAvatarUnlocked(avatar.minLevel)) {
+          @if (!isAvatarUnlocked(avatar.minLevel, realStats.level)) {
           <small>Liv. {{ avatar.minLevel }}</small>
           }
         </button>
@@ -162,7 +163,8 @@
       <h3>Tutti i trofei</h3>
 
       <div class="achievement-grid full">
-        @for (achievement of achievements; track achievement.title) {
+        @for (achievement of getAchievements(realStats); track
+        achievement.title) {
         <div class="achievement-card" [class.locked]="!achievement.completed">
           <div class="achievement-icon">{{ achievement.icon }}</div>
 
@@ -181,5 +183,5 @@
       </div>
     </div>
   </div>
-  }
+  } }
 </ion-content>
