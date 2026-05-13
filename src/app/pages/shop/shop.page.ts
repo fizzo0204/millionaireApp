@@ -6,7 +6,6 @@ import { Observable, Subscription } from 'rxjs';
 import { AdsService } from 'src/app/services/ads.service';
 import { CoinsService } from 'src/app/services/coins.service';
 import { LivesService } from 'src/app/services/lives';
-import { AudioService } from 'src/app/services/audio';
 
 @Component({
   selector: 'app-shop',
@@ -32,7 +31,6 @@ export class ShopPage implements OnInit, OnDestroy {
 
   constructor(
     private ads: AdsService,
-    private audioService: AudioService,
     private coinsService: CoinsService,
     private livesService: LivesService,
   ) {
@@ -58,17 +56,18 @@ export class ShopPage implements OnInit, OnDestroy {
 
     this.coinsLoading = true;
 
-    const reward = await this.ads.showRewardedAd();
+    try {
+      const reward = await this.ads.showRewardedAd();
 
-    if (reward) {
-      await this.coinsService.addCoins(10);
       if (reward) {
         await this.coinsService.addCoins(10);
         this.triggerCoinPulse();
       }
+    } catch (error) {
+      console.error('Errore rewarded ad monete:', error);
+    } finally {
+      this.coinsLoading = false;
     }
-
-    this.coinsLoading = false;
   }
 
   triggerCoinPulse() {
@@ -88,13 +87,17 @@ export class ShopPage implements OnInit, OnDestroy {
 
     this.lifeLoading = true;
 
-    const reward = await this.ads.showRewardedAd();
+    try {
+      const reward = await this.ads.showRewardedAd();
 
-    if (reward) {
-      await this.livesService.addLife(1);
+      if (reward) {
+        await this.livesService.addLife(1);
+      }
+    } catch (error) {
+      console.error('Errore rewarded ad vita:', error);
+    } finally {
+      this.lifeLoading = false;
     }
-
-    this.lifeLoading = false;
   }
 
   triggerLifePulse() {

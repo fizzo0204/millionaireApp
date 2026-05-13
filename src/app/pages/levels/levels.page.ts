@@ -42,7 +42,6 @@ export class LevelsPage {
   categoryIcon = '❓';
   categoryClass = 'default';
   difficultyTitle = 'Easy';
-  difficultyIcon = '⭐';
 
   ngOnInit() {
     this.categoryId = this.route.snapshot.paramMap.get('categoryId') || '';
@@ -182,6 +181,5 @@ export class LevelsPage {
     this.categoryClass = category?.className || 'default';
 
     this.difficultyTitle = difficulty?.title || 'Easy';
-    this.difficultyIcon = difficulty?.icon || '⭐';
   }
 }

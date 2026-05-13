@@ -432,7 +432,7 @@ export class QuizPage implements OnInit, OnDestroy {
 
       if (reward) {
         this.showWrongModal = false;
-        this.nextQuestion();
+        await this.loadQuestions();
       }
     } finally {
       this.adInProgress = false;
