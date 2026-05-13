@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-
+import { LivesService } from 'src/app/services/lives';
 import { AuthService } from 'src/app/services/auth.service';
 import {
   DifficultyId,
   ProgressService,
 } from 'src/app/services/progress.service';
+import { AdsService } from 'src/app/services/ads.service';
 
 type LevelItem = {
   number: number;
@@ -28,11 +29,15 @@ export class LevelsPage {
   private router = inject(Router);
   private auth = inject(AuthService);
   private progressService = inject(ProgressService);
+  private livesService = inject(LivesService);
+  private ads = inject(AdsService);
 
   categoryId = '';
   difficultyId: DifficultyId = 'easy';
 
   levels: LevelItem[] = [];
+  showNoLivesModal = false;
+  lifeLoading = false;
   categoryTitle = 'Quiz';
   categoryIcon = '❓';
   categoryClass = 'default';
@@ -112,9 +117,34 @@ export class LevelsPage {
   openLevel(level: LevelItem) {
     if (level.locked) return;
 
+    if (this.livesService.getLives() <= 0) {
+      this.showNoLivesModal = true;
+      return;
+    }
+
     this.router.navigateByUrl(
       `/quiz/${this.categoryId}/${this.difficultyId}/${level.number}`,
     );
+  }
+
+  closeNoLivesModal() {
+    if (this.lifeLoading) return;
+    this.showNoLivesModal = false;
+  }
+
+  async watchAdForLife() {
+    if (this.lifeLoading) return;
+
+    this.lifeLoading = true;
+
+    const reward = await this.ads.showRewardedAd();
+
+    if (reward) {
+      await this.livesService.addLife(1);
+      this.showNoLivesModal = false;
+    }
+
+    this.lifeLoading = false;
   }
 
   goBack() {
