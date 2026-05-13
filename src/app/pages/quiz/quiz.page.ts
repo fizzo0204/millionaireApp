@@ -173,7 +173,7 @@ export class QuizPage implements OnInit, OnDestroy {
     await this.livesService.spendLife();
 
     this.stopTimer();
-    this.router.navigateByUrl(`/difficulty/${this.categoryId}`);
+    this.goToLevelsPage();
   }
 
   setupLabels() {
@@ -393,9 +393,7 @@ export class QuizPage implements OnInit, OnDestroy {
     }
 
     this.navigatingAway = true;
-    this.router.navigateByUrl(
-      `/levels/${this.categoryId}/${this.difficultyId}`,
-    );
+    this.goToLevelsPage();
   }
 
   markCurrentQuestionAsWrong() {
@@ -492,15 +490,13 @@ export class QuizPage implements OnInit, OnDestroy {
     this.showRewardModal = false;
     this.navigatingAway = true;
 
-    this.router.navigateByUrl(
-      `/levels/${this.categoryId}/${this.difficultyId}`,
-    );
+    this.goToLevelsPage();
   }
 
   goBack() {
     if (this.loading || !this.currentQuestion) {
       this.navigatingAway = true;
-      this.router.navigateByUrl(`/difficulty/${this.categoryId}`);
+      this.goToLevelsPage();
       return;
     }
 
@@ -521,7 +517,7 @@ export class QuizPage implements OnInit, OnDestroy {
     this.showExitModal = false;
     this.stopTimer();
     this.navigatingAway = true;
-    this.router.navigateByUrl(`/difficulty/${this.categoryId}`);
+    this.goToLevelsPage();
   }
 
   startTimer() {
@@ -544,6 +540,12 @@ export class QuizPage implements OnInit, OnDestroy {
       clearInterval(this.timer);
       this.timer = undefined;
     }
+  }
+
+  private goToLevelsPage() {
+    this.router.navigateByUrl(
+      `/levels/${this.categoryId}/${this.difficultyId}`,
+    );
   }
 
   ngOnDestroy() {
