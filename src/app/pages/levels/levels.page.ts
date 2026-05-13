@@ -33,6 +33,11 @@ export class LevelsPage {
   difficultyId: DifficultyId = 'easy';
 
   levels: LevelItem[] = [];
+  categoryTitle = 'Quiz';
+  categoryIcon = '❓';
+  categoryClass = 'default';
+  difficultyTitle = 'Easy';
+  difficultyIcon = '⭐';
 
   ngOnInit() {
     this.categoryId = this.route.snapshot.paramMap.get('categoryId') || '';
@@ -40,6 +45,8 @@ export class LevelsPage {
     this.difficultyId =
       (this.route.snapshot.paramMap.get('difficultyId') as DifficultyId) ||
       'easy';
+
+    this.setupLabels();
 
     this.generateLevels();
   }
@@ -112,5 +119,39 @@ export class LevelsPage {
 
   goBack() {
     this.router.navigateByUrl(`/difficulty/${this.categoryId}`);
+  }
+
+  setupLabels() {
+    const categories: Record<
+      string,
+      { title: string; icon: string; className: string }
+    > = {
+      sport: { title: 'Sport', icon: '⚽', className: 'sport' },
+      cinema: { title: 'Cinema', icon: '🎬', className: 'cinema' },
+      storia: { title: 'Storia', icon: '🏛️', className: 'storia' },
+      geografia: { title: 'Geografia', icon: '🌍', className: 'geografia' },
+      scienza: { title: 'Scienze', icon: '🔬', className: 'scienza' },
+      musica: { title: 'Musica', icon: '🎵', className: 'musica' },
+      tecnologia: { title: 'Tecnologia', icon: '💡', className: 'tecnologia' },
+      altro: { title: 'Altro', icon: '⭐', className: 'altro' },
+    };
+
+    const difficulties: Record<DifficultyId, { title: string; icon: string }> =
+      {
+        easy: { title: 'Easy', icon: '⭐' },
+        medium: { title: 'Medium', icon: '🏅' },
+        hard: { title: 'Hard', icon: '🔥' },
+        extreme: { title: 'Extreme', icon: '👑' },
+      };
+
+    const category = categories[this.categoryId];
+    const difficulty = difficulties[this.difficultyId];
+
+    this.categoryTitle = category?.title || 'Quiz';
+    this.categoryIcon = category?.icon || '❓';
+    this.categoryClass = category?.className || 'default';
+
+    this.difficultyTitle = difficulty?.title || 'Easy';
+    this.difficultyIcon = difficulty?.icon || '⭐';
   }
 }

@@ -2,14 +2,19 @@
   color: #fff;
 }
 
+/* HERO */
 .levels-header {
   margin: 28px 0 18px;
+  min-height: 142px;
   padding: 14px;
   border-radius: 26px;
+  position: relative;
+  overflow: hidden;
 
-  display: flex;
+  display: grid;
+  grid-template-columns: 52px 1fr 1px 96px;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 
   background: linear-gradient(135deg, rgba(7, 44, 82, 0.96), #031f3d);
   border: 1px solid rgba(96, 165, 250, 0.28);
@@ -19,11 +24,23 @@
     0 10px 24px rgba(0, 0, 0, 0.3);
 }
 
+.levels-header::after {
+  content: "";
+  position: absolute;
+  right: -44px;
+  bottom: -54px;
+  width: 165px;
+  height: 165px;
+  border-radius: 50%;
+  background: rgba(96, 165, 250, 0.1);
+}
+
 .back-btn {
-  width: 48px;
-  height: 48px;
+  width: 50px;
+  height: 50px;
   border: 0;
   border-radius: 50%;
+  z-index: 2;
 
   display: grid;
   place-items: center;
@@ -37,43 +54,229 @@
     inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 
   ion-icon {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
   }
+}
+
+.levels-header-content {
+  display: contents;
+}
+
+.levels-title-wrap {
+  position: relative;
+  z-index: 2;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.levels-pulse-icon {
+  width: 52px;
+  height: 52px;
+  margin-bottom: 3px;
+  border-radius: 50%;
+
+  display: grid;
+  place-items: center;
+
+  font-size: 1.75rem;
+  color: #fff;
+
+  background: rgba(255, 255, 255, 0.13);
+  border: 2px solid rgba(96, 165, 250, 0.75);
+
+  box-shadow:
+    0 0 18px rgba(96, 165, 250, 0.36),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+
+  animation: levelsBadgePulse 1.8s ease-in-out infinite;
 }
 
 .levels-header h1 {
   margin: 0;
-  color: #ffea00;
-  font-size: 1.55rem;
+
+  font-size: 1.8rem;
+  line-height: 1;
+
   font-weight: 900;
+  color: #ffea00;
+
+  text-align: center;
 
   text-shadow:
     0 3px 0 rgba(129, 90, 0, 0.7),
     0 8px 12px rgba(0, 0, 0, 0.35);
 }
 
-.levels-header p {
-  margin: 4px 0 0;
-  color: #dbeafe;
-  font-size: 0.82rem;
-  font-weight: 800;
+.difficulty-pill {
+  margin-top: 8px;
+  padding: 7px 13px;
+  border-radius: 999px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+
+  white-space: nowrap;
+
+  color: #031f3d;
+  font-size: 0.68rem;
+  font-weight: 900;
+
+  background: linear-gradient(180deg, #dbeafe, #60a5fa);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.55),
+    0 4px 0 rgba(30, 64, 175, 0.65),
+    0 8px 14px rgba(0, 0, 0, 0.25);
+
+  strong {
+    font-size: 0.68rem;
+    font-weight: 900;
+  }
+
+  span {
+    font-size: 0.72rem;
+  }
 }
 
+.header-divider {
+  width: 1px;
+  height: 92px;
+  z-index: 2;
+
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(96, 165, 250, 0.55),
+    transparent
+  );
+}
+
+.category-badge {
+  position: relative;
+  z-index: 2;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.category-badge-icon {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+
+  display: grid;
+  place-items: center;
+
+  font-size: 2rem;
+
+  background: rgba(255, 255, 255, 0.16);
+
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.12),
+    0 8px 16px rgba(0, 0, 0, 0.28);
+}
+
+.category-badge-name {
+  margin-top: -5px;
+  padding: 5px 12px;
+  border-radius: 999px;
+
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: #fff;
+
+  background: rgba(7, 44, 82, 0.95);
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 5px 10px rgba(0, 0, 0, 0.25);
+}
+
+/* CATEGORY COLORS */
+.category-badge.sport .category-badge-icon,
+.category-badge.sport .category-badge-name {
+  background: linear-gradient(135deg, #22c55e, #15803d);
+}
+
+.category-badge.cinema .category-badge-icon,
+.category-badge.cinema .category-badge-name {
+  background: linear-gradient(135deg, #f97316, #c2410c);
+}
+
+.category-badge.storia .category-badge-icon,
+.category-badge.storia .category-badge-name {
+  background: linear-gradient(135deg, #10b981, #047857);
+}
+
+.category-badge.geografia .category-badge-icon,
+.category-badge.geografia .category-badge-name {
+  background: linear-gradient(135deg, #fb923c, #f97316);
+}
+
+.category-badge.scienza .category-badge-icon,
+.category-badge.scienza .category-badge-name {
+  background: linear-gradient(135deg, #ec4899, #be185d);
+}
+
+.category-badge.musica .category-badge-icon,
+.category-badge.musica .category-badge-name {
+  background: linear-gradient(135deg, #22d3ee, #0284c7);
+}
+
+.category-badge.tecnologia .category-badge-icon,
+.category-badge.tecnologia .category-badge-name {
+  background: linear-gradient(135deg, #facc15, #d97706);
+}
+
+.category-badge.altro .category-badge-icon,
+.category-badge.altro .category-badge-name,
+.category-badge.default .category-badge-icon,
+.category-badge.default .category-badge-name {
+  background: linear-gradient(135deg, #a855f7, #7e22ce);
+}
+
+@keyframes levelsBadgePulse {
+  0%,
+  100% {
+    transform: scale(1);
+
+    box-shadow:
+      0 0 18px rgba(96, 165, 250, 0.36),
+      inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+  }
+
+  50% {
+    transform: scale(1.06);
+
+    box-shadow:
+      0 0 26px rgba(96, 165, 250, 0.58),
+      inset 0 0 0 2px rgba(255, 255, 255, 0.12);
+  }
+}
+
+/* GRID */
 .levels-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
-  padding-bottom: 24px;
+  padding-bottom: 30px;
 }
 
 .level-card {
   position: relative;
   overflow: hidden;
 
-  min-height: 82px;
+  min-height: 132px;
   border: 0;
-  border-radius: 18px;
-  padding: 8px 4px;
+  border-radius: 24px;
+  padding: 16px 8px;
 
   display: flex;
   flex-direction: column;
@@ -97,47 +300,40 @@
   filter: brightness(1.08);
 }
 
-.level-card span {
-  font-size: 0.58rem;
-  font-weight: 900;
-  color: #dbeafe;
-  text-transform: uppercase;
-}
-
-.level-card strong {
-  margin-top: 2px;
-  color: #ffea00;
-  font-size: 1.35rem;
-  font-weight: 1000;
-
-  text-shadow:
-    0 2px 0 rgba(129, 90, 0, 0.7),
-    0 6px 10px rgba(0, 0, 0, 0.3);
-}
-
 .level-status {
-  position: absolute;
-  top: 7px;
-  right: 7px;
-
-  width: 24px;
-  height: 24px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
 
   display: grid;
   place-items: center;
 
-  font-size: 0.75rem;
+  font-size: 1.25rem;
   font-weight: 1000;
 
   color: #fff;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(17, 37, 72, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
-    0 4px 8px rgba(0, 0, 0, 0.22);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 6px 12px rgba(0, 0, 0, 0.3);
 }
 
+.level-card strong {
+  margin-top: 10px;
+
+  color: #ffea00;
+  font-size: 3rem;
+  line-height: 1;
+  font-weight: 1000;
+
+  text-shadow:
+    0 3px 0 rgba(129, 90, 0, 0.75),
+    0 8px 14px rgba(0, 0, 0, 0.35);
+}
+
+/* LOCKED */
 .level-card.locked {
   opacity: 0.55;
   filter: grayscale(0.25);
@@ -156,13 +352,10 @@
 }
 
 .level-card.locked .level-status {
-  width: 30px;
-  height: 30px;
-  font-size: 1rem;
-
   background: rgba(255, 255, 255, 0.1);
 }
 
+/* COMPLETED */
 .level-card.completed {
   background: linear-gradient(135deg, #22c55e, #15803d);
 
@@ -181,13 +374,83 @@
     inset 0 0 0 2px rgba(255, 255, 255, 0.38);
 }
 
+/* SMALL DEVICES */
 @media (max-width: 390px) {
-  .levels-grid {
-    grid-template-columns: repeat(4, 1fr);
+  .levels-header {
+    margin-top: 24px;
+    min-height: 132px;
+    padding: 12px;
+
+    grid-template-columns: 44px 1fr 1px 78px;
     gap: 9px;
   }
 
+  .back-btn {
+    width: 42px;
+    height: 42px;
+
+    ion-icon {
+      font-size: 1.4rem;
+    }
+  }
+
+  .levels-pulse-icon {
+    width: 46px;
+    height: 46px;
+    font-size: 1.5rem;
+  }
+
+  .levels-header h1 {
+    font-size: 1.55rem;
+  }
+
+  .difficulty-pill {
+    font-size: 0.58rem;
+    padding: 6px 8px;
+    gap: 3px;
+
+    strong {
+      font-size: 0.58rem;
+    }
+
+    span {
+      font-size: 0.62rem;
+    }
+  }
+
+  .header-divider {
+    height: 86px;
+  }
+
+  .category-badge-icon {
+    width: 54px;
+    height: 54px;
+    font-size: 1.7rem;
+  }
+
+  .category-badge-name {
+    font-size: 0.62rem;
+    padding: 4px 9px;
+  }
+
+  .levels-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
   .level-card {
-    min-height: 76px;
+    min-height: 118px;
+    border-radius: 20px;
+    padding: 14px 6px;
+  }
+
+  .level-status {
+    width: 36px;
+    height: 36px;
+    font-size: 1.05rem;
+  }
+
+  .level-card strong {
+    font-size: 2.5rem;
   }
 }

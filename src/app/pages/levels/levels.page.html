@@ -4,9 +4,25 @@
       <ion-icon name="arrow-back-outline"></ion-icon>
     </button>
 
-    <div>
-      <h1>Livelli</h1>
-      <p>{{ difficultyId | titlecase }}</p>
+    <div class="levels-header-content">
+      <div class="levels-title-wrap">
+        <div class="levels-pulse-icon">🎯</div>
+        <h1>Livelli</h1>
+
+        <div class="difficulty-pill">
+          <span>⭐</span>
+          <strong>{{ difficultyTitle }}</strong>
+          <span>⭐</span>
+        </div>
+      </div>
+
+      <div class="header-divider"></div>
+
+      <div class="category-badge" [ngClass]="categoryClass">
+        <div class="category-badge-icon">{{ categoryIcon }}</div>
+
+        <div class="category-badge-name">{{ categoryTitle }}</div>
+      </div>
     </div>
   </div>
 
@@ -20,11 +36,9 @@
       [disabled]="level.locked"
       (click)="openLevel(level)"
     >
-      <div class="level-status">
+      <div class="level-status centered">
         @if (level.locked) { 🔒 } @else if (level.completed) { ✓ } @else { ⭐ }
       </div>
-
-      <span>Livello</span>
 
       <strong>{{ level.number }}</strong>
     </button>
