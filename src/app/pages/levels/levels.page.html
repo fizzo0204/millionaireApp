@@ -34,13 +34,26 @@
         type="button"
         [class.locked]="level.locked"
         [class.completed]="level.completed"
+        [class.just-completed]="level.justCompleted"
+        [class.new-unlocked]="
+    !level.locked &&
+    !level.completed &&
+    level.number === firstPlayableLevel
+  "
         [disabled]="level.locked"
         (click)="openLevel(level)"
       >
+        <div class="level-complete-burst"></div>
+
         <div class="level-status centered">
           @if (level.locked) { 🔒 } @else if (level.completed) { ✓ } @else { ⭐
           }
         </div>
+
+        @if ( !level.locked && !level.completed && level.number ===
+        firstPlayableLevel ) {
+        <div class="new-badge">NUOVO</div>
+        }
 
         <strong>{{ level.number }}</strong>
       </button>

@@ -15,6 +15,7 @@ type LevelItem = {
   number: number;
   locked: boolean;
   completed: boolean;
+  justCompleted?: boolean;
 };
 
 @Component({
@@ -38,6 +39,7 @@ export class LevelsPage {
   difficultyId: DifficultyId = 'easy';
 
   levels: LevelItem[] = [];
+  previousCompletedLevelNumbers: number[] = [];
   showNoLivesModal = false;
   lifeLoading = false;
   categoryTitle = 'Quiz';
@@ -104,6 +106,12 @@ export class LevelsPage {
     this.levels = this.levels.map((level, index) => {
       const completed = completedLevelNumbers.includes(level.number);
 
+      const wasCompletedBefore = this.previousCompletedLevelNumbers.includes(
+        level.number,
+      );
+
+      const justCompleted = completed && !wasCompletedBefore;
+
       const previousLevel = this.levels[index - 1];
 
       const unlocked =
@@ -113,8 +121,18 @@ export class LevelsPage {
         ...level,
         completed,
         locked: !unlocked,
+        justCompleted,
       };
     });
+
+    this.previousCompletedLevelNumbers = [...completedLevelNumbers];
+
+    setTimeout(() => {
+      this.levels = this.levels.map((level) => ({
+        ...level,
+        justCompleted: false,
+      }));
+    }, 1400);
   }
 
   openLevel(level: LevelItem) {
@@ -197,5 +215,11 @@ export class LevelsPage {
     setTimeout(() => {
       this.router.navigateByUrl(url);
     }, 160);
+  }
+
+  get firstPlayableLevel(): number {
+    const next = this.levels.find((level) => !level.locked && !level.completed);
+
+    return next?.number ?? -1;
   }
 }

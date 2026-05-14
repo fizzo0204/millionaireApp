@@ -569,3 +569,176 @@
     opacity: 1;
   }
 }
+
+/* =========================================================
+   NEW LEVEL WOW
+========================================================= */
+
+.level-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.level-card.new-unlocked {
+  border-color: rgba(255, 234, 0, 0.9);
+
+  box-shadow:
+    0 0 0 rgba(255, 234, 0, 0),
+    0 0 28px rgba(255, 234, 0, 0.42),
+    0 12px 24px rgba(0, 0, 0, 0.3);
+
+  animation: newLevelPulse 1.8s infinite;
+}
+
+.level-card.new-unlocked::before {
+  content: "";
+
+  position: absolute;
+  inset: -40%;
+
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    rgba(255, 234, 0, 0.18),
+    transparent,
+    rgba(255, 255, 255, 0.08),
+    transparent
+  );
+
+  animation: newLevelSpin 5s linear infinite;
+}
+
+.level-card.new-unlocked > * {
+  position: relative;
+  z-index: 2;
+}
+
+.new-badge {
+  position: absolute;
+  top: 10px;
+  // right: 10px;
+
+  padding: 4px 8px;
+  border-radius: 999px;
+
+  background: linear-gradient(180deg, #ffea00, #ffc400);
+
+  color: #04111f;
+  font-size: 0.58rem;
+  font-weight: 1000;
+  letter-spacing: 0.04em;
+
+  box-shadow:
+    0 4px 10px rgba(255, 196, 0, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+}
+
+@keyframes newLevelPulse {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+
+    box-shadow:
+      0 0 0 rgba(255, 234, 0, 0),
+      0 0 18px rgba(255, 234, 0, 0.28);
+  }
+
+  50% {
+    transform: translateY(-4px) scale(1.03);
+
+    box-shadow:
+      0 0 28px rgba(255, 234, 0, 0.45),
+      0 0 42px rgba(255, 234, 0, 0.22);
+  }
+}
+
+@keyframes newLevelSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================================================
+   LEVEL COMPLETE WOW
+========================================================= */
+
+.level-card.completed.just-completed {
+  animation: completedReveal 900ms cubic-bezier(0.22, 1.35, 0.36, 1);
+}
+
+.level-card.completed.just-completed .level-status {
+  animation: completeIconPop 900ms cubic-bezier(0.22, 1.5, 0.36, 1);
+
+  box-shadow:
+    0 0 28px rgba(74, 222, 128, 0.55),
+    0 0 52px rgba(74, 222, 128, 0.24);
+}
+
+.level-complete-burst {
+  position: absolute;
+  inset: -40%;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.level-card.completed.just-completed .level-complete-burst {
+  opacity: 1;
+
+  background:
+    radial-gradient(circle, rgba(74, 222, 128, 0.45), transparent 26%),
+    conic-gradient(
+      from 0deg,
+      transparent,
+      rgba(255, 255, 255, 0.22),
+      transparent,
+      rgba(74, 222, 128, 0.28),
+      transparent
+    );
+
+  animation: completeBurstSpin 1.2s ease;
+}
+
+@keyframes completedReveal {
+  0% {
+    transform: scale(0.82) rotate(-4deg);
+    filter: brightness(1.4);
+  }
+
+  45% {
+    transform: scale(1.08) rotate(2deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
+@keyframes completeIconPop {
+  0% {
+    transform: scale(0.4);
+  }
+
+  55% {
+    transform: scale(1.28);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes completeBurstSpin {
+  0% {
+    transform: scale(0.3) rotate(0deg);
+    opacity: 0;
+  }
+
+  35% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1.2) rotate(180deg);
+    opacity: 0;
+  }
+}
