@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -32,6 +32,8 @@ export class LevelsPage {
   private livesService = inject(LivesService);
   private ads = inject(AdsService);
 
+  @ViewChild('pageAnim') pageAnim?: ElementRef<HTMLElement>;
+
   categoryId = '';
   difficultyId: DifficultyId = 'easy';
 
@@ -56,6 +58,8 @@ export class LevelsPage {
   }
 
   async ionViewWillEnter() {
+    this.pageAnim?.nativeElement.classList.remove('page-fade-out');
+
     await this.loadLevelProgress();
   }
 
@@ -147,7 +151,7 @@ export class LevelsPage {
   }
 
   goBack() {
-    this.router.navigateByUrl(`/difficulty/${this.categoryId}`);
+    this.animateAndNavigate(`/difficulty/${this.categoryId}`);
   }
 
   setupLabels() {
@@ -181,5 +185,17 @@ export class LevelsPage {
     this.categoryClass = category?.className || 'default';
 
     this.difficultyTitle = difficulty?.title || 'Easy';
+  }
+
+  private animateAndNavigate(url: string) {
+    const el = this.pageAnim?.nativeElement;
+
+    el?.classList.remove('page-fade-out');
+    void el?.offsetWidth;
+    el?.classList.add('page-fade-out');
+
+    setTimeout(() => {
+      this.router.navigateByUrl(url);
+    }, 160);
   }
 }

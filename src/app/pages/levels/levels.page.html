@@ -1,48 +1,51 @@
 <ion-content fullscreen class="levels-page">
-  <div class="levels-header">
-    <button class="back-btn" type="button" (click)="goBack()">
-      <ion-icon name="arrow-back-outline"></ion-icon>
-    </button>
+  <div #pageAnim class="page-fade">
+    <div class="levels-header">
+      <button class="back-btn" type="button" (click)="goBack()">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
 
-    <div class="levels-header-content">
-      <div class="levels-title-wrap">
-        <div class="levels-pulse-icon">🎯</div>
-        <h1>Livelli</h1>
+      <div class="levels-header-content">
+        <div class="levels-title-wrap">
+          <div class="levels-pulse-icon">🎯</div>
+          <h1>Livelli</h1>
 
-        <div class="difficulty-pill">
-          <span>⭐</span>
-          <strong>{{ difficultyTitle }}</strong>
-          <span>⭐</span>
+          <div class="difficulty-pill">
+            <span>⭐</span>
+            <strong>{{ difficultyTitle }}</strong>
+            <span>⭐</span>
+          </div>
+        </div>
+
+        <div class="header-divider"></div>
+
+        <div class="category-badge" [ngClass]="categoryClass">
+          <div class="category-badge-icon">{{ categoryIcon }}</div>
+
+          <div class="category-badge-name">{{ categoryTitle }}</div>
         </div>
       </div>
-
-      <div class="header-divider"></div>
-
-      <div class="category-badge" [ngClass]="categoryClass">
-        <div class="category-badge-icon">{{ categoryIcon }}</div>
-
-        <div class="category-badge-name">{{ categoryTitle }}</div>
-      </div>
     </div>
-  </div>
 
-  <div class="levels-grid">
-    @for (level of levels; track level.number) {
-    <button
-      class="level-card"
-      type="button"
-      [class.locked]="level.locked"
-      [class.completed]="level.completed"
-      [disabled]="level.locked"
-      (click)="openLevel(level)"
-    >
-      <div class="level-status centered">
-        @if (level.locked) { 🔒 } @else if (level.completed) { ✓ } @else { ⭐ }
-      </div>
+    <div class="levels-grid">
+      @for (level of levels; track level.number) {
+      <button
+        class="level-card"
+        type="button"
+        [class.locked]="level.locked"
+        [class.completed]="level.completed"
+        [disabled]="level.locked"
+        (click)="openLevel(level)"
+      >
+        <div class="level-status centered">
+          @if (level.locked) { 🔒 } @else if (level.completed) { ✓ } @else { ⭐
+          }
+        </div>
 
-      <strong>{{ level.number }}</strong>
-    </button>
-    }
+        <strong>{{ level.number }}</strong>
+      </button>
+      }
+    </div>
   </div>
   @if (showNoLivesModal) {
   <div class="no-lives-backdrop">

@@ -1,5 +1,5 @@
 <ion-content class="difficulty-content">
-  <div class="page-fade">
+  <div #pageAnim class="page-fade">
     <div class="difficulty-hero" [ngClass]="categoryClass">
       <button class="hero-back-btn" type="button" (click)="goBack()">
         <ion-icon name="arrow-back-outline"></ion-icon>
@@ -57,39 +57,4 @@
       }
     </div>
   </div>
-
-  @if (showNoLivesModal) {
-  <div class="no-lives-backdrop">
-    <div class="no-lives-modal">
-      <button
-        class="modal-close-btn"
-        type="button"
-        (click)="closeNoLivesModal()"
-        [disabled]="lifeLoading"
-      >
-        <ion-icon name="close-outline"></ion-icon>
-      </button>
-
-      <div class="no-lives-icon">💔</div>
-
-      <h2>Vite finite!</h2>
-
-      <p>
-        Non puoi iniziare un quiz senza vite. Guarda un video per recuperare
-        subito <strong>+1 vita</strong>.
-      </p>
-
-      <button
-        class="watch-life-btn"
-        type="button"
-        (click)="watchAdForLife()"
-        [disabled]="lifeLoading"
-      >
-        @if (!lifeLoading) { 🎁 Guarda video e recupera una vita } @else {
-        <ion-spinner name="dots"></ion-spinner>
-        }
-      </button>
-    </div>
-  </div>
-  }
 </ion-content>

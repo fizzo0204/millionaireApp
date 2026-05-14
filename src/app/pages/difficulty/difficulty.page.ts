@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -8,8 +8,6 @@ import {
   DifficultyId,
   ProgressService,
 } from 'src/app/services/progress.service';
-import { LivesService } from 'src/app/services/lives';
-import { AdsService } from 'src/app/services/ads.service';
 
 type DifficultyItem = {
   id: DifficultyId;
@@ -34,17 +32,14 @@ export class DifficultyPage {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private progressService = inject(ProgressService);
-  private livesService = inject(LivesService);
-  private ads = inject(AdsService);
   private auth = inject(AuthService);
+
+  @ViewChild('pageAnim') pageAnim?: ElementRef<HTMLElement>;
 
   categoryId = '';
   categoryTitle = 'Quiz';
   categoryIcon = '❓';
   categoryClass = 'default';
-
-  showNoLivesModal = false;
-  lifeLoading = false;
 
   difficulties: DifficultyItem[] = [
     {
@@ -99,6 +94,8 @@ export class DifficultyPage {
   }
 
   async ionViewWillEnter() {
+    this.pageAnim?.nativeElement.classList.remove('page-fade-out');
+
     await this.loadDifficultyProgress();
   }
 
@@ -155,37 +152,24 @@ export class DifficultyPage {
   }
 
   goBack() {
-    this.router.navigateByUrl('/home');
+    this.animateAndNavigate('/home');
   }
 
   selectDifficulty(difficulty: DifficultyItem) {
     if (difficulty.locked) return;
 
-    if (this.livesService.getLives() <= 0) {
-      this.showNoLivesModal = true;
-      return;
-    }
-
-    this.router.navigateByUrl(`/levels/${this.categoryId}/${difficulty.id}`);
+    this.animateAndNavigate(`/levels/${this.categoryId}/${difficulty.id}`);
   }
 
-  closeNoLivesModal() {
-    if (this.lifeLoading) return;
-    this.showNoLivesModal = false;
-  }
+  private animateAndNavigate(url: string) {
+    const el = this.pageAnim?.nativeElement;
 
-  async watchAdForLife() {
-    if (this.lifeLoading) return;
+    el?.classList.remove('page-fade-out');
+    void el?.offsetWidth;
+    el?.classList.add('page-fade-out');
 
-    this.lifeLoading = true;
-
-    const reward = await this.ads.showRewardedAd();
-
-    if (reward) {
-      await this.livesService.addLife(1);
-      this.showNoLivesModal = false;
-    }
-
-    this.lifeLoading = false;
+    setTimeout(() => {
+      this.router.navigateByUrl(url);
+    }, 160);
   }
 }
