@@ -85,6 +85,33 @@
 
         <ion-icon class="logout-arrow" name="refresh-outline"></ion-icon>
       </button>
+      <button class="logout-card" type="button" (click)="resetDailyAvatars()">
+        <div class="logout-icon">🎨</div>
+
+        <div class="logout-text">
+          <h3>Reset avatar daily</h3>
+          <p>Rimuove gli avatar ottenuti dai reward giornalieri</p>
+        </div>
+
+        <ion-icon class="logout-arrow" name="trash-outline"></ion-icon>
+      </button>
+      <div class="settings-card daily-debug-card">
+        <div class="setting-info">
+          <div class="setting-icon">🧪</div>
+
+          <div>
+            <h3>Test daily reward</h3>
+            <p>Simula un giorno specifico</p>
+          </div>
+        </div>
+
+        <div class="daily-debug-buttons">
+          <button type="button" (click)="setDailyDebugDay(1)">G1</button>
+          <button type="button" (click)="setDailyDebugDay(3)">G3</button>
+          <button type="button" (click)="setDailyDebugDay(5)">G5</button>
+          <button type="button" (click)="setDailyDebugDay(7)">G7</button>
+        </div>
+      </div>
     </div>
   </div>
 </ion-content>

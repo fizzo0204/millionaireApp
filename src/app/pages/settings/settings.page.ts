@@ -79,4 +79,12 @@ export class SettingsPage {
     this.dailyRewardService.resetDailyReward();
     console.log('Daily reset:', this.dailyRewardService.getState());
   }
+
+  setDailyDebugDay(day: number) {
+    this.dailyRewardService.setDebugDay(day);
+  }
+
+  resetDailyAvatars() {
+    this.dailyRewardService.resetUnlockedAvatars();
+  }
 }

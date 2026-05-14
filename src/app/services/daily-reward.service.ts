@@ -10,6 +10,13 @@ export type DailyReward = {
   icon: string;
 };
 
+export type DailyAvatarReward = {
+  id: string;
+  label: string;
+  icon: string;
+  rarity: 'common' | 'rare' | 'epic';
+};
+
 export type DailyRewardState = {
   currentDay: number;
   lastClaimDate: string | null;
@@ -30,6 +37,33 @@ export class DailyRewardService {
     { day: 5, type: 'avatar', label: 'Avatar', icon: '🎨' },
     { day: 6, type: 'xp', amount: 15, label: '+15 XP', icon: '⚡' },
     { day: 7, type: 'chest', label: 'Epic Chest', icon: '🎁' },
+  ];
+
+  readonly dailyAvatars: DailyAvatarReward[] = [
+    {
+      id: 'daily_turtle_gold',
+      label: 'Golden Turtle',
+      icon: '🐢',
+      rarity: 'rare',
+    },
+    {
+      id: 'daily_fire_brain',
+      label: 'Fire Brain',
+      icon: '🔥',
+      rarity: 'rare',
+    },
+    {
+      id: 'daily_neon_star',
+      label: 'Neon Star',
+      icon: '🌟',
+      rarity: 'common',
+    },
+    {
+      id: 'daily_crown_legend',
+      label: 'Crown Legend',
+      icon: '👑',
+      rarity: 'epic',
+    },
   ];
 
   getState(): DailyRewardState {
@@ -58,6 +92,12 @@ export class DailyRewardService {
   getRewardForDay(day: number): DailyReward {
     const normalizedDay = Math.min(Math.max(day, 1), 7);
     return this.rewards[normalizedDay - 1];
+  }
+
+  getRandomDailyAvatar(): DailyAvatarReward {
+    const index = Math.floor(Math.random() * this.dailyAvatars.length);
+
+    return this.dailyAvatars[index];
   }
 
   claimToday() {
@@ -92,5 +132,42 @@ export class DailyRewardService {
 
   private getTodayKey(): string {
     return new Date().toISOString().slice(0, 10);
+  }
+
+  saveUnlockedAvatar(avatar: DailyAvatarReward) {
+    const saved = localStorage.getItem('turtlemind_unlocked_avatars');
+
+    const avatars: DailyAvatarReward[] = saved ? JSON.parse(saved) : [];
+
+    const alreadyUnlocked = avatars.some((item) => item.id === avatar.id);
+
+    if (alreadyUnlocked) return;
+
+    avatars.push(avatar);
+
+    localStorage.setItem(
+      'turtlemind_unlocked_avatars',
+      JSON.stringify(avatars),
+    );
+  }
+
+  getUnlockedAvatars(): DailyAvatarReward[] {
+    const saved = localStorage.getItem('turtlemind_unlocked_avatars');
+
+    return saved ? JSON.parse(saved) : [];
+  }
+
+  setDebugDay(day: number) {
+    const state: DailyRewardState = {
+      currentDay: day,
+      lastClaimDate: null,
+      claimedToday: false,
+    };
+
+    localStorage.setItem(this.storageKey, JSON.stringify(state));
+  }
+
+  resetUnlockedAvatars() {
+    localStorage.removeItem('turtlemind_unlocked_avatars');
   }
 }

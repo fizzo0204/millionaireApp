@@ -8,7 +8,7 @@ import {
   AppUserProfile,
   QuizHistoryItem,
 } from 'src/app/services/user-stats.service';
-
+import { DailyRewardService } from 'src/app/services/daily-reward.service';
 import { AuthService } from 'src/app/services/auth.service';
 
 @Component({
@@ -59,10 +59,37 @@ export class ProfilePage {
     { id: 'trophy', label: 'Campione', icon: '🏆', minLevel: 10 },
   ];
 
+  get allAvatars() {
+    const dailyAvatars = this.dailyRewardService
+      .getUnlockedAvatars()
+      .map((avatar) => ({
+        id: avatar.id,
+        label: avatar.label,
+        icon: this.getDailyAvatarIcon(avatar.id, avatar.icon),
+        minLevel: 1,
+        source: 'daily',
+        rarity: avatar.rarity,
+      }));
+
+    return [...this.avatars, ...dailyAvatars];
+  }
+
   constructor(
     private auth: AuthService,
     private userStatsService: UserStatsService,
+    private dailyRewardService: DailyRewardService,
   ) {}
+
+  private getDailyAvatarIcon(id: string, fallbackIcon: string): string {
+    const icons: Record<string, string> = {
+      daily_turtle_gold: '🐢',
+      daily_fire_brain: '🔥',
+      daily_neon_star: '🌟',
+      daily_crown_legend: '👑',
+    };
+
+    return icons[id] || fallbackIcon;
+  }
 
   getXpPercent(xp: number): number {
     return Math.min(100, Math.round((xp / this.maxXp) * 100));
@@ -262,7 +289,7 @@ export class ProfilePage {
   }
 
   getAvatarIcon(avatarId: string, user: User | null): string {
-    const avatar = this.avatars.find((a) => a.id === avatarId);
+    const avatar = this.allAvatars.find((a) => a.id === avatarId);
 
     if (!avatar || avatar.id === 'letter') {
       return this.getAvatarLetter(user);
@@ -286,7 +313,7 @@ export class ProfilePage {
   }
 
   chooseTempAvatar(avatarId: string, currentLevel: number) {
-    const avatar = this.avatars.find((a) => a.id === avatarId);
+    const avatar = this.allAvatars.find((a) => a.id === avatarId);
 
     if (!avatar || !this.isAvatarUnlocked(avatar.minLevel, currentLevel)) {
       return;

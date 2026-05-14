@@ -6,6 +6,7 @@ import { UserStatsService } from 'src/app/services/user-stats.service';
 import { AuthService } from 'src/app/services/auth.service';
 import { firstValueFrom } from 'rxjs';
 import { AdsService } from 'src/app/services/ads.service';
+import { DailyAvatarReward } from 'src/app/services/daily-reward.service';
 
 @Component({
   selector: 'app-daily-reward-modal',
@@ -18,6 +19,7 @@ export class DailyRewardModalComponent {
   @Output() closed = new EventEmitter<void>();
 
   claimedNow = false;
+  unlockedAvatar: DailyAvatarReward | null = null;
 
   constructor(
     public dailyRewardService: DailyRewardService,
@@ -62,6 +64,14 @@ export class DailyRewardModalComponent {
       }
     }
 
+    if (reward.type === 'avatar') {
+      const avatar = this.dailyRewardService.getRandomDailyAvatar();
+
+      this.dailyRewardService.saveUnlockedAvatar(avatar);
+
+      this.unlockedAvatar = avatar;
+    }
+
     this.dailyRewardService.claimToday();
     this.claimedNow = true;
   }
@@ -85,6 +95,14 @@ export class DailyRewardModalComponent {
       if (user && !user.isAnonymous) {
         await this.userStatsService.addXp(user.uid, reward.amount * 2);
       }
+    }
+
+    if (reward.type === 'avatar') {
+      const avatar = this.dailyRewardService.getRandomDailyAvatar();
+
+      this.dailyRewardService.saveUnlockedAvatar(avatar);
+
+      this.unlockedAvatar = avatar;
     }
 
     this.dailyRewardService.claimToday();

@@ -150,3 +150,26 @@
   color: #ff5260;
   flex-shrink: 0;
 }
+
+.daily-debug-card {
+  align-items: stretch;
+}
+
+.daily-debug-buttons {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+
+  button {
+    flex: 1;
+    border: 0;
+    border-radius: 12px;
+    padding: 9px 6px;
+
+    color: #04111f;
+    background: #ffea00;
+
+    font-size: 0.72rem;
+    font-weight: 1000;
+  }
+}
