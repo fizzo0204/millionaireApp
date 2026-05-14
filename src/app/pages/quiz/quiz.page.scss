@@ -976,3 +976,130 @@
     font-size: 0.72rem;
   }
 }
+
+/* =========================================================
+   XP FLOATING EFFECTS
+========================================================= */
+
+.question-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.question-card.question-success {
+  animation: questionSuccessGlow 720ms ease;
+}
+
+.xp-float {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  z-index: 3;
+
+  color: #4ade80;
+  font-size: 0.9rem;
+  font-weight: 1000;
+
+  text-shadow:
+    0 0 12px rgba(74, 222, 128, 0.55),
+    0 3px 8px rgba(0, 0, 0, 0.35);
+
+  animation: xpFloatUp 900ms cubic-bezier(0.22, 1.35, 0.36, 1) forwards;
+}
+
+@keyframes questionSuccessGlow {
+  0% {
+    box-shadow:
+      0 0 18px rgba(59, 130, 246, 0.32),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  }
+
+  45% {
+    box-shadow:
+      0 0 32px rgba(74, 222, 128, 0.45),
+      0 0 58px rgba(74, 222, 128, 0.2),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+
+  100% {
+    box-shadow:
+      0 0 18px rgba(59, 130, 246, 0.32),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  }
+}
+
+@keyframes xpFloatUp {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.72);
+  }
+
+  35% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.08);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-34px) scale(0.92);
+  }
+}
+
+/* Reward XP particles */
+
+.xp-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.xp-particles span {
+  position: absolute;
+
+  color: #4ade80;
+  font-size: 0.72rem;
+  font-weight: 1000;
+
+  opacity: 0;
+
+  text-shadow:
+    0 0 10px rgba(74, 222, 128, 0.6),
+    0 3px 8px rgba(0, 0, 0, 0.35);
+
+  animation: rewardXpParticle 2.1s ease-in-out infinite;
+}
+
+.xp-particles span:nth-child(1) {
+  left: 18%;
+  top: 34%;
+  animation-delay: 0.1s;
+}
+
+.xp-particles span:nth-child(2) {
+  right: 16%;
+  top: 46%;
+  animation-delay: 0.55s;
+}
+
+.xp-particles span:nth-child(3) {
+  left: 42%;
+  bottom: 20%;
+  animation-delay: 0.95s;
+}
+
+@keyframes rewardXpParticle {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.7) rotate(-8deg);
+  }
+
+  35% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-42px) scale(1.05) rotate(8deg);
+  }
+}

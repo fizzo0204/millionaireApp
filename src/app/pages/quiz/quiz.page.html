@@ -70,7 +70,11 @@
       <div class="progress-fill" [style.width.%]="progressPercent"></div>
     </div>
 
-    <div class="question-card">
+    <div class="question-card" [class.question-success]="answered && isCorrect">
+      @if (answered && isCorrect) {
+      <div class="xp-float">+10 XP</div>
+      }
+
       <h1>{{ currentQuestion.question }}</h1>
     </div>
 
@@ -256,6 +260,12 @@
   <div class="modal-backdrop">
     <div class="reward-modal epic">
       <div class="reward-burst"></div>
+
+      <div class="xp-particles">
+        <span>+XP</span>
+        <span>+XP</span>
+        <span>+XP</span>
+      </div>
 
       <div class="reward-crown">👑</div>
 
