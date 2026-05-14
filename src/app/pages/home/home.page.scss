@@ -481,3 +481,24 @@ ion-content.home-content {
     font-size: 0.58rem;
   }
 }
+
+// TEST BUTTON DAILY REWARDED
+.daily-test-btn {
+  width: 100%;
+  margin-bottom: 18px;
+
+  border: 0;
+  border-radius: 18px;
+
+  padding: 14px;
+
+  color: #04111f;
+  font-size: 0.9rem;
+  font-weight: 1000;
+
+  background: linear-gradient(180deg, #ffea00, #ffc400);
+
+  box-shadow:
+    0 8px 0 rgba(129, 90, 0, 0.75),
+    0 14px 20px rgba(255, 196, 0, 0.24);
+}

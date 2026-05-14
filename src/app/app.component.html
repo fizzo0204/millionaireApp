@@ -19,7 +19,9 @@
         <app-bottom-nav
           [activeTab]="activeTab"
           (tabChange)="setActiveTab($event)"
-          [hidden]="user?.isAnonymous || hideBottomNav"
+          [hidden]="
+            user?.isAnonymous || hideBottomNav || ui.hideBottomNavForModal()
+          "
         ></app-bottom-nav>
       }
     </div>

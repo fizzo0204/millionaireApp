@@ -1,0 +1,264 @@
+.daily-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+
+  display: grid;
+  place-items: center;
+
+  padding: 22px;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.daily-modal {
+  position: relative;
+  overflow: hidden;
+
+  width: 100%;
+  max-width: 335px;
+
+  padding: 20px;
+  border-radius: 28px;
+
+  color: #fff;
+  text-align: center;
+
+  background: radial-gradient(circle at top, #0f4cbd, #061d48);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  box-shadow:
+    0 0 32px rgba(59, 130, 246, 0.35),
+    0 24px 50px rgba(0, 0, 0, 0.48);
+
+  animation: dailyPop 420ms cubic-bezier(0.22, 1.35, 0.36, 1);
+}
+
+.daily-glow {
+  position: absolute;
+  inset: -80px;
+
+  background:
+    radial-gradient(circle, rgba(255, 234, 0, 0.24), transparent 34%),
+    conic-gradient(
+      from 0deg,
+      transparent,
+      rgba(255, 234, 0, 0.2),
+      transparent,
+      rgba(96, 165, 250, 0.18),
+      transparent
+    );
+
+  animation: dailySpin 8s linear infinite;
+}
+
+.daily-modal > *:not(.daily-glow) {
+  position: relative;
+  z-index: 2;
+}
+
+.daily-icon {
+  font-size: 2.7rem;
+  margin-bottom: 6px;
+  animation: giftBounce 1.8s ease-in-out infinite;
+}
+
+.daily-header h2 {
+  margin: 0;
+  color: #ffea00;
+  font-size: 1.55rem;
+  font-weight: 1000;
+}
+
+.daily-header p {
+  margin: 8px 0 16px;
+  color: #dbeafe;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.daily-days {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+}
+
+.day-card {
+  min-height: 72px;
+  padding: 7px 5px;
+  border-radius: 18px;
+
+  display: grid;
+  place-items: center;
+
+  background: rgba(7, 44, 82, 0.74);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 8px 14px rgba(0, 0, 0, 0.22);
+}
+
+.day-card span {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+
+  display: grid;
+  place-items: center;
+
+  color: #031f3d;
+  background: #dbeafe;
+
+  font-size: 0.72rem;
+  font-weight: 1000;
+}
+
+.day-card strong {
+  color: #ffea00;
+  font-size: 1.05rem;
+  font-weight: 1000;
+}
+
+.day-card small {
+  color: #dbeafe;
+  font-size: 0.62rem;
+  font-weight: 900;
+}
+
+.day-card.claimed {
+  opacity: 0.55;
+  filter: grayscale(0.2);
+}
+
+.day-card.claimed span {
+  background: #22c55e;
+  color: #052e16;
+}
+
+.day-card.current {
+  border-color: rgba(255, 234, 0, 0.85);
+  animation: currentDayPulse 1.6s infinite;
+}
+
+.day-card.epic {
+  grid-column: span 2;
+  background: linear-gradient(135deg, #a855f7, #4c1d95);
+  border-color: rgba(255, 234, 0, 0.55);
+}
+
+.daily-actions {
+  display: grid;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.claim-btn {
+  width: 100%;
+
+  border: 0;
+  border-radius: 17px;
+
+  padding: 13px;
+
+  color: #04111f;
+  font-size: 0.96rem;
+  font-weight: 1000;
+
+  background: linear-gradient(180deg, #ffea00, #ffc400);
+
+  box-shadow:
+    0 7px 0 rgba(129, 90, 0, 0.75),
+    0 12px 18px rgba(255, 196, 0, 0.24);
+
+  animation: claimGlow 1.8s infinite;
+}
+
+.double-btn {
+  width: 100%;
+
+  border: 0;
+  border-radius: 16px;
+
+  padding: 12px;
+
+  color: #fff;
+  font-size: 0.86rem;
+  font-weight: 1000;
+
+  background: linear-gradient(135deg, #a855f7, #7e22ce);
+
+  box-shadow:
+    0 5px 0 rgba(88, 28, 135, 0.85),
+    0 10px 14px rgba(0, 0, 0, 0.24);
+}
+
+.claimed-box {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 16px;
+
+  color: #4ade80;
+  font-size: 0.9rem;
+  font-weight: 1000;
+
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.28);
+}
+
+@keyframes dailyPop {
+  from {
+    opacity: 0;
+    transform: translateY(26px) scale(0.88);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes dailySpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes giftBounce {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-5px) rotate(-3deg);
+  }
+}
+
+@keyframes currentDayPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 14px rgba(255, 234, 0, 0.22),
+      0 8px 14px rgba(0, 0, 0, 0.22);
+  }
+
+  50% {
+    transform: scale(1.04);
+    box-shadow:
+      0 0 24px rgba(255, 234, 0, 0.45),
+      0 8px 14px rgba(0, 0, 0, 0.22);
+  }
+}
+
+@keyframes claimGlow {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+
+  50% {
+    filter: brightness(1.08);
+  }
+}

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnDestroy, HostListener, inject } from '@angular/core';
 import { IonicModule, Platform } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
@@ -7,7 +7,7 @@ import { App as CapacitorApp } from '@capacitor/app';
 import type { PluginListenerHandle } from '@capacitor/core';
 import { Observable, Subscription, filter } from 'rxjs';
 import { User } from 'firebase/auth';
-
+import { UiService } from './services/ui.service';
 import { AuthService } from './services/auth.service';
 import { HomeNavbarComponent } from './components/home-navbar/home-navbar.component';
 import { BottomNavComponent } from './components/bottom-nav/bottom-nav.component';
@@ -39,7 +39,7 @@ export class AppComponent implements OnDestroy {
 
   showAppLoader = true;
   hideBottomNav = false;
-
+  ui = inject(UiService);
   private routerSub?: Subscription;
   private appStateListener?: PluginListenerHandle;
 

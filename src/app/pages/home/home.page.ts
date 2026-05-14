@@ -9,11 +9,18 @@ import { AuthService } from 'src/app/services/auth.service';
 import { AdsService } from 'src/app/services/ads.service';
 import { CoinsService } from 'src/app/services/coins.service';
 import { LivesService } from 'src/app/services/lives';
+import { DailyRewardModalComponent } from 'src/app/components/daily-reward-modal/daily-reward-modal.component';
+import { UiService } from 'src/app/services/ui.service';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [IonicModule, CommonModule, AnonymousModalComponent],
+  imports: [
+    IonicModule,
+    CommonModule,
+    AnonymousModalComponent,
+    DailyRewardModalComponent,
+  ],
   templateUrl: './home.page.html',
   styleUrls: ['./home.page.scss'],
 })
@@ -25,10 +32,9 @@ export class HomePage implements OnInit, OnDestroy {
   readonly maxLives = 5;
 
   showAnonModal = false;
-
   coinsLoading = false;
   lifeLoading = false;
-
+  showDailyReward = false;
   coinRewardPulse = false;
   lifeRecoveredPulse = false;
 
@@ -113,6 +119,7 @@ export class HomePage implements OnInit, OnDestroy {
     private livesService: LivesService,
     private router: Router,
     private userStatsService: UserStatsService,
+    private ui: UiService,
   ) {
     this.coins$ = this.coinsService.coins$;
     this.lives$ = this.livesService.lives$;
@@ -192,5 +199,15 @@ export class HomePage implements OnInit, OnDestroy {
     this.userSub?.unsubscribe();
     this.livesSub?.unsubscribe();
     this.ads.hideBanner();
+  }
+
+  openDailyReward() {
+    this.showDailyReward = true;
+    this.ui.openModalOverlay();
+  }
+
+  closeDailyReward() {
+    this.showDailyReward = false;
+    this.ui.closeModalOverlay();
   }
 }

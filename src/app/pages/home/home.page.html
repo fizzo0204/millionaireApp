@@ -1,7 +1,11 @@
 <ion-content class="home-content">
   @if (showAnonModal) {
   <app-anonymous-modal></app-anonymous-modal>
-  } @if (!showAnonModal) {
+  } @if (showDailyReward) {
+  <app-daily-reward-modal
+    (closed)="closeDailyReward()"
+  ></app-daily-reward-modal>
+  }@if (!showAnonModal) {
   <div class="page-fade">
     <div class="stats-grid">
       <div class="stat-card">
@@ -37,6 +41,9 @@
       </div>
     </div>
 
+    <button class="daily-test-btn" type="button" (click)="openDailyReward()">
+      🎁 Test Daily Reward
+    </button>
     <div class="section-title">
       <span>🎯</span>
       <h2>Categorie disponibili</h2>

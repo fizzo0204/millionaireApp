@@ -1,0 +1,75 @@
+<div class="daily-backdrop">
+  <div class="daily-modal">
+    <div class="daily-glow"></div>
+
+    <div class="daily-header">
+      <div class="daily-icon">🎁</div>
+
+      <h2>Daily Reward</h2>
+
+      <p>Torna ogni giorno per ottenere premi sempre migliori</p>
+    </div>
+
+    <div class="daily-days">
+      <div class="day-card claimed">
+        <span>1</span>
+        <strong>+5</strong>
+        <small>Coins</small>
+      </div>
+
+      <div class="day-card claimed">
+        <span>2</span>
+        <strong>+5</strong>
+        <small>Coins</small>
+      </div>
+
+      <div class="day-card current">
+        <span>3</span>
+        <strong>+10</strong>
+        <small>XP</small>
+      </div>
+
+      <div class="day-card">
+        <span>4</span>
+        <strong>+5</strong>
+        <small>Coins</small>
+      </div>
+
+      <div class="day-card">
+        <span>5</span>
+        <strong>🎨</strong>
+        <small>Avatar</small>
+      </div>
+
+      <div class="day-card">
+        <span>6</span>
+        <strong>+15</strong>
+        <small>XP</small>
+      </div>
+
+      <div class="day-card epic">
+        <span>7</span>
+        <strong>🎁</strong>
+        <small>Epic</small>
+      </div>
+    </div>
+
+    @if (!claimed) {
+      <div class="daily-actions">
+        <button class="claim-btn" type="button" (click)="claimReward()">
+          Riscatta reward
+        </button>
+
+        <button class="double-btn" type="button" (click)="claimDoubleReward()">
+          ▶ Guarda video e raddoppia
+        </button>
+      </div>
+    } @else {
+      <div class="claimed-box">✅ Reward riscattata!</div>
+
+      <button class="claim-btn" type="button" (click)="continue()">
+        Continua
+      </button>
+    }
+  </div>
+</div>
