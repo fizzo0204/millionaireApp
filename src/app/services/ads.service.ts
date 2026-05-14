@@ -48,13 +48,25 @@ export class AdsService {
     let showedListener: any;
     let rewardedListener: any;
     let dismissedListener: any;
+    let failedListener: any;
 
     try {
       const options: RewardAdOptions = {
         adId: 'ca-app-pub-3940256099942544/5224354917',
       };
 
-      const dismissedPromise = new Promise<void>(async (resolve) => {
+      const resultPromise = new Promise<boolean>(async (resolve) => {
+        const finish = async (result: boolean) => {
+          await this.audioService.playMusic();
+
+          showedListener?.remove();
+          rewardedListener?.remove();
+          dismissedListener?.remove();
+          failedListener?.remove();
+
+          resolve(result);
+        };
+
         showedListener = await AdMob.addListener(
           RewardAdPluginEvents.Showed,
           () => {
@@ -64,7 +76,7 @@ export class AdsService {
 
         rewardedListener = await AdMob.addListener(
           RewardAdPluginEvents.Rewarded,
-          (reward: AdMobRewardItem) => {
+          async (reward: AdMobRewardItem) => {
             if (reward && reward.amount > 0) {
               hasReward = true;
               console.log('🎉 Reward ottenuto:', reward);
@@ -75,8 +87,14 @@ export class AdsService {
         dismissedListener = await AdMob.addListener(
           RewardAdPluginEvents.Dismissed,
           async () => {
-            await this.audioService.playMusic();
-            resolve();
+            await finish(hasReward);
+          },
+        );
+
+        failedListener = await AdMob.addListener(
+          RewardAdPluginEvents.FailedToShow,
+          async () => {
+            await finish(false);
           },
         );
       });
@@ -84,19 +102,14 @@ export class AdsService {
       await AdMob.prepareRewardVideoAd(options);
       await AdMob.showRewardVideoAd();
 
-      await dismissedPromise;
-
-      showedListener?.remove();
-      rewardedListener?.remove();
-      dismissedListener?.remove();
-
-      return hasReward;
+      return await resultPromise;
     } catch (err) {
       console.error('❌ Errore rewarded video:', err);
 
       showedListener?.remove();
       rewardedListener?.remove();
       dismissedListener?.remove();
+      failedListener?.remove();
 
       await this.audioService.playMusic();
 

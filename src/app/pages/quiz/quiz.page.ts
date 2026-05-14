@@ -16,6 +16,7 @@ import { AdsService } from 'src/app/services/ads.service';
 import { GameLoaderComponent } from 'src/app/components/game-loader/game-loader.component';
 import { AuthService } from 'src/app/services/auth.service';
 import { firstValueFrom } from 'rxjs';
+import { HapticsService } from 'src/app/services/haptics.service';
 
 type HelpId = 'fifty' | 'switch' | 'audience';
 
@@ -36,6 +37,7 @@ export class QuizPage implements OnInit, OnDestroy {
   private progressService = inject(ProgressService);
   private userStatsService = inject(UserStatsService);
   private auth = inject(AuthService);
+  private haptics = inject(HapticsService);
 
   private appStateListener?: PluginListenerHandle;
   private adInProgress = false;
@@ -78,8 +80,8 @@ export class QuizPage implements OnInit, OnDestroy {
   coins$ = this.coinsService.coins$;
   lives$ = this.livesService.lives$;
 
-  timeLeft = 10;
-  readonly maxTime = 10;
+  timeLeft = 15;
+  readonly maxTime = 15;
   private timer?: ReturnType<typeof setInterval>;
 
   helps = [
@@ -238,10 +240,12 @@ export class QuizPage implements OnInit, OnDestroy {
 
     if (this.isCorrect) {
       this.correctAnswers++;
+      this.haptics.success();
       return;
     }
 
     this.wrongAnswers++;
+    this.haptics.error();
 
     setTimeout(() => {
       this.showWrongModal = true;
@@ -263,6 +267,7 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   async useHelp(helpId: HelpId) {
+    this.haptics.light();
     if (
       this.usedHelps.includes(helpId) ||
       this.answered ||
@@ -277,6 +282,7 @@ export class QuizPage implements OnInit, OnDestroy {
 
     if (!this.coinsService.canAfford(help.cost)) {
       this.neededCoins = help.cost;
+      this.stopTimer();
       this.showCoinsModal = true;
       return;
     }
@@ -321,6 +327,7 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   async nextQuestion() {
+    this.haptics.light();
     if (this.currentIndex >= this.questions.length - 1) {
       await this.finishQuiz();
       return;
@@ -402,6 +409,7 @@ export class QuizPage implements OnInit, OnDestroy {
     this.answered = true;
     this.isCorrect = false;
     this.wrongAnswers++;
+    this.haptics.light();
     this.stopTimer();
   }
 
@@ -477,6 +485,9 @@ export class QuizPage implements OnInit, OnDestroy {
       }
 
       this.showCoinsModal = false;
+      if (!this.answered && this.currentQuestion && this.timeLeft > 0) {
+        this.startTimer();
+      }
     } finally {
       this.adInProgress = false;
     }
@@ -484,9 +495,14 @@ export class QuizPage implements OnInit, OnDestroy {
 
   closeCoinsModal() {
     this.showCoinsModal = false;
+
+    if (!this.answered && this.currentQuestion && this.timeLeft > 0) {
+      this.startTimer();
+    }
   }
 
   continueAfterReward() {
+    this.haptics.heavy();
     this.showRewardModal = false;
     this.navigatingAway = true;
 
