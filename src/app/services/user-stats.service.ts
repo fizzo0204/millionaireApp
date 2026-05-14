@@ -19,7 +19,7 @@ import {
   deleteDoc,
 } from '@angular/fire/firestore';
 import { User } from 'firebase/auth';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 
 export interface UserStats {
   quizPlayed: number;
@@ -215,6 +215,25 @@ export class UserStatsService {
     return collectionData(historyQuery, {
       idField: 'id',
     }) as Observable<QuizHistoryItem[]>;
+  }
+
+  async addXp(uid: string, amount: number) {
+    const userRef = doc(this.firestore, `users/${uid}`);
+
+    const snapshot = await getDoc(userRef);
+
+    if (!snapshot.exists()) return;
+
+    const data = snapshot.data();
+    const currentXp = data['stats']?.xp ?? 0;
+
+    const updatedXp = currentXp + amount;
+    const updatedLevel = Math.max(1, Math.floor(updatedXp / 100) + 1);
+
+    await updateDoc(userRef, {
+      'stats.xp': increment(amount),
+      'stats.level': updatedLevel,
+    });
   }
 
   // TEST

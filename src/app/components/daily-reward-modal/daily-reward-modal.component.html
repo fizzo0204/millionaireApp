@@ -11,50 +11,21 @@
     </div>
 
     <div class="daily-days">
-      <div class="day-card claimed">
-        <span>1</span>
-        <strong>+5</strong>
-        <small>Coins</small>
-      </div>
-
-      <div class="day-card claimed">
-        <span>2</span>
-        <strong>+5</strong>
-        <small>Coins</small>
-      </div>
-
-      <div class="day-card current">
-        <span>3</span>
-        <strong>+10</strong>
-        <small>XP</small>
-      </div>
-
-      <div class="day-card">
-        <span>4</span>
-        <strong>+5</strong>
-        <small>Coins</small>
-      </div>
-
-      <div class="day-card">
-        <span>5</span>
-        <strong>🎨</strong>
-        <small>Avatar</small>
-      </div>
-
-      <div class="day-card">
-        <span>6</span>
-        <strong>+15</strong>
-        <small>XP</small>
-      </div>
-
-      <div class="day-card epic">
-        <span>7</span>
-        <strong>🎁</strong>
-        <small>Epic</small>
-      </div>
+      @for (reward of rewards; track reward.day) {
+        <div
+          class="day-card"
+          [class.claimed]="reward.day < currentDay"
+          [class.current]="reward.day === currentDay && !hasClaimed"
+          [class.epic]="reward.type === 'chest'"
+        >
+          <span>{{ reward.day }}</span>
+          <strong>{{ reward.icon }}</strong>
+          <small>{{ reward.label }}</small>
+        </div>
+      }
     </div>
 
-    @if (!claimed) {
+    @if (!hasClaimed) {
       <div class="daily-actions">
         <button class="claim-btn" type="button" (click)="claimReward()">
           Riscatta reward

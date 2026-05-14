@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { firstValueFrom } from 'rxjs';
-
+import { DailyRewardService } from 'src/app/services/daily-reward.service';
 import { AuthService } from 'src/app/services/auth.service';
 import { AudioService } from 'src/app/services/audio';
 import { UserStatsService } from 'src/app/services/user-stats.service';
@@ -24,6 +24,7 @@ export class SettingsPage {
     private authService: AuthService,
     private router: Router,
     private userStatsService: UserStatsService,
+    private dailyRewardService: DailyRewardService,
   ) {
     this.musicEnabled = this.audioService.isMusicEnabled();
     this.clickEnabled = this.audioService.isClickEnabled();
@@ -72,5 +73,10 @@ export class SettingsPage {
     } finally {
       this.resetLoading = false;
     }
+  }
+
+  resetDailyReward() {
+    this.dailyRewardService.resetDailyReward();
+    console.log('Daily reset:', this.dailyRewardService.getState());
   }
 }
