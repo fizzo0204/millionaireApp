@@ -78,8 +78,8 @@ export class QuizPage implements OnInit, OnDestroy {
   coins$ = this.coinsService.coins$;
   lives$ = this.livesService.lives$;
 
-  timeLeft = 20;
-  readonly maxTime = 20;
+  timeLeft = 10;
+  readonly maxTime = 10;
   private timer?: ReturnType<typeof setInterval>;
 
   helps = [
@@ -450,7 +450,7 @@ export class QuizPage implements OnInit, OnDestroy {
         this.answered = false;
         this.isCorrect = false;
         this.selectedAnswerIndex = null;
-        this.timeLeft = 10;
+        this.timeLeft = 5;
         this.startTimer();
       }
     } finally {

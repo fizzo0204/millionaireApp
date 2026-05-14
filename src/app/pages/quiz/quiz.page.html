@@ -42,7 +42,7 @@
         </strong>
       </div>
 
-      <div class="timer-circle">
+      <div class="timer-circle" [class.timer-danger]="timeLeft <= 5">
         <svg viewBox="0 0 36 36">
           <path
             class="timer-bg"
@@ -81,7 +81,17 @@
         type="button"
         [class.hidden]="hiddenAnswers.includes(i)"
         [class.correct]="getAnswerClass(i) === 'correct'"
+        [class.correct-pop]="
+    answered &&
+    i === selectedAnswerIndex &&
+    i === currentQuestion.correctIndex
+  "
         [class.wrong]="getAnswerClass(i) === 'wrong'"
+        [class.wrong-shake]="
+    answered &&
+    i === selectedAnswerIndex &&
+    i !== currentQuestion.correctIndex
+  "
         (click)="selectAnswer(i)"
       >
         <span class="answer-letter">{{ answerLetters[i] }}</span>
@@ -180,12 +190,12 @@
 
       <p>
         Il tempo per questa domanda è finito. Guarda un video per ottenere
-        <strong>+10 secondi</strong> e continuare sulla stessa domanda.
+        <strong>+5 secondi</strong> e continuare sulla stessa domanda.
       </p>
 
       <div class="wrong-actions">
         <button class="ad-btn" type="button" (click)="watchAdForMoreTime()">
-          ▶ Guarda pubblicità e ottieni +10s
+          ▶ Guarda pubblicità e ottieni +5s
         </button>
 
         <button
@@ -244,19 +254,32 @@
   </div>
   } @if (showRewardModal) {
   <div class="modal-backdrop">
-    <div class="reward-modal">
+    <div class="reward-modal epic">
+      <div class="reward-burst"></div>
+
+      <div class="reward-crown">👑</div>
+
       <div class="reward-icon">🏆</div>
 
       <h2>Livello completato!</h2>
 
       <p>{{ rewardMessage }}</p>
-      <div class="reward-unlock">🔓 {{ rewardUnlockedMessage }}</div>
+
+      <div class="reward-unlock">
+        <span>🔓</span>
+        {{ rewardUnlockedMessage }}
+      </div>
 
       <div class="reward-xp">+{{ rewardXp }} XP</div>
-      <div class="reward-streak">🔥 Continua così!</div>
 
-      <button class="reward-btn" (click)="continueAfterReward()">
+      <div class="reward-streak">
+        <span>🔥</span>
+        Continua così!
+      </div>
+
+      <button class="reward-btn" type="button" (click)="continueAfterReward()">
         Continua
+        <ion-icon name="chevron-forward-outline"></ion-icon>
       </button>
     </div>
   </div>

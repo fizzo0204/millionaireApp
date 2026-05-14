@@ -125,7 +125,7 @@ export class LevelsPage {
       return;
     }
 
-    this.router.navigateByUrl(
+    this.animateAndNavigate(
       `/quiz/${this.categoryId}/${this.difficultyId}/${level.number}`,
     );
   }
