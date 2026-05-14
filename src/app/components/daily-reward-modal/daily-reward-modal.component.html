@@ -1,46 +1,120 @@
 <div class="daily-backdrop">
-  <div class="daily-modal">
+  <div class="daily-modal" [class.cinematic-active]="cinematicVisible">
     <div class="daily-glow"></div>
 
-    <div class="daily-header">
-      <div class="daily-icon">🎁</div>
+    <div class="daily-main">
+      <div class="daily-header">
+        <div class="daily-icon">🎁</div>
 
-      <h2>Daily Reward</h2>
+        <h2>Daily Reward</h2>
 
-      <p>Torna ogni giorno per ottenere premi sempre migliori</p>
-    </div>
+        <p>Torna ogni giorno per ottenere premi sempre migliori</p>
+      </div>
 
-    <div class="daily-days">
-      @for (reward of rewards; track reward.day) {
-        <div
-          class="day-card"
-          [class.claimed]="reward.day < currentDay"
-          [class.current]="reward.day === currentDay && !hasClaimed"
-          [class.epic]="reward.type === 'chest'"
-        >
-          <span>{{ reward.day }}</span>
-          <strong>{{ reward.icon }}</strong>
-          <small>{{ reward.label }}</small>
+      <div class="daily-days">
+        @for (reward of rewards; track reward.day) {
+          <div
+            class="day-card"
+            [class.claimed]="reward.day < currentDay"
+            [class.current]="reward.day === currentDay && !hasClaimed"
+            [class.epic]="reward.type === 'chest'"
+          >
+            <span>{{ reward.day }}</span>
+            <strong>{{ reward.icon }}</strong>
+            <small>{{ reward.label }}</small>
+          </div>
+        }
+      </div>
+
+      @if (!hasClaimed) {
+        <div class="daily-actions">
+          <button
+            class="claim-btn"
+            type="button"
+            (click)="claimReward()"
+            [disabled]="claimLoading"
+          >
+            @if (!claimLoading) {
+              Riscatta reward
+            } @else {
+              Preparazione...
+            }
+          </button>
+
+          <button
+            class="double-btn"
+            type="button"
+            (click)="claimDoubleReward()"
+            [disabled]="claimLoading"
+          >
+            ▶ Guarda video e raddoppia
+          </button>
         </div>
+      } @else {
+        @if (!cinematicVisible) {
+          @if (chestReward) {
+            <div class="claimed-box chest-result">
+              <span>{{ chestReward.icon }}</span>
+              <strong>{{ chestReward.label }}</strong>
+              <small>Scrigno aperto!</small>
+            </div>
+          } @else if (unlockedAvatar) {
+            <div class="claimed-box avatar-result">
+              <span>{{ unlockedAvatar.icon }}</span>
+              <strong>{{ unlockedAvatar.label }}</strong>
+              <small>Avatar sbloccato!</small>
+            </div>
+          } @else {
+            <div class="claimed-box">✅ Reward riscattata!</div>
+          }
+
+          <button class="claim-btn" type="button" (click)="continue()">
+            Continua
+          </button>
+        }
       }
     </div>
 
-    @if (!hasClaimed) {
-      <div class="daily-actions">
-        <button class="claim-btn" type="button" (click)="claimReward()">
-          Riscatta reward
-        </button>
+    @if (cinematicVisible) {
+      <div class="cinematic-overlay">
+        <div class="cinematic-stage" [ngClass]="rewardRevealType">
+          <div class="cinematic-burst"></div>
+          <div class="cinematic-sparks"></div>
 
-        <button class="double-btn" type="button" (click)="claimDoubleReward()">
-          ▶ Guarda video e raddoppia
-        </button>
+          @if (cinematicPhase === "opening") {
+            <div class="cinematic-chest">
+              <div class="cinematic-glow"></div>
+              <div class="cinematic-chest-box">🎁</div>
+              <div class="cinematic-copy">Apertura scrigno...</div>
+            </div>
+          }
+
+          @if (cinematicPhase === "flash") {
+            <div class="cinematic-flash">
+              <div class="cinematic-rays"></div>
+              <div class="cinematic-title">EPIC!</div>
+            </div>
+          }
+
+          @if (cinematicPhase === "reward") {
+            <div class="cinematic-prize">
+              <div class="prize-aura"></div>
+
+              <div class="prize-icon">{{ rewardRevealIcon }}</div>
+
+              <div class="prize-label">{{ rewardRevealLabel }}</div>
+
+              <button
+                class="cinematic-ok-btn"
+                type="button"
+                (click)="closeCinematic()"
+              >
+                OK
+              </button>
+            </div>
+          }
+        </div>
       </div>
-    } @else {
-      <div class="claimed-box">✅ Reward riscattata!</div>
-
-      <button class="claim-btn" type="button" (click)="continue()">
-        Continua
-      </button>
     }
   </div>
 </div>

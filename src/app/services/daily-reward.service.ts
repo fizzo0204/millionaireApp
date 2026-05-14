@@ -17,6 +17,17 @@ export type DailyAvatarReward = {
   rarity: 'common' | 'rare' | 'epic';
 };
 
+export type DailyChestRewardType = 'coins' | 'xp' | 'avatar';
+
+export type DailyChestReward = {
+  type: DailyChestRewardType;
+  amount?: number;
+  label: string;
+  icon: string;
+  rarity: 'rare' | 'epic';
+  avatar?: DailyAvatarReward;
+};
+
 export type DailyRewardState = {
   currentDay: number;
   lastClaimDate: string | null;
@@ -63,6 +74,35 @@ export class DailyRewardService {
       label: 'Crown Legend',
       icon: '👑',
       rarity: 'epic',
+    },
+  ];
+
+  readonly epicChestRewards: DailyChestReward[] = [
+    {
+      type: 'coins',
+      amount: 15,
+      label: '+15 Coins',
+      icon: '🪙',
+      rarity: 'rare',
+    },
+    {
+      type: 'xp',
+      amount: 30,
+      label: '+30 XP',
+      icon: '⚡',
+      rarity: 'rare',
+    },
+    {
+      type: 'avatar',
+      label: 'Avatar Epico',
+      icon: '👑',
+      rarity: 'epic',
+      avatar: {
+        id: 'daily_crown_legend',
+        label: 'Crown Legend',
+        icon: '👑',
+        rarity: 'epic',
+      },
     },
   ];
 
@@ -169,5 +209,11 @@ export class DailyRewardService {
 
   resetUnlockedAvatars() {
     localStorage.removeItem('turtlemind_unlocked_avatars');
+  }
+
+  getRandomEpicChestReward(): DailyChestReward {
+    const index = Math.floor(Math.random() * this.epicChestRewards.length);
+
+    return this.epicChestRewards[index];
   }
 }
