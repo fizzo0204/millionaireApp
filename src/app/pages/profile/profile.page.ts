@@ -298,6 +298,36 @@ export class ProfilePage {
     return avatar.icon || this.getAvatarLetter(user);
   }
 
+  get epicAvatars() {
+    return this.allAvatars.filter((avatar: any) => avatar.rarity === 'epic');
+  }
+
+  get dailyOnlyAvatars() {
+    return this.allAvatars.filter((avatar: any) => avatar.rarity !== 'epic');
+  }
+
+  get unlockedDailyAvatarIds(): string[] {
+    return this.dailyRewardService
+      .getUnlockedAvatars()
+      .map((avatar) => avatar.id);
+  }
+
+  get dailyRewardAvatars() {
+    return this.dailyRewardService.dailyAvatars.filter(
+      (avatar) => avatar.rarity !== 'epic',
+    );
+  }
+
+  get epicRewardAvatars() {
+    return this.dailyRewardService.dailyAvatars.filter(
+      (avatar) => avatar.rarity === 'epic',
+    );
+  }
+
+  isRewardAvatarUnlocked(avatarId: string): boolean {
+    return this.unlockedDailyAvatarIds.includes(avatarId);
+  }
+
   isAvatarUnlocked(minLevel: number, currentLevel: number): boolean {
     return currentLevel >= minLevel;
   }
@@ -313,11 +343,16 @@ export class ProfilePage {
   }
 
   chooseTempAvatar(avatarId: string, currentLevel: number) {
-    const avatar = this.allAvatars.find((a) => a.id === avatarId);
+    const levelAvatar = this.avatars.find((a) => a.id === avatarId);
 
-    if (!avatar || !this.isAvatarUnlocked(avatar.minLevel, currentLevel)) {
+    if (levelAvatar) {
+      if (!this.isAvatarUnlocked(levelAvatar.minLevel, currentLevel)) return;
+
+      this.tempSelectedAvatar = avatarId;
       return;
     }
+
+    if (!this.isRewardAvatarUnlocked(avatarId)) return;
 
     this.tempSelectedAvatar = avatarId;
   }

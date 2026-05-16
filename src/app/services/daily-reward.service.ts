@@ -53,7 +53,7 @@ export class DailyRewardService {
   readonly dailyAvatars: DailyAvatarReward[] = [
     {
       id: 'daily_turtle_gold',
-      label: 'Golden Turtle',
+      label: 'Turtle',
       icon: '🐢',
       rarity: 'rare',
     },
