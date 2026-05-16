@@ -18,44 +18,15 @@ import {
   getDocs,
   deleteDoc,
 } from '@angular/fire/firestore';
+import {
+  UserStats,
+  AppUserProfile,
+  QuizHistoryItem,
+} from 'src/app/models/user-stats.model';
 import { User } from 'firebase/auth';
-import { Observable, firstValueFrom } from 'rxjs';
-
-export interface UserStats {
-  quizPlayed: number;
-  correctAnswers: number;
-  wrongAnswers: number;
-  bestScore: number;
-  streakDays: number;
-  lastQuizPlayedAt: unknown;
-  xp: number;
-  level: number;
-  coins: number;
-  lives: number;
-}
-
-export interface AppUserProfile {
-  uid: string;
-
-  displayName: string | null;
-  email: string | null;
-  photoURL: string | null;
-
-  createdAt: unknown;
-  lastLoginAt: unknown;
-
-  stats: UserStats;
-}
-
-export interface QuizHistoryItem {
-  categoryId: string;
-  difficultyId: string;
-
-  correctAnswers: number;
-  totalQuestions: number;
-
-  playedAt: unknown;
-}
+import { Observable } from 'rxjs';
+import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
+import { DifficultyId } from '../models/difficulty.model';
 
 @Injectable({
   providedIn: 'root',
@@ -70,9 +41,9 @@ export class UserStatsService {
     bestScore: 0,
     streakDays: 0,
     xp: 0,
-    level: 1,
-    coins: 20,
-    lives: 5,
+    level: USER_STATS_CONFIG.defaultLevel,
+    coins: USER_STATS_CONFIG.defaultCoins,
+    lives: USER_STATS_CONFIG.defaultLives,
     lastQuizPlayedAt: null,
   };
 
@@ -164,10 +135,14 @@ export class UserStatsService {
         }
       }
 
-      const xpEarned = correctAnswers * 10;
+      const xpEarned = correctAnswers * USER_STATS_CONFIG.xpPerCorrectAnswer;
       const updatedXp = currentXp + xpEarned;
 
-      const updatedLevel = Math.max(1, Math.floor(updatedXp / 100) + 1);
+      const updatedLevel = Math.max(
+        1,
+        Math.floor(updatedXp / USER_STATS_CONFIG.xpPerLevel) +
+          USER_STATS_CONFIG.defaultLevel,
+      );
 
       transaction.update(userRef, {
         'stats.quizPlayed': increment(1),
@@ -185,7 +160,7 @@ export class UserStatsService {
   async recordQuizHistory(
     uid: string,
     categoryId: string,
-    difficultyId: string,
+    difficultyId: DifficultyId,
     correctAnswers: number,
     totalQuestions: number,
   ): Promise<void> {
@@ -228,7 +203,11 @@ export class UserStatsService {
     const currentXp = data['stats']?.xp ?? 0;
 
     const updatedXp = currentXp + amount;
-    const updatedLevel = Math.max(1, Math.floor(updatedXp / 100) + 1);
+    const updatedLevel = Math.max(
+      1,
+      Math.floor(updatedXp / USER_STATS_CONFIG.xpPerLevel) +
+        USER_STATS_CONFIG.defaultLevel,
+    );
 
     await updateDoc(userRef, {
       'stats.xp': increment(amount),

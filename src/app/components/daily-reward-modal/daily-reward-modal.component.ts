@@ -1,21 +1,18 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
-
-import {
-  DailyAvatarReward,
-  DailyChestReward,
-  DailyReward,
-  DailyRewardService,
-} from 'src/app/services/daily-reward.service';
-
+import { DailyRewardService } from 'src/app/services/daily-reward.service';
 import { CoinsService } from 'src/app/services/coins.service';
 import { UserStatsService } from 'src/app/services/user-stats.service';
 import { AuthService } from 'src/app/services/auth.service';
 import { AdsService } from 'src/app/services/ads.service';
-
-type RevealType = 'coins' | 'xp' | 'avatar' | 'chest';
-type CinematicPhase = 'opening' | 'flash' | 'reward';
+import {
+  DailyAvatarReward,
+  DailyChestReward,
+  DailyReward,
+  CinematicPhase,
+  RevealType,
+} from 'src/app/models/daily-reward.model';
 
 @Component({
   selector: 'app-daily-reward-modal',

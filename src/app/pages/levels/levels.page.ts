@@ -5,18 +5,10 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { LivesService } from 'src/app/services/lives';
 import { AuthService } from 'src/app/services/auth.service';
-import {
-  DifficultyId,
-  ProgressService,
-} from 'src/app/services/progress.service';
+import { ProgressService } from 'src/app/services/progress.service';
 import { AdsService } from 'src/app/services/ads.service';
-
-type LevelItem = {
-  number: number;
-  locked: boolean;
-  completed: boolean;
-  justCompleted?: boolean;
-};
+import { LevelModel } from 'src/app/models/level.model';
+import { DifficultyId } from 'src/app/models/difficulty.model';
 
 @Component({
   selector: 'app-levels',
@@ -38,7 +30,7 @@ export class LevelsPage {
   categoryId = '';
   difficultyId: DifficultyId = 'easy';
 
-  levels: LevelItem[] = [];
+  levels: LevelModel[] = [];
   previousCompletedLevelNumbers: number[] = [];
   showNoLivesModal = false;
   lifeLoading = false;
@@ -135,7 +127,7 @@ export class LevelsPage {
     }, 1400);
   }
 
-  openLevel(level: LevelItem) {
+  openLevel(level: LevelModel) {
     if (level.locked) return;
 
     if (this.livesService.getLives() <= 0) {

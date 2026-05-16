@@ -9,6 +9,8 @@ import {
   RewardAdPluginEvents,
 } from '@capacitor-community/admob';
 import { AudioService } from './audio';
+import { ADS_CONFIG } from '../config/ads.config';
+import { PluginListenerHandle } from '@capacitor/core';
 
 @Injectable({
   providedIn: 'root',
@@ -28,7 +30,7 @@ export class AdsService {
     if (this.bannerVisible) return;
 
     const options: BannerAdOptions = {
-      adId: 'ca-app-pub-3940256099942544/6300978111',
+      adId: ADS_CONFIG.banner.adId,
       adSize: BannerAdSize.BANNER,
       position: BannerAdPosition.BOTTOM_CENTER,
     };
@@ -45,14 +47,14 @@ export class AdsService {
   async showRewardedAd(): Promise<boolean> {
     let hasReward = false;
 
-    let showedListener: any;
-    let rewardedListener: any;
-    let dismissedListener: any;
-    let failedListener: any;
+    let showedListener: PluginListenerHandle | undefined;
+    let rewardedListener: PluginListenerHandle | undefined;
+    let dismissedListener: PluginListenerHandle | undefined;
+    let failedListener: PluginListenerHandle | undefined;
 
     try {
       const options: RewardAdOptions = {
-        adId: 'ca-app-pub-3940256099942544/5224354917',
+        adId: ADS_CONFIG.rewarded.adId,
       };
 
       const resultPromise = new Promise<boolean>(async (resolve) => {

@@ -8,12 +8,11 @@ import {
   collection,
   getDocs,
 } from '@angular/fire/firestore';
-
-export type DifficultyId = 'easy' | 'medium' | 'hard' | 'extreme';
-
-export interface UserCategoryProgress {
-  completedDifficulties: DifficultyId[];
-}
+import { DifficultyId } from '../models/difficulty.model';
+import {
+  UserCategoryProgress,
+  CompletedLevelProgress,
+} from 'src/app/models/progress.model';
 
 @Injectable({
   providedIn: 'root',
@@ -189,7 +188,7 @@ export class ProgressService {
     const snapshot = await getDocs(levelsRef);
 
     return snapshot.docs
-      .map((docSnap) => docSnap.data() as any)
+      .map((docSnap) => docSnap.data() as CompletedLevelProgress)
       .filter(
         (data) =>
           data.categoryId === categoryId && data.difficultyId === difficultyId,

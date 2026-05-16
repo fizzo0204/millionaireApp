@@ -1,24 +1,19 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import {
-  getAuth,
   signInWithCredential,
   GoogleAuthProvider,
   signInAnonymously,
   onAuthStateChanged,
   User,
   linkWithCredential,
-  Auth,
   AuthCredential,
   signInWithPopup,
 } from 'firebase/auth';
-import { initializeApp } from 'firebase/app';
-import { environment } from 'src/environments/environment';
+import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { UserStatsService } from './user-stats.service';
-
-const app = initializeApp(environment.firebase);
-const auth: Auth = getAuth(app);
+import { firebaseAuth } from 'src/app/config/firebase.config';
 
 @Injectable({
   providedIn: 'root',
@@ -33,7 +28,7 @@ export class AuthService {
   private initialAuthResolved = false;
 
   constructor(private userStatsService: UserStatsService) {
-    onAuthStateChanged(auth, async (user) => {
+    onAuthStateChanged(firebaseAuth, async (user) => {
       console.log(
         '👤 Stato auth cambiato →',
         user?.displayName || (user?.isAnonymous ? 'Anonimo' : 'null'),
@@ -49,7 +44,7 @@ export class AuthService {
 
         if (!user) {
           console.log('🚪 Nessun utente → creo accesso anonimo...');
-          const anon = await signInAnonymously(auth);
+          const anon = await signInAnonymously(firebaseAuth);
           this.userSubject.next(anon.user);
           console.log('🙈 Accesso anonimo creato');
         }
@@ -62,7 +57,7 @@ export class AuthService {
 
     try {
       console.log('🔹 Avvio login Google...');
-      const isMobile = (window as any).Capacitor?.isNativePlatform?.() ?? false;
+      const isMobile = Capacitor.isNativePlatform();
 
       let credential: AuthCredential | null = null;
 
@@ -80,7 +75,7 @@ export class AuthService {
       } else {
         console.log('💻 Login Google tramite popup web...');
         const provider = new GoogleAuthProvider();
-        const result = await signInWithPopup(auth, provider);
+        const result = await signInWithPopup(firebaseAuth, provider);
         credential = GoogleAuthProvider.credentialFromResult(result);
       }
 
@@ -88,7 +83,7 @@ export class AuthService {
         throw new Error('❌ Credenziale non valida');
       }
 
-      const currentUser = auth.currentUser;
+      const currentUser = firebaseAuth.currentUser;
 
       if (currentUser && currentUser.isAnonymous) {
         console.log('🔗 Provo a collegare account anonimo a Google...');
@@ -98,13 +93,13 @@ export class AuthService {
         } catch (err: any) {
           if (err.code === 'auth/credential-already-in-use') {
             console.warn('⚠️ Account Google già esistente → login diretto');
-            await signInWithCredential(auth, credential);
+            await signInWithCredential(firebaseAuth, credential);
           } else {
             throw err;
           }
         }
       } else {
-        await signInWithCredential(auth, credential);
+        await signInWithCredential(firebaseAuth, credential);
       }
 
       console.log('✅ Accesso Google completato.');
@@ -124,10 +119,10 @@ export class AuthService {
       console.log('👋 Effettuo logout...');
 
       await FirebaseAuthentication.signOut();
-      await auth.signOut();
+      await firebaseAuth.signOut();
 
       console.log('⚪ Creo nuovo utente anonimo dopo logout...');
-      const anon = await signInAnonymously(auth);
+      const anon = await signInAnonymously(firebaseAuth);
 
       console.log('🙈 Nuovo utente anonimo generato.');
       this.userSubject.next(anon.user);

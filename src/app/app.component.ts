@@ -13,6 +13,8 @@ import { HomeNavbarComponent } from './components/home-navbar/home-navbar.compon
 import { BottomNavComponent } from './components/bottom-nav/bottom-nav.component';
 import { AudioService } from './services/audio';
 import { GameLoaderComponent } from './components/game-loader/game-loader.component';
+import { NavigationTab } from './models/navigation.model';
+import { APP_CONFIG } from 'src/app/config/app.config';
 
 @Component({
   selector: 'app-root',
@@ -34,7 +36,7 @@ export class AppComponent implements OnDestroy {
     this.handleGlobalPointerDown();
   }
 
-  activeTab = 'home';
+  activeTab: NavigationTab = 'home';
   user$: Observable<User | null> = this.auth.user$;
 
   showAppLoader = true;
@@ -57,7 +59,10 @@ export class AppComponent implements OnDestroy {
   }
 
   async initializeApp() {
-    await Promise.all([this.prepareApp(), this.wait(2200)]);
+    await Promise.all([
+      this.prepareApp(),
+      this.wait(APP_CONFIG.loaderDuration),
+    ]);
 
     this.showAppLoader = false;
   }
@@ -118,10 +123,9 @@ export class AppComponent implements OnDestroy {
   private updateActiveTabFromUrl(url: string) {
     const cleanUrl = url.split('?')[0];
 
-    this.hideBottomNav =
-      cleanUrl.startsWith('/difficulty') ||
-      cleanUrl.startsWith('/levels') ||
-      cleanUrl.startsWith('/quiz');
+    this.hideBottomNav = APP_CONFIG.hiddenBottomNavRoutes.some((route) =>
+      cleanUrl.startsWith(route),
+    );
 
     if (cleanUrl.startsWith('/shop')) {
       this.activeTab = 'negozio';
@@ -138,15 +142,10 @@ export class AppComponent implements OnDestroy {
       return;
     }
 
-    if (cleanUrl.startsWith('/leaderboard')) {
-      this.activeTab = 'classifica';
-      return;
-    }
-
     this.activeTab = 'home';
   }
 
-  setActiveTab(tab: string) {
+  setActiveTab(tab: NavigationTab) {
     this.activeTab = tab;
   }
 

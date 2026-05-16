@@ -8,21 +8,12 @@ import {
   Firestore,
   collection,
   getDocs,
-  limit,
   query,
   where,
 } from '@angular/fire/firestore';
-
-export interface QuizQuestion {
-  id?: string;
-  category: string;
-  difficulty: string;
-  levelNumber: number;
-  question: string;
-  answers: string[];
-  correctIndex: number;
-  active: boolean;
-}
+import { QuestionModel } from 'src/app/models/question.model';
+import { DifficultyId } from '../models/difficulty.model';
+import { QUESTIONS_CONFIG } from '../config/questions.config';
 
 @Injectable({
   providedIn: 'root',
@@ -33,7 +24,7 @@ export class QuestionsService {
 
   private getSeenKey(
     category: string,
-    difficulty: string,
+    difficulty: DifficultyId,
     levelNumber: number,
   ): string {
     return `seen_questions_${category}_${difficulty}_${levelNumber}`;
@@ -41,7 +32,7 @@ export class QuestionsService {
 
   private getSeenQuestionIds(
     category: string,
-    difficulty: string,
+    difficulty: DifficultyId,
     levelNumber: number,
   ): string[] {
     const key = this.getSeenKey(category, difficulty, levelNumber);
@@ -58,7 +49,7 @@ export class QuestionsService {
 
   private saveSeenQuestionId(
     category: string,
-    difficulty: string,
+    difficulty: DifficultyId,
     levelNumber: number,
     questionId: string,
   ) {
@@ -68,15 +59,18 @@ export class QuestionsService {
 
     const updated = [questionId, ...current.filter((id) => id !== questionId)];
 
-    localStorage.setItem(key, JSON.stringify(updated.slice(0, 5)));
+    localStorage.setItem(
+      key,
+      JSON.stringify(updated.slice(0, QUESTIONS_CONFIG.maxSeenQuestions)),
+    );
   }
 
   getQuestions(
     category: string,
-    difficulty: string,
+    difficulty: DifficultyId,
     levelNumber: number,
     amount: number = 1,
-  ): Promise<QuizQuestion[]> {
+  ): Promise<QuestionModel[]> {
     return runInInjectionContext(this.injector, async () => {
       const questionsRef = collection(this.firestore, 'questions');
 
@@ -92,7 +86,7 @@ export class QuestionsService {
 
       const questions = snapshot.docs.map((doc) => ({
         id: doc.id,
-        ...(doc.data() as Omit<QuizQuestion, 'id'>),
+        ...(doc.data() as Omit<QuestionModel, 'id'>),
       }));
 
       const seenIds = this.getSeenQuestionIds(

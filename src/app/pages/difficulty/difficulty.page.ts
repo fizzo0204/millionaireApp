@@ -4,22 +4,9 @@ import { IonicModule } from '@ionic/angular';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from 'src/app/services/auth.service';
-import {
-  DifficultyId,
-  ProgressService,
-} from 'src/app/services/progress.service';
-
-type DifficultyItem = {
-  id: DifficultyId;
-  title: string;
-  subtitle: string;
-  icon: string;
-  xp: number;
-  range: string;
-  className: string;
-  locked: boolean;
-  completed: boolean;
-};
+import { ProgressService } from 'src/app/services/progress.service';
+import { DifficultyModel } from 'src/app/models/difficulty.model';
+import { DIFFICULTIES } from 'src/app/data/difficulties.data';
 
 @Component({
   selector: 'app-difficulty',
@@ -41,52 +28,7 @@ export class DifficultyPage {
   categoryIcon = '❓';
   categoryClass = 'default';
 
-  difficulties: DifficultyItem[] = [
-    {
-      id: 'easy',
-      title: 'Easy',
-      subtitle: 'Perfetto per iniziare!',
-      icon: '⭐',
-      xp: 100,
-      range: '1-30',
-      className: 'easy',
-      locked: false,
-      completed: false,
-    },
-    {
-      id: 'medium',
-      title: 'Medium',
-      subtitle: 'La sfida si fa interessante!',
-      icon: '🏅',
-      xp: 200,
-      range: '31-60',
-      className: 'medium',
-      locked: true,
-      completed: false,
-    },
-    {
-      id: 'hard',
-      title: 'Hard',
-      subtitle: 'Solo per i più preparati!',
-      icon: '🔥',
-      xp: 400,
-      range: '61-100',
-      className: 'hard',
-      locked: true,
-      completed: false,
-    },
-    {
-      id: 'extreme',
-      title: 'Extreme',
-      subtitle: 'Il livello dei campioni!',
-      icon: '👑',
-      xp: 800,
-      range: '100+',
-      className: 'extreme',
-      locked: true,
-      completed: false,
-    },
-  ];
+  difficulties: DifficultyModel[] = [...DIFFICULTIES];
 
   ngOnInit() {
     this.categoryId = this.route.snapshot.paramMap.get('categoryId') || '';
@@ -155,7 +97,7 @@ export class DifficultyPage {
     this.animateAndNavigate('/home');
   }
 
-  selectDifficulty(difficulty: DifficultyItem) {
+  selectDifficulty(difficulty: DifficultyModel) {
     if (difficulty.locked) return;
 
     this.animateAndNavigate(`/levels/${this.categoryId}/${difficulty.id}`);

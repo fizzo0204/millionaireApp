@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
+import { NavigationTab } from 'src/app/models/navigation.model';
 
 @Component({
   selector: 'app-bottom-nav',
@@ -10,12 +11,12 @@ import { IonicModule } from '@ionic/angular';
   styleUrls: ['./bottom-nav.component.scss'],
 })
 export class BottomNavComponent {
-  @Input() activeTab: string = 'home';
-  @Output() tabChange = new EventEmitter<string>();
+  @Input() activeTab: NavigationTab = 'home';
+  @Output() tabChange = new EventEmitter<NavigationTab>();
 
   constructor(private router: Router) {}
 
-  setActiveTab(tab: string) {
+  setActiveTab(tab: NavigationTab) {
     if (tab === this.activeTab) return;
 
     const page = document.querySelector('.page-fade');

@@ -3,13 +3,17 @@ import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { User } from 'firebase/auth';
 import { map, Observable, of, switchMap } from 'rxjs';
-import {
-  UserStatsService,
-  AppUserProfile,
-  QuizHistoryItem,
-} from 'src/app/services/user-stats.service';
+import { UserStatsService } from 'src/app/services/user-stats.service';
 import { DailyRewardService } from 'src/app/services/daily-reward.service';
 import { AuthService } from 'src/app/services/auth.service';
+import { AchievementModel } from 'src/app/models/achievement.model';
+import { ProfileStatModel } from 'src/app/models/profile-stat.model';
+import { AVATARS } from 'src/app/data/avatars.data';
+import { AvatarModel } from 'src/app/models/avatar.model';
+import {
+  AppUserProfile,
+  QuizHistoryItem,
+} from 'src/app/models/user-stats.model';
 
 @Component({
   selector: 'app-profile',
@@ -52,24 +56,21 @@ export class ProfilePage {
   showAvatarModal = false;
   showAchievementsModal = false;
 
-  avatars = [
-    { id: 'letter', label: 'Iniziale', minLevel: 1 },
-    { id: 'crown', label: 'Corona', icon: '👑', minLevel: 3 },
-    { id: 'brain', label: 'Genio', icon: '🧠', minLevel: 5 },
-    { id: 'trophy', label: 'Campione', icon: '🏆', minLevel: 10 },
-  ];
+  avatars: AvatarModel[] = [...AVATARS];
 
-  get allAvatars() {
-    const dailyAvatars = this.dailyRewardService
+  get allAvatars(): AvatarModel[] {
+    const dailyAvatars: AvatarModel[] = this.dailyRewardService
       .getUnlockedAvatars()
-      .map((avatar) => ({
-        id: avatar.id,
-        label: avatar.label,
-        icon: this.getDailyAvatarIcon(avatar.id, avatar.icon),
-        minLevel: 1,
-        source: 'daily',
-        rarity: avatar.rarity,
-      }));
+      .map(
+        (avatar): AvatarModel => ({
+          id: avatar.id,
+          label: avatar.label,
+          icon: this.getDailyAvatarIcon(avatar.id, avatar.icon),
+          minLevel: 1,
+          source: 'daily',
+          rarity: avatar.rarity,
+        }),
+      );
 
     return [...this.avatars, ...dailyAvatars];
   }
@@ -106,7 +107,7 @@ export class ProfilePage {
     return 'Principiante';
   }
 
-  getStats(realStats: AppUserProfile['stats']) {
+  getStats(realStats: AppUserProfile['stats']): ProfileStatModel[] {
     const totalAnswers = realStats.correctAnswers + realStats.wrongAnswers;
 
     const correctPercentage =
@@ -179,7 +180,7 @@ export class ProfilePage {
     return 'bad';
   }
 
-  getAchievements(realStats: AppUserProfile['stats']) {
+  getAchievements(realStats: AppUserProfile['stats']): AchievementModel[] {
     const totalAnswers = realStats.correctAnswers + realStats.wrongAnswers;
 
     const correctPercentage =
@@ -298,12 +299,16 @@ export class ProfilePage {
     return avatar.icon || this.getAvatarLetter(user);
   }
 
-  get epicAvatars() {
-    return this.allAvatars.filter((avatar: any) => avatar.rarity === 'epic');
+  get epicAvatars(): AvatarModel[] {
+    return this.allAvatars.filter(
+      (avatar: AvatarModel) => avatar.rarity === 'epic',
+    );
   }
 
-  get dailyOnlyAvatars() {
-    return this.allAvatars.filter((avatar: any) => avatar.rarity !== 'epic');
+  get dailyOnlyAvatars(): AvatarModel[] {
+    return this.allAvatars.filter(
+      (avatar: AvatarModel) => avatar.rarity !== 'epic',
+    );
   }
 
   get unlockedDailyAvatarIds(): string[] {

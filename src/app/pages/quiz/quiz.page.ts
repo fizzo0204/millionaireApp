@@ -6,10 +6,8 @@ import { App as CapacitorApp } from '@capacitor/app';
 import type { PluginListenerHandle } from '@capacitor/core';
 import { UserStatsService } from 'src/app/services/user-stats.service';
 import { ProgressService } from 'src/app/services/progress.service';
-import {
-  QuestionsService,
-  QuizQuestion,
-} from 'src/app/services/questions.service';
+import { QuestionsService } from 'src/app/services/questions.service';
+import { QuestionModel } from 'src/app/models/question.model';
 import { CoinsService } from 'src/app/services/coins.service';
 import { LivesService } from 'src/app/services/lives';
 import { AdsService } from 'src/app/services/ads.service';
@@ -17,8 +15,9 @@ import { GameLoaderComponent } from 'src/app/components/game-loader/game-loader.
 import { AuthService } from 'src/app/services/auth.service';
 import { firstValueFrom } from 'rxjs';
 import { HapticsService } from 'src/app/services/haptics.service';
-
-type HelpId = 'fifty' | 'switch' | 'audience';
+import { HelpModel, HelpId } from 'src/app/models/help.model';
+import { HELPS } from 'src/app/data/helps.data';
+import { DifficultyId } from 'src/app/models/difficulty.model';
 
 @Component({
   selector: 'app-quiz',
@@ -45,7 +44,7 @@ export class QuizPage implements OnInit, OnDestroy {
   private navigatingAway = false;
 
   categoryId = '';
-  difficultyId = '';
+  difficultyId: DifficultyId = 'easy';
   levelNumber = 1;
   levelAlreadyCompleted = false;
 
@@ -53,7 +52,7 @@ export class QuizPage implements OnInit, OnDestroy {
   categoryIcon = '❓';
   difficultyTitle = 'Easy';
 
-  questions: QuizQuestion[] = [];
+  questions: QuestionModel[] = [];
   currentIndex = 0;
 
   correctAnswers = 0;
@@ -84,22 +83,15 @@ export class QuizPage implements OnInit, OnDestroy {
   readonly maxTime = 15;
   private timer?: ReturnType<typeof setInterval>;
 
-  helps = [
-    { id: 'fifty' as HelpId, icon: '50:50', title: '50 / 50', cost: 20 },
-    { id: 'switch' as HelpId, icon: '🔄', title: 'Cambia domanda', cost: 30 },
-    {
-      id: 'audience' as HelpId,
-      icon: '👥',
-      title: 'Chiedi al pubblico',
-      cost: 25,
-    },
-  ];
+  helps: HelpModel[] = [...HELPS];
 
   audiencePercentages = [15, 20, 50, 15];
 
   async ngOnInit() {
     this.categoryId = this.route.snapshot.paramMap.get('categoryId') || '';
-    this.difficultyId = this.route.snapshot.paramMap.get('difficultyId') || '';
+    this.difficultyId =
+      (this.route.snapshot.paramMap.get('difficultyId') as DifficultyId) ||
+      'easy';
     this.levelNumber = Number(
       this.route.snapshot.paramMap.get('levelNumber') || 1,
     );
@@ -202,7 +194,7 @@ export class QuizPage implements OnInit, OnDestroy {
     this.difficultyTitle = difficulties[this.difficultyId] || 'Easy';
   }
 
-  get currentQuestion(): QuizQuestion | null {
+  get currentQuestion(): QuestionModel | null {
     return this.questions[this.currentIndex] || null;
   }
 
@@ -312,8 +304,8 @@ export class QuizPage implements OnInit, OnDestroy {
     if (!question) return;
 
     const wrongIndexes = question.answers
-      .map((_, index) => index)
-      .filter((index) => index !== question.correctIndex);
+      .map((_, index: number) => index)
+      .filter((index: number) => index !== question.correctIndex);
 
     this.hiddenAnswers = wrongIndexes.slice(0, 2);
   }
@@ -349,7 +341,7 @@ export class QuizPage implements OnInit, OnDestroy {
       const levelAlreadyCompleted = await this.progressService.isLevelCompleted(
         user.uid,
         this.categoryId,
-        this.difficultyId as any,
+        this.difficultyId,
         this.levelNumber,
       );
 
@@ -371,7 +363,7 @@ export class QuizPage implements OnInit, OnDestroy {
         await this.progressService.completeLevel(
           user.uid,
           this.categoryId,
-          this.difficultyId as any,
+          this.difficultyId,
           this.levelNumber,
         );
 
@@ -379,14 +371,14 @@ export class QuizPage implements OnInit, OnDestroy {
           await this.progressService.isDifficultyFullyCompleted(
             user.uid,
             this.categoryId,
-            this.difficultyId as any,
+            this.difficultyId,
           );
 
         if (difficultyCompleted) {
           await this.progressService.completeUserDifficulty(
             user.uid,
             this.categoryId,
-            this.difficultyId as any,
+            this.difficultyId,
           );
         }
 

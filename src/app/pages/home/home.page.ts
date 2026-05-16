@@ -11,6 +11,8 @@ import { CoinsService } from 'src/app/services/coins.service';
 import { LivesService } from 'src/app/services/lives';
 import { DailyRewardModalComponent } from 'src/app/components/daily-reward-modal/daily-reward-modal.component';
 import { UiService } from 'src/app/services/ui.service';
+import { CATEGORIES } from 'src/app/data/categories.data';
+import { CategoryModel } from 'src/app/models/category.model';
 
 @Component({
   selector: 'app-home',
@@ -53,64 +55,7 @@ export class HomePage implements OnInit, OnDestroy {
     }),
   );
 
-  categories = [
-    {
-      id: 'sport',
-      title: 'Sport',
-      icon: '⚽',
-      description: 'Calcio, basket, tennis e grandi campioni',
-      className: 'sport',
-    },
-    {
-      id: 'cinema',
-      title: 'Cinema',
-      icon: '🎬',
-      description: 'Film, attori, registi e grandi classici',
-      className: 'cinema',
-    },
-    {
-      id: 'storia',
-      title: 'Storia',
-      icon: '🏛️',
-      description: 'Eventi, personaggi e grandi epoche',
-      className: 'storia',
-    },
-    {
-      id: 'geografia',
-      title: 'Geografia',
-      icon: '🌍',
-      description: 'Capitali, paesi, bandiere e luoghi',
-      className: 'geografia',
-    },
-    {
-      id: 'scienza',
-      title: 'Scienza',
-      icon: '🔬',
-      description: 'Scoperte, invenzioni e curiosità',
-      className: 'scienza',
-    },
-    {
-      id: 'musica',
-      title: 'Musica',
-      icon: '🎵',
-      description: 'Artisti, canzoni e leggende',
-      className: 'musica',
-    },
-    {
-      id: 'tecnologia',
-      title: 'Tecnologia',
-      icon: '💡',
-      description: 'Innovazioni, gadget e futuro',
-      className: 'tecnologia',
-    },
-    {
-      id: 'altro',
-      title: 'Altro',
-      icon: '⭐',
-      description: 'Tante domande a sorpresa',
-      className: 'altro',
-    },
-  ];
+  categories: CategoryModel[] = [...CATEGORIES];
 
   constructor(
     private auth: AuthService,

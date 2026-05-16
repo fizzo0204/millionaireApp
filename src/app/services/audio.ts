@@ -1,4 +1,6 @@
 import { Injectable } from '@angular/core';
+import { AUDIO_CONFIG } from '../config/audio.config';
+import { STORAGE_KEYS } from 'src/app/config/storage-keys.config';
 
 @Injectable({
   providedIn: 'root',
@@ -10,22 +12,20 @@ export class AudioService {
   private readonly CLICK_POOL_SIZE = 5;
 
   private clickEnabled = true;
-  private readonly CLICK_ENABLED_KEY = 'click_enabled';
 
   private musicEnabled = true;
-  private readonly MUSIC_ENABLED_KEY = 'music_enabled';
 
   private fadeInterval?: ReturnType<typeof setInterval>;
   private isStartingMusic = false;
 
   constructor() {
-    const clickSaved = localStorage.getItem(this.CLICK_ENABLED_KEY);
+    const clickSaved = localStorage.getItem(STORAGE_KEYS.clickEnabled);
 
     if (clickSaved !== null) {
       this.clickEnabled = clickSaved === 'true';
     }
 
-    const saved = localStorage.getItem(this.MUSIC_ENABLED_KEY);
+    const saved = localStorage.getItem(STORAGE_KEYS.musicEnabled);
 
     if (saved !== null) {
       this.musicEnabled = saved === 'true';
@@ -37,13 +37,11 @@ export class AudioService {
   initHomeMusic() {
     if (this.music) return;
 
-    this.music = new Audio('assets/audio/homeMusic.m4a');
-
+    this.music = new Audio(AUDIO_CONFIG.music.home);
     this.music.setAttribute('playsinline', 'true');
     this.music.loop = true;
     this.music.preload = 'auto';
     this.music.volume = 0;
-
     this.music.load();
   }
 
@@ -51,7 +49,7 @@ export class AudioService {
     if (this.clickPool.length > 0) return;
 
     this.clickPool = Array.from({ length: this.CLICK_POOL_SIZE }, () => {
-      const audio = new Audio('assets/audio/click.m4a');
+      const audio = new Audio(AUDIO_CONFIG.sounds.click);
       audio.volume = 0.5;
       audio.preload = 'auto';
       return audio;
@@ -107,7 +105,7 @@ export class AudioService {
 
   setClickEnabled(enabled: boolean) {
     this.clickEnabled = enabled;
-    localStorage.setItem(this.CLICK_ENABLED_KEY, String(enabled));
+    localStorage.setItem(STORAGE_KEYS.clickEnabled, String(enabled));
   }
 
   isClickEnabled(): boolean {
@@ -116,7 +114,7 @@ export class AudioService {
 
   setMusicEnabled(enabled: boolean) {
     this.musicEnabled = enabled;
-    localStorage.setItem(this.MUSIC_ENABLED_KEY, String(enabled));
+    localStorage.setItem(STORAGE_KEYS.musicEnabled, String(enabled));
 
     if (enabled) {
       this.playMusic();

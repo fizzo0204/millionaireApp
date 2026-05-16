@@ -1,110 +1,30 @@
 import { Injectable } from '@angular/core';
-
-export type DailyRewardType = 'coins' | 'xp' | 'avatar' | 'chest';
-
-export type DailyReward = {
-  day: number;
-  type: DailyRewardType;
-  amount?: number;
-  label: string;
-  icon: string;
-};
-
-export type DailyAvatarReward = {
-  id: string;
-  label: string;
-  icon: string;
-  rarity: 'common' | 'rare' | 'epic';
-};
-
-export type DailyChestRewardType = 'coins' | 'xp' | 'avatar';
-
-export type DailyChestReward = {
-  type: DailyChestRewardType;
-  amount?: number;
-  label: string;
-  icon: string;
-  rarity: 'rare' | 'epic';
-  avatar?: DailyAvatarReward;
-};
-
-export type DailyRewardState = {
-  currentDay: number;
-  lastClaimDate: string | null;
-  claimedToday: boolean;
-};
+import {
+  DailyReward,
+  DailyAvatarReward,
+  DailyChestReward,
+  DailyRewardState,
+} from 'src/app/models/daily-reward.model';
+import {
+  DAILY_REWARDS,
+  DAILY_AVATARS,
+  EPIC_CHEST_REWARDS,
+} from 'src/app/data/daily-rewards.data';
+import { DAILY_REWARD_CONFIG } from 'src/app/config/daily-reward.config';
 
 @Injectable({
   providedIn: 'root',
 })
 export class DailyRewardService {
-  private readonly storageKey = 'turtlemind_daily_reward';
+  private readonly storageKey = DAILY_REWARD_CONFIG.storageKeys.reward;
+  private readonly unlockedAvatarsKey =
+    DAILY_REWARD_CONFIG.storageKeys.unlockedAvatars;
 
-  readonly rewards: DailyReward[] = [
-    { day: 1, type: 'coins', amount: 5, label: '+5 Coins', icon: '🪙' },
-    { day: 2, type: 'coins', amount: 5, label: '+5 Coins', icon: '🪙' },
-    { day: 3, type: 'xp', amount: 10, label: '+10 XP', icon: '⚡' },
-    { day: 4, type: 'coins', amount: 5, label: '+5 Coins', icon: '🪙' },
-    { day: 5, type: 'avatar', label: 'Avatar', icon: '🎨' },
-    { day: 6, type: 'xp', amount: 15, label: '+15 XP', icon: '⚡' },
-    { day: 7, type: 'chest', label: 'Epic Chest', icon: '🎁' },
-  ];
+  readonly rewards: DailyReward[] = DAILY_REWARDS;
 
-  readonly dailyAvatars: DailyAvatarReward[] = [
-    {
-      id: 'daily_turtle_gold',
-      label: 'Turtle',
-      icon: '🐢',
-      rarity: 'rare',
-    },
-    {
-      id: 'daily_fire_brain',
-      label: 'Fire Brain',
-      icon: '🔥',
-      rarity: 'rare',
-    },
-    {
-      id: 'daily_neon_star',
-      label: 'Neon Star',
-      icon: '🌟',
-      rarity: 'common',
-    },
-    {
-      id: 'daily_crown_legend',
-      label: 'Crown Legend',
-      icon: '👑',
-      rarity: 'epic',
-    },
-  ];
+  readonly dailyAvatars: DailyAvatarReward[] = DAILY_AVATARS;
 
-  readonly epicChestRewards: DailyChestReward[] = [
-    {
-      type: 'coins',
-      amount: 15,
-      label: '+15 Coins',
-      icon: '🪙',
-      rarity: 'rare',
-    },
-    {
-      type: 'xp',
-      amount: 30,
-      label: '+30 XP',
-      icon: '⚡',
-      rarity: 'rare',
-    },
-    {
-      type: 'avatar',
-      label: 'Avatar Epico',
-      icon: '👑',
-      rarity: 'epic',
-      avatar: {
-        id: 'daily_crown_legend',
-        label: 'Crown Legend',
-        icon: '👑',
-        rarity: 'epic',
-      },
-    },
-  ];
+  readonly epicChestRewards: DailyChestReward[] = EPIC_CHEST_REWARDS;
 
   getState(): DailyRewardState {
     const saved = localStorage.getItem(this.storageKey);
@@ -130,7 +50,10 @@ export class DailyRewardService {
   }
 
   getRewardForDay(day: number): DailyReward {
-    const normalizedDay = Math.min(Math.max(day, 1), 7);
+    const normalizedDay = Math.min(
+      Math.max(day, 1),
+      DAILY_REWARD_CONFIG.maxDay,
+    );
     return this.rewards[normalizedDay - 1];
   }
 
@@ -142,8 +65,8 @@ export class DailyRewardService {
 
   claimToday() {
     const state = this.getState();
-
-    const nextDay = state.currentDay >= 7 ? 1 : state.currentDay + 1;
+    const nextDay =
+      state.currentDay >= DAILY_REWARD_CONFIG.maxDay ? 1 : state.currentDay + 1;
 
     const newState: DailyRewardState = {
       currentDay: nextDay,
@@ -155,7 +78,10 @@ export class DailyRewardService {
   }
 
   simulateDay(day: number) {
-    const normalizedDay = Math.min(Math.max(day, 1), 7);
+    const normalizedDay = Math.min(
+      Math.max(day, 1),
+      DAILY_REWARD_CONFIG.maxDay,
+    );
 
     const state: DailyRewardState = {
       currentDay: normalizedDay,
@@ -175,7 +101,7 @@ export class DailyRewardService {
   }
 
   saveUnlockedAvatar(avatar: DailyAvatarReward) {
-    const saved = localStorage.getItem('turtlemind_unlocked_avatars');
+    const saved = localStorage.getItem(this.unlockedAvatarsKey);
 
     const avatars: DailyAvatarReward[] = saved ? JSON.parse(saved) : [];
 
@@ -185,21 +111,23 @@ export class DailyRewardService {
 
     avatars.push(avatar);
 
-    localStorage.setItem(
-      'turtlemind_unlocked_avatars',
-      JSON.stringify(avatars),
-    );
+    localStorage.setItem(this.unlockedAvatarsKey, JSON.stringify(avatars));
   }
 
   getUnlockedAvatars(): DailyAvatarReward[] {
-    const saved = localStorage.getItem('turtlemind_unlocked_avatars');
+    const saved = localStorage.getItem(this.unlockedAvatarsKey);
 
     return saved ? JSON.parse(saved) : [];
   }
 
   setDebugDay(day: number) {
+    const normalizedDay = Math.min(
+      Math.max(day, 1),
+      DAILY_REWARD_CONFIG.maxDay,
+    );
+
     const state: DailyRewardState = {
-      currentDay: day,
+      currentDay: normalizedDay,
       lastClaimDate: null,
       claimedToday: false,
     };
@@ -208,7 +136,7 @@ export class DailyRewardService {
   }
 
   resetUnlockedAvatars() {
-    localStorage.removeItem('turtlemind_unlocked_avatars');
+    localStorage.removeItem(this.unlockedAvatarsKey);
   }
 
   getRandomEpicChestReward(): DailyChestReward {

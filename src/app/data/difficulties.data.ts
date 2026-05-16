@@ -1,0 +1,48 @@
+import { DifficultyModel } from '../models/difficulty.model';
+
+export const DIFFICULTIES: DifficultyModel[] = [
+  {
+    id: 'easy',
+    title: 'Easy',
+    subtitle: 'Perfetto per iniziare!',
+    icon: '⭐',
+    xp: 100,
+    range: '1-30',
+    className: 'easy',
+    locked: false,
+    completed: false,
+  },
+  {
+    id: 'medium',
+    title: 'Medium',
+    subtitle: 'La sfida si fa interessante!',
+    icon: '🏅',
+    xp: 200,
+    range: '31-60',
+    className: 'medium',
+    locked: true,
+    completed: false,
+  },
+  {
+    id: 'hard',
+    title: 'Hard',
+    subtitle: 'Solo per i più preparati!',
+    icon: '🔥',
+    xp: 400,
+    range: '61-100',
+    className: 'hard',
+    locked: true,
+    completed: false,
+  },
+  {
+    id: 'extreme',
+    title: 'Extreme',
+    subtitle: 'Il livello dei campioni!',
+    icon: '👑',
+    xp: 800,
+    range: '100+',
+    className: 'extreme',
+    locked: true,
+    completed: false,
+  },
+];

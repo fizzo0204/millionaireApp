@@ -8,6 +8,7 @@ import {
   increment,
 } from '@angular/fire/firestore';
 import { AuthService } from './auth.service';
+import { AppUserProfile } from '../models/user-stats.model';
 
 @Injectable({
   providedIn: 'root',
@@ -37,8 +38,9 @@ export class CoinsService {
 
       const userRef = doc(this.firestore, `users/${user.uid}`);
 
-      this.coinsSub = docData(userRef).subscribe((profile: any) => {
-        const coins = profile?.stats?.coins ?? 20;
+      this.coinsSub = docData(userRef).subscribe((profile) => {
+        const userProfile = profile as AppUserProfile | undefined;
+        const coins = userProfile?.stats?.coins ?? 20;
         this.coinsSubject.next(coins);
       });
     });

@@ -8,8 +8,9 @@ import {
   serverTimestamp,
   increment,
 } from '@angular/fire/firestore';
-
 import { AuthService } from './auth.service';
+import { LIVES_CONFIG } from 'src/app/config/lives.config';
+import { AppUserProfile } from '../models/user-stats.model';
 
 @Injectable({
   providedIn: 'root',
@@ -21,11 +22,7 @@ export class LivesService {
   private userSub?: Subscription;
   private livesDocSub?: Subscription;
 
-  private readonly MAX_LIVES = 5;
-  // private readonly RECOVERY_TIME = 30 * 60 * 1000; // 30 minuti
-  private readonly RECOVERY_TIME = 15000;
-
-  private livesSubject = new BehaviorSubject<number>(this.MAX_LIVES);
+  private livesSubject = new BehaviorSubject<number>(LIVES_CONFIG.maxLives);
   lives$ = this.livesSubject.asObservable();
 
   private countdownSubject = new BehaviorSubject<string>('');
@@ -43,16 +40,16 @@ export class LivesService {
       this.livesDocSub?.unsubscribe();
 
       if (!user || user.isAnonymous) {
-        this.livesSubject.next(this.MAX_LIVES);
+        this.livesSubject.next(LIVES_CONFIG.maxLives);
         this.countdownSubject.next('');
         return;
       }
 
       const userRef = doc(this.firestore, `users/${user.uid}`);
 
-      this.livesDocSub = docData(userRef).subscribe((profile: any) => {
-        const lives = profile?.stats?.lives ?? this.MAX_LIVES;
-
+      this.livesDocSub = docData(userRef).subscribe((profile) => {
+        const userProfile = profile as AppUserProfile | undefined;
+        const lives = userProfile?.stats?.lives ?? LIVES_CONFIG.maxLives;
         this.livesSubject.next(lives);
       });
     });
@@ -74,8 +71,8 @@ export class LivesService {
     const userRef = doc(this.firestore, `users/${user.uid}`);
 
     await updateDoc(userRef, {
-      'stats.lives': increment(-1),
-      'stats.lastLifeUpdate': serverTimestamp(),
+      [LIVES_CONFIG.firestorePaths.lives]: increment(-1),
+      [LIVES_CONFIG.firestorePaths.lastLifeUpdate]: serverTimestamp(),
     });
 
     return true;
@@ -87,14 +84,14 @@ export class LivesService {
     if (!user || user.isAnonymous) return;
 
     const currentLives = this.getLives();
-    const updatedLives = Math.min(this.MAX_LIVES, currentLives + amount);
+    const updatedLives = Math.min(LIVES_CONFIG.maxLives, currentLives + amount);
 
     const userRef = doc(this.firestore, `users/${user.uid}`);
 
     await updateDoc(userRef, {
-      'stats.lives': updatedLives,
-      'stats.lastLifeUpdate':
-        updatedLives >= this.MAX_LIVES ? null : serverTimestamp(),
+      [LIVES_CONFIG.firestorePaths.lives]: updatedLives,
+      [LIVES_CONFIG.firestorePaths.lastLifeUpdate]:
+        updatedLives >= LIVES_CONFIG.maxLives ? null : serverTimestamp(),
     });
   }
 
@@ -114,36 +111,41 @@ export class LivesService {
 
     const lives = this.getLives();
 
-    if (lives >= this.MAX_LIVES) {
+    if (lives >= LIVES_CONFIG.maxLives) {
       this.countdownSubject.next('');
       return;
     }
 
     const userRef = doc(this.firestore, `users/${user.uid}`);
-    const profile: any = await firstValueFrom(docData(userRef));
+    const profile = (await firstValueFrom(docData(userRef))) as
+      | AppUserProfile
+      | undefined;
 
-    const lastLifeUpdate = profile?.stats?.lastLifeUpdate;
+    const lastUpdateTime = this.getLastLifeUpdateTime(
+      profile?.stats?.lastLifeUpdate,
+    );
 
-    if (!lastLifeUpdate?.toDate) return;
-
-    const lastUpdateTime = lastLifeUpdate.toDate().getTime();
+    if (!lastUpdateTime) return;
     const now = Date.now();
 
     const diff = now - lastUpdateTime;
-    const recoveredLives = Math.floor(diff / this.RECOVERY_TIME);
+    const recoveredLives = Math.floor(diff / LIVES_CONFIG.recoveryTime);
 
     if (recoveredLives <= 0) return;
 
-    const updatedLives = Math.min(this.MAX_LIVES, lives + recoveredLives);
+    const updatedLives = Math.min(
+      LIVES_CONFIG.maxLives,
+      lives + recoveredLives,
+    );
 
     const newLastUpdate =
-      updatedLives >= this.MAX_LIVES
+      updatedLives >= LIVES_CONFIG.maxLives
         ? null
-        : new Date(lastUpdateTime + recoveredLives * this.RECOVERY_TIME);
+        : new Date(lastUpdateTime + recoveredLives * LIVES_CONFIG.recoveryTime);
 
     await updateDoc(userRef, {
-      'stats.lives': updatedLives,
-      'stats.lastLifeUpdate': newLastUpdate,
+      [LIVES_CONFIG.firestorePaths.lives]: updatedLives,
+      [LIVES_CONFIG.firestorePaths.lastLifeUpdate]: newLastUpdate,
     });
   }
 
@@ -157,23 +159,25 @@ export class LivesService {
 
     const lives = this.getLives();
 
-    if (lives >= this.MAX_LIVES) {
+    if (lives >= LIVES_CONFIG.maxLives) {
       this.countdownSubject.next('');
       return;
     }
 
     const userRef = doc(this.firestore, `users/${user.uid}`);
-    const profile: any = await firstValueFrom(docData(userRef));
+    const profile = (await firstValueFrom(docData(userRef))) as
+      | AppUserProfile
+      | undefined;
 
-    const lastLifeUpdate = profile?.stats?.lastLifeUpdate;
+    const lastUpdateTime = this.getLastLifeUpdateTime(
+      profile?.stats?.lastLifeUpdate,
+    );
 
-    if (!lastLifeUpdate?.toDate) {
+    if (!lastUpdateTime) {
       this.countdownSubject.next('');
       return;
     }
-
-    const lastUpdateTime = lastLifeUpdate.toDate().getTime();
-    const nextLifeAt = lastUpdateTime + this.RECOVERY_TIME;
+    const nextLifeAt = lastUpdateTime + LIVES_CONFIG.recoveryTime;
     const remaining = Math.max(0, nextLifeAt - Date.now());
 
     const minutes = Math.floor(remaining / 60000);
@@ -182,5 +186,27 @@ export class LivesService {
     const formatted = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
     this.countdownSubject.next(formatted);
+  }
+
+  private getLastLifeUpdateTime(value: unknown): number | null {
+    if (!value) return null;
+
+    if (typeof value === 'number') {
+      return value;
+    }
+
+    if (value instanceof Date) {
+      return value.getTime();
+    }
+
+    if (
+      typeof value === 'object' &&
+      'toDate' in value &&
+      typeof value.toDate === 'function'
+    ) {
+      return value.toDate().getTime();
+    }
+
+    return null;
   }
 }
