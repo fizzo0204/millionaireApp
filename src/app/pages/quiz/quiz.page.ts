@@ -46,6 +46,8 @@ export class QuizPage implements OnInit, OnDestroy {
   categoryId = '';
   difficultyId: DifficultyId = 'easy';
   levelNumber = 1;
+  displayLevelNumber = 1;
+  totalLevels = 30;
   levelAlreadyCompleted = false;
 
   categoryTitle = 'Quiz';
@@ -58,20 +60,23 @@ export class QuizPage implements OnInit, OnDestroy {
   correctAnswers = 0;
   wrongAnswers = 0;
 
-  loading = true;
   selectedAnswerIndex: number | null = null;
-  answered = false;
-  isCorrect = false;
 
   hiddenAnswers: number[] = [];
   usedHelps: HelpId[] = [];
 
+  loading = true;
+  answered = false;
+  isCorrect = false;
   showWrongModal = false;
   showTimeModal = false;
   showCoinsModal = false;
   showAudienceHint = false;
   showExitModal = false;
   showRewardModal = false;
+  switchingQuestion = false;
+  helpAnimation: HelpId | null = null;
+
   rewardXp = 0;
   rewardMessage = '';
   rewardUnlockedMessage = '';
@@ -96,9 +101,33 @@ export class QuizPage implements OnInit, OnDestroy {
       this.route.snapshot.paramMap.get('levelNumber') || 1,
     );
 
+    this.setupLevelProgress();
+
     this.setupLabels();
     await this.listenToAppState();
     await this.loadQuestions();
+  }
+
+  private setupLevelProgress() {
+    if (this.difficultyId === 'easy') {
+      this.displayLevelNumber = this.levelNumber;
+      this.totalLevels = 30;
+    }
+
+    if (this.difficultyId === 'medium') {
+      this.displayLevelNumber = this.levelNumber - 30;
+      this.totalLevels = 30;
+    }
+
+    if (this.difficultyId === 'hard') {
+      this.displayLevelNumber = this.levelNumber - 60;
+      this.totalLevels = 40;
+    }
+
+    if (this.difficultyId === 'extreme') {
+      this.displayLevelNumber = this.levelNumber - 100;
+      this.totalLevels = 50;
+    }
   }
 
   ionViewWillLeave() {
@@ -233,6 +262,11 @@ export class QuizPage implements OnInit, OnDestroy {
     if (this.isCorrect) {
       this.correctAnswers++;
       this.haptics.success();
+
+      setTimeout(() => {
+        this.nextQuestion();
+      }, 700);
+
       return;
     }
 
@@ -283,14 +317,14 @@ export class QuizPage implements OnInit, OnDestroy {
     if (!spent) return;
 
     this.usedHelps.push(helpId);
+    await this.playHelpAnimation(helpId);
 
     if (helpId === 'fifty') {
       this.applyFiftyFifty();
     }
 
     if (helpId === 'switch') {
-      this.markCurrentQuestionAsWrong();
-      this.nextQuestion();
+      await this.switchQuestion();
     }
 
     if (helpId === 'audience') {
@@ -554,6 +588,49 @@ export class QuizPage implements OnInit, OnDestroy {
     this.router.navigateByUrl(
       `/levels/${this.categoryId}/${this.difficultyId}`,
     );
+  }
+
+  private async switchQuestion() {
+    if (this.switchingQuestion) return;
+
+    this.switchingQuestion = true;
+
+    try {
+      const newQuestions = await this.questionsService.getQuestions(
+        this.categoryId,
+        this.difficultyId,
+        this.levelNumber,
+        1,
+      );
+
+      if (newQuestions.length === 0) return;
+
+      this.questions = newQuestions;
+      this.currentIndex = 0;
+
+      this.resetQuestionState();
+      this.startTimer();
+    } finally {
+      this.switchingQuestion = false;
+    }
+  }
+
+  private pauseTimer() {
+    this.stopTimer();
+  }
+
+  private resumeTimer() {
+    if (!this.answered && !this.showTimeModal && this.currentQuestion) {
+      this.startTimer();
+    }
+  }
+
+  private async playHelpAnimation(helpId: HelpId) {
+    this.pauseTimer();
+    this.helpAnimation = helpId;
+    await this.wait(1600);
+    this.helpAnimation = null;
+    this.resumeTimer();
   }
 
   ngOnDestroy() {

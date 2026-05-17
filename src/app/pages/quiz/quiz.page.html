@@ -1,6 +1,24 @@
 <ion-content class="quiz-content">
   <div class="page-fade">
-    @if (loading) {
+    @if (helpAnimation) {
+    <div class="help-animation-backdrop">
+      <div class="help-animation-card" [ngClass]="helpAnimation">
+        @if (helpAnimation === 'fifty') {
+        <div class="help-animation-icon">50:50</div>
+        <h2>Taglio tattico!</h2>
+        <p>Due risposte sbagliate stanno sparendo...</p>
+        } @if (helpAnimation === 'audience') {
+        <div class="help-animation-icon">👥</div>
+        <h2>Pubblico in ascolto!</h2>
+        <p>Stiamo raccogliendo i voti...</p>
+        } @if (helpAnimation === 'switch') {
+        <div class="help-animation-icon">🔄</div>
+        <h2>Cambio domanda!</h2>
+        <p>Prepariamo una nuova sfida...</p>
+        }
+      </div>
+    </div>
+    } @if (loading) {
     <app-game-loader
       icon="🎯"
       title="Preparazione quiz..."
@@ -37,9 +55,7 @@
 
     <div class="progress-section">
       <div class="progress-copy">
-        <strong>
-          Domanda {{ currentIndex + 1 }} di {{ questions.length }}
-        </strong>
+        <strong>Domanda {{ levelNumber }}/{{ totalLevels }}</strong>
       </div>
 
       <div class="timer-circle" [class.timer-danger]="timeLeft <= 5">
@@ -132,7 +148,7 @@
         class="help-card"
         type="button"
         [class.used]="usedHelps.includes(help.id)"
-        [disabled]="usedHelps.includes(help.id) || answered || showTimeModal"
+        [disabled]="usedHelps.includes(help.id) || answered || showTimeModal || !!helpAnimation"
         (click)="useHelp(help.id)"
       >
         <div class="help-icon">{{ help.icon }}</div>
@@ -151,16 +167,6 @@
           track $index) { ❤️ } }
         </div>
       </div>
-
-      <button
-        class="next-btn"
-        type="button"
-        [disabled]="!answered || !isCorrect"
-        (click)="nextQuestion()"
-      >
-        Prossima domanda
-        <ion-icon name="chevron-forward-outline"></ion-icon>
-      </button>
     </div>
     }
   </div>
