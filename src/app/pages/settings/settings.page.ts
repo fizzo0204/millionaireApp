@@ -65,6 +65,11 @@ export class SettingsPage {
       }
 
       await this.userStatsService.resetUserDebugData(user.uid);
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith('seen_questions_')) {
+          localStorage.removeItem(key);
+        }
+      });
 
       alert('Dati reset completato');
     } catch (error) {

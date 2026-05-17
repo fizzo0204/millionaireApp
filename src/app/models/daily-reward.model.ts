@@ -35,3 +35,11 @@ export interface DailyRewardState {
   lastClaimDate: string | null;
   claimedToday: boolean;
 }
+
+export interface UserDailyRewardData {
+  currentDay: number;
+  lastClaimDate: string | null;
+  claimedToday: boolean;
+  unlockedAvatarIds: string[];
+  selectedAvatar: string;
+}

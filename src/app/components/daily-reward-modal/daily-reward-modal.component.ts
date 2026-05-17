@@ -75,7 +75,7 @@ export class DailyRewardModalComponent {
 
       await this.handleReward(reward, 1);
 
-      this.dailyRewardService.claimToday();
+      await this.dailyRewardService.claimToday();
       this.claimedNow = true;
     } finally {
       this.claimLoading = false;
@@ -96,7 +96,7 @@ export class DailyRewardModalComponent {
 
       await this.handleReward(reward, 2);
 
-      this.dailyRewardService.claimToday();
+      await this.dailyRewardService.claimToday();
       this.claimedNow = true;
     } finally {
       this.claimLoading = false;
@@ -143,7 +143,7 @@ export class DailyRewardModalComponent {
     if (reward.type === 'avatar') {
       const avatar = this.dailyRewardService.getRandomDailyAvatar();
 
-      this.dailyRewardService.saveUnlockedAvatar(avatar);
+      await this.dailyRewardService.saveUnlockedAvatar(avatar);
       this.unlockedAvatar = avatar;
 
       await this.playRewardCinematic(avatar.icon, avatar.label, 'avatar');
@@ -160,7 +160,7 @@ export class DailyRewardModalComponent {
     }
 
     if (chestReward.type === 'avatar' && chestReward.avatar) {
-      this.dailyRewardService.saveUnlockedAvatar(chestReward.avatar);
+      await this.dailyRewardService.saveUnlockedAvatar(chestReward.avatar);
       this.unlockedAvatar = chestReward.avatar;
     }
   }

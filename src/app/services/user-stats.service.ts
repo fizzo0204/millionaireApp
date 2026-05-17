@@ -17,6 +17,8 @@ import {
   limit,
   getDocs,
   deleteDoc,
+  UpdateData,
+  DocumentData,
 } from '@angular/fire/firestore';
 import {
   UserStats,
@@ -27,6 +29,7 @@ import { User } from 'firebase/auth';
 import { Observable } from 'rxjs';
 import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
 import { DifficultyId } from '../models/difficulty.model';
+import { UserDailyRewardData } from 'src/app/models/daily-reward.model';
 
 @Injectable({
   providedIn: 'root',
@@ -47,6 +50,14 @@ export class UserStatsService {
     lastQuizPlayedAt: null,
   };
 
+  readonly defaultDailyReward: UserDailyRewardData = {
+    currentDay: 1,
+    lastClaimDate: null,
+    claimedToday: false,
+    unlockedAvatarIds: [],
+    selectedAvatar: 'letter',
+  };
+
   async ensureUserProfile(user: User): Promise<void> {
     const userRef = doc(this.firestore, `users/${user.uid}`);
     const snapshot = await getDoc(userRef);
@@ -60,23 +71,92 @@ export class UserStatsService {
         createdAt: serverTimestamp(),
         lastLoginAt: serverTimestamp(),
         stats: this.defaultStats,
+        dailyReward: this.defaultDailyReward,
       });
 
       return;
     }
 
-    await updateDoc(userRef, {
+    const data = snapshot.data();
+
+    const updates: UpdateData<DocumentData> = {
       displayName: user.displayName,
       email: user.email,
       photoURL: user.photoURL,
       lastLoginAt: serverTimestamp(),
-    });
+    };
+
+    if (!data['dailyReward']) {
+      updates['dailyReward'] = this.defaultDailyReward;
+    }
+
+    await updateDoc(userRef, updates);
   }
 
   getUserProfile(uid: string): Observable<AppUserProfile | undefined> {
     const userRef = doc(this.firestore, `users/${uid}`);
 
     return docData(userRef) as Observable<AppUserProfile | undefined>;
+  }
+
+  async getDailyRewardData(uid: string): Promise<UserDailyRewardData> {
+    const userRef = doc(this.firestore, `users/${uid}`);
+    const snapshot = await getDoc(userRef);
+
+    if (!snapshot.exists()) {
+      return this.defaultDailyReward;
+    }
+
+    const data = snapshot.data();
+    const dailyReward = data['dailyReward'] as Partial<UserDailyRewardData>;
+
+    if (!dailyReward) {
+      await updateDoc(userRef, {
+        dailyReward: this.defaultDailyReward,
+      });
+
+      return this.defaultDailyReward;
+    }
+
+    return {
+      ...this.defaultDailyReward,
+      ...dailyReward,
+      unlockedAvatarIds: dailyReward.unlockedAvatarIds ?? [],
+      selectedAvatar: dailyReward.selectedAvatar ?? 'letter',
+    };
+  }
+
+  async updateDailyRewardData(
+    uid: string,
+    data: Partial<UserDailyRewardData>,
+  ): Promise<void> {
+    const updatePayload: UpdateData<DocumentData> = {};
+
+    for (const [key, value] of Object.entries(data)) {
+      updatePayload[`dailyReward.${key}`] = value;
+    }
+
+    const userRef = doc(this.firestore, `users/${uid}`);
+
+    await updateDoc(userRef, updatePayload);
+  }
+
+  async unlockDailyAvatar(uid: string, avatarId: string): Promise<void> {
+    const dailyReward = await this.getDailyRewardData(uid);
+
+    if (dailyReward.unlockedAvatarIds.includes(avatarId)) {
+      return;
+    }
+
+    await this.updateDailyRewardData(uid, {
+      unlockedAvatarIds: [...dailyReward.unlockedAvatarIds, avatarId],
+    });
+  }
+
+  async saveSelectedAvatar(uid: string, avatarId: string): Promise<void> {
+    await this.updateDailyRewardData(uid, {
+      selectedAvatar: avatarId,
+    });
   }
 
   private getStartOfToday(): Date {
@@ -239,6 +319,7 @@ export class UserStatsService {
         ...this.defaultStats,
         lastLifeUpdate: null,
       },
+      dailyReward: this.defaultDailyReward,
     });
   }
 }

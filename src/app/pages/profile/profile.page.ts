@@ -50,7 +50,7 @@ export class ProfilePage {
 
   joinDate = this.getJoinDate();
 
-  selectedAvatar = localStorage.getItem('profile_avatar') || 'letter';
+  selectedAvatar = this.dailyRewardService.getSelectedAvatar();
   tempSelectedAvatar = this.selectedAvatar;
 
   showAvatarModal = false;
@@ -338,6 +338,7 @@ export class ProfilePage {
   }
 
   openAvatarModal() {
+    this.selectedAvatar = this.dailyRewardService.getSelectedAvatar();
     this.tempSelectedAvatar = this.selectedAvatar;
     this.showAvatarModal = true;
   }
@@ -362,9 +363,9 @@ export class ProfilePage {
     this.tempSelectedAvatar = avatarId;
   }
 
-  saveAvatar() {
+  async saveAvatar() {
     this.selectedAvatar = this.tempSelectedAvatar;
-    localStorage.setItem('profile_avatar', this.selectedAvatar);
+    await this.dailyRewardService.saveSelectedAvatar(this.selectedAvatar);
     this.showAvatarModal = false;
   }
 
