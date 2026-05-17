@@ -13,21 +13,34 @@ ion-content.home-content {
 .stat-card {
   position: relative;
   border-radius: 16px;
-  padding: 12px;
-
+  padding: 10px 12px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-
   background: rgba(7, 44, 82, 0.85);
-
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.04),
     0 8px 18px rgba(0, 0, 0, 0.22);
 }
 
 .stat-icon {
-  font-size: 1.5rem;
+  width: 54px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: -4px auto 2px;
+  font-size: 2rem;
+  line-height: 1;
+  overflow: visible;
+}
+
+.stat-icon .coin-icon {
+  width: 118px;
+  height: 118px;
+  object-fit: contain;
+  transform: scale(1.2);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
 }
 
 .stat-value {

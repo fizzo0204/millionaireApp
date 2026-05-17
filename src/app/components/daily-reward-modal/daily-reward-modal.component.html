@@ -20,7 +20,13 @@
             [class.epic]="reward.type === 'chest'"
           >
             <span>{{ reward.day }}</span>
-            <strong>{{ reward.icon }}</strong>
+            <strong>
+              @if (reward.icon.includes("assets/")) {
+                <img class="coin-icon big" [src]="reward.icon" alt="Coins" />
+              } @else {
+                {{ reward.icon }}
+              }
+            </strong>
             <small>{{ reward.label }}</small>
           </div>
         }
@@ -52,21 +58,7 @@
         </div>
       } @else {
         @if (!cinematicVisible) {
-          @if (chestReward) {
-            <div class="claimed-box chest-result">
-              <span>{{ chestReward.icon }}</span>
-              <strong>{{ chestReward.label }}</strong>
-              <small>Scrigno aperto!</small>
-            </div>
-          } @else if (unlockedAvatar) {
-            <div class="claimed-box avatar-result">
-              <span>{{ unlockedAvatar.icon }}</span>
-              <strong>{{ unlockedAvatar.label }}</strong>
-              <small>Avatar sbloccato!</small>
-            </div>
-          } @else {
-            <div class="claimed-box">✅ Reward riscattata!</div>
-          }
+          <div class="claimed-box">✅ Reward riscattata!</div>
 
           <button class="claim-btn" type="button" (click)="continue()">
             Continua
@@ -74,47 +66,73 @@
         }
       }
     </div>
-
-    @if (cinematicVisible) {
-      <div class="cinematic-overlay">
-        <div class="cinematic-stage" [ngClass]="rewardRevealType">
-          <div class="cinematic-burst"></div>
-          <div class="cinematic-sparks"></div>
-
-          @if (cinematicPhase === "opening") {
-            <div class="cinematic-chest">
-              <div class="cinematic-glow"></div>
-              <div class="cinematic-chest-box">🎁</div>
-              <div class="cinematic-copy">Apertura scrigno...</div>
-            </div>
-          }
-
-          @if (cinematicPhase === "flash") {
-            <div class="cinematic-flash">
-              <div class="cinematic-rays"></div>
-              <div class="cinematic-title">EPIC!</div>
-            </div>
-          }
-
-          @if (cinematicPhase === "reward") {
-            <div class="cinematic-prize">
-              <div class="prize-aura"></div>
-
-              <div class="prize-icon">{{ rewardRevealIcon }}</div>
-
-              <div class="prize-label">{{ rewardRevealLabel }}</div>
-
-              <button
-                class="cinematic-ok-btn"
-                type="button"
-                (click)="closeCinematic()"
-              >
-                OK
-              </button>
-            </div>
-          }
-        </div>
-      </div>
-    }
   </div>
+
+  @if (cinematicVisible) {
+    <div
+      class="premium-reward-scene"
+      [ngClass]="[rewardRevealType, cinematicPhase]"
+      (click)="finishCinematic()"
+    >
+      <div class="scene-bg-glow"></div>
+      <div class="scene-stars"></div>
+      <div class="scene-rays"></div>
+      <div class="scene-particles"></div>
+
+      <div class="reward-ribbon">
+        <div class="ribbon-side left"></div>
+        <div class="ribbon-main">PREMIO GIORNALIERO!</div>
+        <div class="ribbon-side right"></div>
+      </div>
+
+      @if (cinematicPhase === "opening") {
+        <div class="premium-opening">
+          <div class="chest-aura"></div>
+          <div class="premium-chest closed">🎁</div>
+          <div class="opening-copy">Apertura scrigno...</div>
+        </div>
+      }
+
+      @if (cinematicPhase === "flash") {
+        <div class="premium-flash">
+          <div class="flash-ring"></div>
+          <div class="flash-title">WOW!</div>
+        </div>
+      }
+
+      @if (cinematicPhase === "reward") {
+        <div class="premium-reward-content">
+          <div class="reward-subtitle">Hai ottenuto</div>
+
+          <div class="floating-reward">
+            <div class="reward-light"></div>
+            <div class="reward-icon-premium">
+              @if (rewardRevealIcon.includes("assets/")) {
+                <img
+                  class="cinematic-coin-img"
+                  [src]="rewardRevealIcon"
+                  alt="Reward"
+                />
+              } @else {
+                {{ rewardRevealIcon }}
+              }
+            </div>
+            <div class="reward-label-premium">{{ rewardRevealLabel }}</div>
+          </div>
+
+          <div class="premium-chest-image">
+            <div class="chest-light"></div>
+
+            <img
+              src="assets/ui/turtle-chest.png"
+              alt="Chest"
+              class="chest-img"
+            />
+          </div>
+
+          <div class="tap-copy">Tocca per continuare</div>
+        </div>
+      }
+    </div>
+  }
 </div>

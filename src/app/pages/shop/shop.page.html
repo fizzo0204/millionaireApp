@@ -10,7 +10,13 @@
         class="wallet-card coins-wallet"
         [class.coin-pulse]="coinRewardPulse"
       >
-        <span>🪙</span>
+        <span>
+          <img
+            class="coin-icon big"
+            src="assets/ui/coin-turtle.webp"
+            alt="Coins"
+          />
+        </span>
 
         <div class="coin-float" *ngIf="coinRewardPulse">+10</div>
 
@@ -41,7 +47,13 @@
       <div class="shop-card coins-card">
         <div class="badge">Gratis</div>
 
-        <div class="shop-icon">🪙</div>
+        <div class="shop-icon">
+          <img
+            class="coin-icon huge"
+            src="assets/ui/coin-turtle.webp"
+            alt="Coins"
+          />
+        </div>
 
         <div class="shop-text">
           <h3>+10 Monete</h3>

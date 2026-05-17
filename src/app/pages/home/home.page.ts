@@ -13,16 +13,12 @@ import { DailyRewardModalComponent } from 'src/app/components/daily-reward-modal
 import { UiService } from 'src/app/services/ui.service';
 import { CATEGORIES } from 'src/app/data/categories.data';
 import { CategoryModel } from 'src/app/models/category.model';
+import { ModalController } from '@ionic/angular';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [
-    IonicModule,
-    CommonModule,
-    AnonymousModalComponent,
-    DailyRewardModalComponent,
-  ],
+  imports: [IonicModule, CommonModule, AnonymousModalComponent],
   templateUrl: './home.page.html',
   styleUrls: ['./home.page.scss'],
 })
@@ -65,6 +61,7 @@ export class HomePage implements OnInit, OnDestroy {
     private router: Router,
     private userStatsService: UserStatsService,
     private ui: UiService,
+    private modalCtrl: ModalController,
   ) {
     this.coins$ = this.coinsService.coins$;
     this.lives$ = this.livesService.lives$;
@@ -146,9 +143,14 @@ export class HomePage implements OnInit, OnDestroy {
     this.ads.hideBanner();
   }
 
-  openDailyReward() {
-    this.showDailyReward = true;
-    this.ui.openModalOverlay();
+  async openDailyReward() {
+    const modal = await this.modalCtrl.create({
+      component: DailyRewardModalComponent,
+      cssClass: 'daily-reward-ion-modal',
+      backdropDismiss: false,
+    });
+
+    await modal.present();
   }
 
   closeDailyReward() {

@@ -50,7 +50,10 @@
         <strong class="difficulty">{{ difficultyTitle }}</strong>
       </div>
 
-      <div class="coins-pill">🪙 {{ coins$ | async }}</div>
+      <div class="coins-pill">
+        <img class="coin-icon" src="assets/ui/coin-turtle.webp" alt="Coins" />
+        {{ coins$ | async }}
+      </div>
     </div>
 
     <div class="progress-section">
@@ -153,7 +156,14 @@
       >
         <div class="help-icon">{{ help.icon }}</div>
         <strong>{{ help.title }}</strong>
-        <span>🪙 {{ help.cost }}</span>
+        <span class="help-cost">
+          <img
+            class="coin-icon small"
+            src="assets/ui/coin-turtle.webp"
+            alt="Coins"
+          />
+          {{ help.cost }}
+        </span>
       </button>
       }
     </div>
@@ -248,7 +258,13 @@
         <ion-icon name="close-outline"></ion-icon>
       </button>
 
-      <div class="coin-big">🪙</div>
+      <div class="coin-big">
+        <img
+          class="coin-icon huge"
+          src="assets/ui/coin-turtle.webp"
+          alt="Coins"
+        />
+      </div>
 
       <h2>Monete insufficienti</h2>
 

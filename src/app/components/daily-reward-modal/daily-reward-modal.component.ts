@@ -13,6 +13,7 @@ import {
   CinematicPhase,
   RevealType,
 } from 'src/app/models/daily-reward.model';
+import { ModalController } from '@ionic/angular';
 
 @Component({
   selector: 'app-daily-reward-modal',
@@ -22,8 +23,6 @@ import {
   styleUrls: ['./daily-reward-modal.component.scss'],
 })
 export class DailyRewardModalComponent {
-  @Output() closed = new EventEmitter<void>();
-
   claimedNow = false;
   claimLoading = false;
 
@@ -43,6 +42,7 @@ export class DailyRewardModalComponent {
     private userStatsService: UserStatsService,
     private auth: AuthService,
     private ads: AdsService,
+    private modalCtrl: ModalController,
   ) {}
 
   get rewards() {
@@ -103,12 +103,15 @@ export class DailyRewardModalComponent {
     }
   }
 
-  closeCinematic() {
+  finishCinematic() {
+    if (!this.cinematicVisible || this.cinematicPhase !== 'reward') return;
+
     this.cinematicVisible = false;
+    this.continue();
   }
 
   continue() {
-    this.closed.emit();
+    this.modalCtrl.dismiss();
   }
 
   private async handleReward(reward: DailyReward, multiplier: number) {
@@ -129,7 +132,11 @@ export class DailyRewardModalComponent {
     if (reward.type === 'coins' && reward.amount) {
       const amount = reward.amount * multiplier;
 
-      await this.playRewardCinematic('🪙', `+${amount} Coins`, 'coins');
+      await this.playRewardCinematic(
+        'assets/ui/coin-turtle.webp',
+        `+${amount} Coins`,
+        'coins',
+      );
       await this.coinsService.addCoins(amount);
     }
 
@@ -181,11 +188,11 @@ export class DailyRewardModalComponent {
     this.cinematicVisible = true;
     this.cinematicPhase = 'opening';
 
-    await this.wait(2200);
+    await this.wait(1600);
 
     this.cinematicPhase = 'flash';
 
-    await this.wait(700);
+    await this.wait(650);
 
     this.cinematicPhase = 'reward';
   }
@@ -200,6 +207,10 @@ export class DailyRewardModalComponent {
     this.rewardRevealType = type;
 
     this.cinematicVisible = true;
+    this.cinematicPhase = 'flash';
+
+    await this.wait(550);
+
     this.cinematicPhase = 'reward';
   }
 

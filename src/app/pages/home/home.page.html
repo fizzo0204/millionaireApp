@@ -1,11 +1,10 @@
+<!-- @if (showDailyReward) {
+<app-daily-reward-modal (closed)="closeDailyReward()"></app-daily-reward-modal>
+} -->
 <ion-content class="home-content">
   @if (showAnonModal) {
   <app-anonymous-modal></app-anonymous-modal>
-  } @if (showDailyReward) {
-  <app-daily-reward-modal
-    (closed)="closeDailyReward()"
-  ></app-daily-reward-modal>
-  }@if (!showAnonModal) {
+  } @if (!showAnonModal) {
   <div class="page-fade">
     <div class="stats-grid">
       <div class="stat-card">
@@ -30,7 +29,13 @@
       </div>
 
       <div class="stat-card coins-card" [class.coin-pulse]="coinRewardPulse">
-        <div class="stat-icon">🪙</div>
+        <div class="stat-icon">
+          <img
+            class="coin-icon big"
+            src="assets/ui/coin-turtle.webp"
+            alt="Coins"
+          />
+        </div>
 
         @if (coinRewardPulse) {
         <div class="coin-float">+10</div>
@@ -69,7 +74,13 @@
     <div class="reward-grid">
       <div class="reward-card coins-reward">
         <div class="reward-card-top">
-          <div class="reward-icon">🪙</div>
+          <div class="reward-icon">
+            <img
+              class="coin-icon huge"
+              src="assets/ui/coin-turtle.webp"
+              alt="Coins"
+            />
+          </div>
 
           <div class="reward-copy">
             <strong>Più monete?</strong>
