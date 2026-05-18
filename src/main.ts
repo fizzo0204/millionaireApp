@@ -22,6 +22,8 @@ import {
   closeOutline,
   arrowBackOutline,
   lockClosedOutline,
+  logoFacebook,
+  logoGoogle,
 } from 'ionicons/icons';
 
 import { defineCustomElements as ionicElements } from '@ionic/core/loader';
@@ -60,4 +62,6 @@ addIcons({
   'close-outline': closeOutline,
   'arrow-back-outline': arrowBackOutline,
   'lock-closed-outline': lockClosedOutline,
+  'logo-facebook': logoFacebook,
+  'logo-google': logoGoogle,
 });

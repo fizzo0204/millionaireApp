@@ -1,23 +1,84 @@
-<div class="anon-backdrop">
-  <div class="anon-card">
-    <h2>Accedi per continuare</h2>
+<div class="login-scene">
+  <div class="scene-bg-glow"></div>
+  <div class="scene-stars"></div>
+  <div class="scene-rays"></div>
+  <div class="scene-particles"></div>
+
+  <div class="login-ribbon">
+    <div class="ribbon-side left"></div>
+    <div class="ribbon-main">BENVENUTO!</div>
+    <div class="ribbon-side right"></div>
+  </div>
+
+  <div class="login-content">
+    <div class="logo-aura"></div>
+
+    <img src="assets/ui/logo-access.webp" alt="TurtleMind" class="login-logo" />
+
+    <h2>Entra in TurtleMind!</h2>
 
     <p>
-      Per giocare a <strong>TurtleMind</strong> devi accedere con Google.
-      <br />
-      In questo modo potrai salvare i progressi e ottenere le ricompense 🎁
+      Salva progressi, monete e ricompense. Continua la tua avventura da
+      qualsiasi dispositivo.
     </p>
 
-    <div class="btn-row">
+    <div class="benefits">
+      <div class="benefit-row">
+        <span class="benefit-icon">🏆</span>
+        <span>Livelli salvati</span>
+      </div>
+
+      <div class="benefit-row">
+        <span class="benefit-icon">
+          <img
+            src="assets/ui/coin-turtle.webp"
+            alt="coin"
+            class="feature-coin"
+          />
+        </span>
+        <span>Monete protette</span>
+      </div>
+
+      <div class="benefit-row">
+        <span class="benefit-icon">🔥</span>
+        <span>Streak al sicuro</span>
+      </div>
+    </div>
+
+    <div class="login-actions">
       <button
-        class="google-btn"
+        class="provider-btn google-btn"
         type="button"
-        (click)="login()"
+        (click)="googleLogin()"
         [disabled]="loading"
       >
-        <ion-icon name="logo-google"></ion-icon>
-        <span>{{ loading ? "Accesso in corso..." : "Accedi con Google" }}</span>
+        <span class="provider-icon">
+          <ion-icon name="logo-google"></ion-icon>
+        </span>
+
+        <span>
+          {{ loading ? "Accesso in corso..." : "Continua con Google" }}
+        </span>
       </button>
+
+      <button
+        class="provider-btn facebook-btn"
+        type="button"
+        (click)="facebookLogin()"
+        [disabled]="loading"
+      >
+        <span class="provider-icon">
+          <ion-icon name="logo-facebook"></ion-icon>
+        </span>
+
+        <span>
+          {{ loading ? "Accesso in corso..." : "Continua con Facebook" }}
+        </span>
+      </button>
+    </div>
+
+    <div class="safe-copy">
+      🔒 Accesso sicuro · Nessuna password salvata nell’app
     </div>
   </div>
 </div>

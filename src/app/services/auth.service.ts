@@ -9,6 +9,7 @@ import {
   linkWithCredential,
   AuthCredential,
   signInWithPopup,
+  FacebookAuthProvider,
 } from 'firebase/auth';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
@@ -106,6 +107,69 @@ export class AuthService {
       return true;
     } catch (error) {
       console.error('❌ Errore login Google:', error);
+      return false;
+    } finally {
+      this.loadingSubject.next(false);
+    }
+  }
+
+  async facebookSignIn(): Promise<boolean> {
+    this.loadingSubject.next(true);
+
+    try {
+      console.log('🔹 Avvio login Facebook...');
+      const isMobile = Capacitor.isNativePlatform();
+
+      let credential: AuthCredential | null = null;
+
+      if (isMobile) {
+        console.log(
+          '📱 Login Facebook tramite Capacitor FirebaseAuthentication...',
+        );
+        const result = await FirebaseAuthentication.signInWithFacebook();
+
+        if (!result.credential?.accessToken) {
+          throw new Error('❌ Nessun accessToken Facebook ricevuto dal plugin');
+        }
+
+        credential = FacebookAuthProvider.credential(
+          result.credential.accessToken,
+        );
+      } else {
+        console.log('💻 Login Facebook tramite popup web...');
+        const provider = new FacebookAuthProvider();
+        provider.addScope('public_profile');
+        const result = await signInWithPopup(firebaseAuth, provider);
+        credential = FacebookAuthProvider.credentialFromResult(result);
+      }
+
+      if (!credential) {
+        throw new Error('❌ Credenziale Facebook non valida');
+      }
+
+      const currentUser = firebaseAuth.currentUser;
+
+      if (currentUser && currentUser.isAnonymous) {
+        console.log('🔗 Provo a collegare account anonimo a Facebook...');
+        try {
+          await linkWithCredential(currentUser, credential);
+          console.log('✅ Account anonimo collegato a Facebook');
+        } catch (err: any) {
+          if (err.code === 'auth/credential-already-in-use') {
+            console.warn('⚠️ Account Facebook già esistente → login diretto');
+            await signInWithCredential(firebaseAuth, credential);
+          } else {
+            throw err;
+          }
+        }
+      } else {
+        await signInWithCredential(firebaseAuth, credential);
+      }
+
+      console.log('✅ Accesso Facebook completato.');
+      return true;
+    } catch (error) {
+      console.error('❌ Errore login Facebook:', error);
       return false;
     } finally {
       this.loadingSubject.next(false);

@@ -15,7 +15,7 @@ export class AnonymousModalComponent {
 
   constructor(private auth: AuthService) {}
 
-  async login() {
+  async googleLogin() {
     if (this.loading) return;
 
     this.loading = true;
@@ -24,6 +24,20 @@ export class AnonymousModalComponent {
       await this.auth.googleSignIn();
     } catch {
       console.log('Login non completato o annullato.');
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async facebookLogin() {
+    if (this.loading) return;
+
+    this.loading = true;
+
+    try {
+      await this.auth.facebookSignIn();
+    } catch {
+      console.log('Login Facebook non completato o annullato.');
     } finally {
       this.loading = false;
     }
