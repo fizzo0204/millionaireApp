@@ -24,6 +24,7 @@ import {
   UserStats,
   AppUserProfile,
   QuizHistoryItem,
+  UserAvatarData,
 } from 'src/app/models/user-stats.model';
 import { User } from 'firebase/auth';
 import { Observable } from 'rxjs';
@@ -50,12 +51,15 @@ export class UserStatsService {
     lastQuizPlayedAt: null,
   };
 
+  readonly defaultAvatar: UserAvatarData = {
+    selectedAvatar: 'letter',
+    unlockedAvatarIds: [],
+  };
+
   readonly defaultDailyReward: UserDailyRewardData = {
     currentDay: 1,
     lastClaimDate: null,
     claimedToday: false,
-    unlockedAvatarIds: [],
-    selectedAvatar: 'letter',
   };
 
   async ensureUserProfile(user: User): Promise<void> {
@@ -72,6 +76,7 @@ export class UserStatsService {
         lastLoginAt: serverTimestamp(),
         stats: this.defaultStats,
         dailyReward: this.defaultDailyReward,
+        avatar: this.defaultAvatar,
       });
 
       return;
@@ -88,6 +93,19 @@ export class UserStatsService {
 
     if (!data['dailyReward']) {
       updates['dailyReward'] = this.defaultDailyReward;
+    }
+
+    if (!data['avatar']) {
+      updates['avatar'] = {
+        selectedAvatar:
+          data['selectedAvatar'] ??
+          data['dailyReward']?.selectedAvatar ??
+          'letter',
+        unlockedAvatarIds:
+          data['unlockedAvatarIds'] ??
+          data['dailyReward']?.unlockedAvatarIds ??
+          [],
+      };
     }
 
     await updateDoc(userRef, updates);
@@ -121,8 +139,6 @@ export class UserStatsService {
     return {
       ...this.defaultDailyReward,
       ...dailyReward,
-      unlockedAvatarIds: dailyReward.unlockedAvatarIds ?? [],
-      selectedAvatar: dailyReward.selectedAvatar ?? 'letter',
     };
   }
 
@@ -141,38 +157,81 @@ export class UserStatsService {
     await updateDoc(userRef, updatePayload);
   }
 
-  async unlockDailyAvatar(uid: string, avatarId: string): Promise<void> {
-    const dailyReward = await this.getDailyRewardData(uid);
+  async getAvatarData(uid: string): Promise<UserAvatarData> {
+    const userRef = doc(this.firestore, `users/${uid}`);
+    const snapshot = await getDoc(userRef);
 
-    if (dailyReward.unlockedAvatarIds.includes(avatarId)) {
+    if (!snapshot.exists()) {
+      return this.defaultAvatar;
+    }
+
+    const data = snapshot.data();
+
+    const avatar: UserAvatarData = {
+      selectedAvatar:
+        data['avatar']?.selectedAvatar ??
+        data['selectedAvatar'] ??
+        data['dailyReward']?.selectedAvatar ??
+        'letter',
+      unlockedAvatarIds:
+        data['avatar']?.unlockedAvatarIds ??
+        data['unlockedAvatarIds'] ??
+        data['dailyReward']?.unlockedAvatarIds ??
+        [],
+    };
+
+    if (!data['avatar']) {
+      await updateDoc(userRef, {
+        avatar,
+      });
+    }
+
+    return avatar;
+  }
+
+  async unlockDailyAvatar(uid: string, avatarId: string): Promise<void> {
+    const avatar = await this.getAvatarData(uid);
+
+    if (avatar.unlockedAvatarIds.includes(avatarId)) {
       return;
     }
 
-    await this.updateDailyRewardData(uid, {
-      unlockedAvatarIds: [...dailyReward.unlockedAvatarIds, avatarId],
+    await this.updateAvatarData(uid, {
+      unlockedAvatarIds: [...avatar.unlockedAvatarIds, avatarId],
     });
   }
 
   async saveSelectedAvatar(uid: string, avatarId: string): Promise<void> {
-    await this.updateDailyRewardData(uid, {
+    await this.updateAvatarData(uid, {
       selectedAvatar: avatarId,
     });
   }
 
+  async updateAvatarData(
+    uid: string,
+    data: Partial<UserAvatarData>,
+  ): Promise<void> {
+    const updatePayload: UpdateData<DocumentData> = {};
+
+    for (const [key, value] of Object.entries(data)) {
+      updatePayload[`avatar.${key}`] = value;
+    }
+
+    const userRef = doc(this.firestore, `users/${uid}`);
+
+    await updateDoc(userRef, updatePayload);
+  }
+
   private getStartOfToday(): Date {
     const today = new Date();
-
     today.setHours(0, 0, 0, 0);
-
     return today;
   }
 
   private getStartOfYesterday(): Date {
     const yesterday = new Date();
-
     yesterday.setDate(yesterday.getDate() - 1);
     yesterday.setHours(0, 0, 0, 0);
-
     return yesterday;
   }
 
@@ -272,9 +331,8 @@ export class UserStatsService {
     }) as Observable<QuizHistoryItem[]>;
   }
 
-  async addXp(uid: string, amount: number) {
+  async addXp(uid: string, amount: number): Promise<void> {
     const userRef = doc(this.firestore, `users/${uid}`);
-
     const snapshot = await getDoc(userRef);
 
     if (!snapshot.exists()) return;
@@ -295,7 +353,6 @@ export class UserStatsService {
     });
   }
 
-  // TEST
   async resetUserDebugData(uid: string): Promise<void> {
     const userRef = doc(this.firestore, `users/${uid}`);
 
@@ -320,6 +377,7 @@ export class UserStatsService {
         lastLifeUpdate: null,
       },
       dailyReward: this.defaultDailyReward,
+      avatar: this.defaultAvatar,
     });
   }
 }

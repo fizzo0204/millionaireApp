@@ -2,10 +2,12 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { User } from 'firebase/auth';
-import { map, Observable, of, switchMap } from 'rxjs';
+import { firstValueFrom, map, Observable, of, switchMap } from 'rxjs';
+
 import { UserStatsService } from 'src/app/services/user-stats.service';
 import { DailyRewardService } from 'src/app/services/daily-reward.service';
 import { AuthService } from 'src/app/services/auth.service';
+
 import { AchievementModel } from 'src/app/models/achievement.model';
 import { ProfileStatModel } from 'src/app/models/profile-stat.model';
 import { AVATARS } from 'src/app/data/avatars.data';
@@ -24,12 +26,10 @@ import {
 })
 export class ProfilePage {
   user$: Observable<User | null> = this.auth.user$;
+
   profile$: Observable<AppUserProfile | undefined> = this.user$.pipe(
     switchMap((user) => {
-      if (!user || user.isAnonymous) {
-        return of(undefined);
-      }
-
+      if (!user || user.isAnonymous) return of(undefined);
       return this.userStatsService.getUserProfile(user.uid);
     }),
   );
@@ -40,10 +40,7 @@ export class ProfilePage {
 
   recentResults$: Observable<QuizHistoryItem[]> = this.user$.pipe(
     switchMap((user) => {
-      if (!user || user.isAnonymous) {
-        return of([]);
-      }
-
+      if (!user || user.isAnonymous) return of([]);
       return this.userStatsService.getRecentQuizHistory(user.uid, 5);
     }),
   );
@@ -52,28 +49,12 @@ export class ProfilePage {
 
   selectedAvatar = this.dailyRewardService.getSelectedAvatar();
   tempSelectedAvatar = this.selectedAvatar;
+  unlockedAvatarIds: string[] = [];
 
   showAvatarModal = false;
   showAchievementsModal = false;
 
-  avatars: AvatarModel[] = [...AVATARS];
-
-  get allAvatars(): AvatarModel[] {
-    const dailyAvatars: AvatarModel[] = this.dailyRewardService
-      .getUnlockedAvatars()
-      .map(
-        (avatar): AvatarModel => ({
-          id: avatar.id,
-          label: avatar.label,
-          icon: this.getDailyAvatarIcon(avatar.id, avatar.icon),
-          minLevel: 1,
-          source: 'daily',
-          rarity: avatar.rarity,
-        }),
-      );
-
-    return [...this.avatars, ...dailyAvatars];
-  }
+  readonly avatars: AvatarModel[] = [...AVATARS];
 
   constructor(
     private auth: AuthService,
@@ -81,23 +62,24 @@ export class ProfilePage {
     private dailyRewardService: DailyRewardService,
   ) {}
 
-  private getDailyAvatarIcon(id: string, fallbackIcon: string): string {
-    const icons: Record<string, string> = {
-      daily_turtle_gold: '🐢',
-      daily_fire_brain: '🔥',
-      daily_neon_star: '🌟',
-      daily_crown_legend: '👑',
-    };
-
-    return icons[id] || fallbackIcon;
+  get baseAvatars(): AvatarModel[] {
+    return this.avatars.filter((avatar) => avatar.source === 'base');
   }
 
-  getXpPercent(xp: number): number {
-    return Math.min(100, Math.round((xp / this.maxXp) * 100));
+  get dailyRewardAvatars(): AvatarModel[] {
+    return this.avatars.filter((avatar) => avatar.source === 'daily');
+  }
+
+  get epicRewardAvatars(): AvatarModel[] {
+    return this.avatars.filter((avatar) => avatar.source === 'epic');
   }
 
   get maxXp(): number {
     return 1000;
+  }
+
+  getXpPercent(xp: number): number {
+    return Math.min(100, Math.round((xp / this.maxXp) * 100));
   }
 
   getTitle(level: number): string {
@@ -121,11 +103,7 @@ export class ProfilePage {
         value: String(realStats.quizPlayed),
         label: 'Quiz giocati',
       },
-      {
-        icon: '🎯',
-        value: `${correctPercentage}%`,
-        label: '% corrette',
-      },
+      { icon: '🎯', value: `${correctPercentage}%`, label: '% corrette' },
       {
         icon: '🔥',
         value: String(realStats.streakDays),
@@ -290,7 +268,7 @@ export class ProfilePage {
   }
 
   getAvatarIcon(avatarId: string, user: User | null): string {
-    const avatar = this.allAvatars.find((a) => a.id === avatarId);
+    const avatar = this.avatars.find((item) => item.id === avatarId);
 
     if (!avatar || avatar.id === 'letter') {
       return this.getAvatarLetter(user);
@@ -299,47 +277,24 @@ export class ProfilePage {
     return avatar.icon || this.getAvatarLetter(user);
   }
 
-  get epicAvatars(): AvatarModel[] {
-    return this.allAvatars.filter(
-      (avatar: AvatarModel) => avatar.rarity === 'epic',
-    );
-  }
-
-  get dailyOnlyAvatars(): AvatarModel[] {
-    return this.allAvatars.filter(
-      (avatar: AvatarModel) => avatar.rarity !== 'epic',
-    );
-  }
-
-  get unlockedDailyAvatarIds(): string[] {
-    return this.dailyRewardService
-      .getUnlockedAvatars()
-      .map((avatar) => avatar.id);
-  }
-
-  get dailyRewardAvatars() {
-    return this.dailyRewardService.dailyAvatars.filter(
-      (avatar) => avatar.rarity !== 'epic',
-    );
-  }
-
-  get epicRewardAvatars() {
-    return this.dailyRewardService.dailyAvatars.filter(
-      (avatar) => avatar.rarity === 'epic',
-    );
-  }
-
   isRewardAvatarUnlocked(avatarId: string): boolean {
-    return this.unlockedDailyAvatarIds.includes(avatarId);
+    return this.unlockedAvatarIds.includes(avatarId);
   }
 
-  isAvatarUnlocked(minLevel: number, currentLevel: number): boolean {
-    return currentLevel >= minLevel;
+  isAvatarUnlocked(
+    minLevel: number | undefined,
+    currentLevel: number,
+  ): boolean {
+    return currentLevel >= (minLevel ?? 1);
   }
 
-  openAvatarModal() {
-    this.selectedAvatar = this.dailyRewardService.getSelectedAvatar();
+  async openAvatarModal() {
+    const profile = await firstValueFrom(this.profile$);
+
+    this.selectedAvatar = profile?.avatar?.selectedAvatar ?? 'letter';
     this.tempSelectedAvatar = this.selectedAvatar;
+    this.unlockedAvatarIds = profile?.avatar?.unlockedAvatarIds ?? [];
+
     this.showAvatarModal = true;
   }
 
@@ -349,10 +304,12 @@ export class ProfilePage {
   }
 
   chooseTempAvatar(avatarId: string, currentLevel: number) {
-    const levelAvatar = this.avatars.find((a) => a.id === avatarId);
+    const avatar = this.avatars.find((item) => item.id === avatarId);
 
-    if (levelAvatar) {
-      if (!this.isAvatarUnlocked(levelAvatar.minLevel, currentLevel)) return;
+    if (!avatar) return;
+
+    if (avatar.source === 'base') {
+      if (!this.isAvatarUnlocked(avatar.minLevel, currentLevel)) return;
 
       this.tempSelectedAvatar = avatarId;
       return;
@@ -365,7 +322,9 @@ export class ProfilePage {
 
   async saveAvatar() {
     this.selectedAvatar = this.tempSelectedAvatar;
+
     await this.dailyRewardService.saveSelectedAvatar(this.selectedAvatar);
+
     this.showAvatarModal = false;
   }
 

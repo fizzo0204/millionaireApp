@@ -1,8 +1,4 @@
-import {
-  DailyReward,
-  DailyAvatarReward,
-  DailyChestReward,
-} from '../models/daily-reward.model';
+import { DailyReward, DailyChestReward } from '../models/daily-reward.model';
 
 export const DAILY_REWARDS: DailyReward[] = [
   {
@@ -38,6 +34,7 @@ export const DAILY_REWARDS: DailyReward[] = [
     type: 'avatar',
     label: 'Avatar',
     icon: '🎨',
+    avatarPool: 'daily',
   },
   {
     day: 6,
@@ -51,33 +48,6 @@ export const DAILY_REWARDS: DailyReward[] = [
     type: 'chest',
     label: 'Epic Chest',
     icon: '🎁',
-  },
-];
-
-export const DAILY_AVATARS: DailyAvatarReward[] = [
-  {
-    id: 'daily_turtle_gold',
-    label: 'Turtle',
-    icon: '🐢',
-    rarity: 'rare',
-  },
-  {
-    id: 'daily_fire_brain',
-    label: 'Fire Brain',
-    icon: '🔥',
-    rarity: 'rare',
-  },
-  {
-    id: 'daily_neon_star',
-    label: 'Neon Star',
-    icon: '🌟',
-    rarity: 'common',
-  },
-  {
-    id: 'daily_crown_legend',
-    label: 'Crown Legend',
-    icon: '👑',
-    rarity: 'epic',
   },
 ];
 
@@ -101,11 +71,5 @@ export const EPIC_CHEST_REWARDS: DailyChestReward[] = [
     label: 'Avatar Epico',
     icon: '👑',
     rarity: 'epic',
-    avatar: {
-      id: 'daily_crown_legend',
-      label: 'Crown Legend',
-      icon: '👑',
-      rarity: 'epic',
-    },
   },
 ];

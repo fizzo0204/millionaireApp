@@ -3,7 +3,6 @@ import { firstValueFrom, Subscription } from 'rxjs';
 
 import {
   DailyReward,
-  DailyAvatarReward,
   DailyChestReward,
   DailyRewardState,
   UserDailyRewardData,
@@ -11,9 +10,11 @@ import {
 
 import {
   DAILY_REWARDS,
-  DAILY_AVATARS,
   EPIC_CHEST_REWARDS,
 } from 'src/app/data/daily-rewards.data';
+
+import { AVATARS } from 'src/app/data/avatars.data';
+import { AvatarModel } from 'src/app/models/avatar.model';
 
 import { DAILY_REWARD_CONFIG } from 'src/app/config/daily-reward.config';
 import { AuthService } from 'src/app/services/auth.service';
@@ -26,6 +27,7 @@ export class DailyRewardService {
   private readonly storageKey = DAILY_REWARD_CONFIG.storageKeys.reward;
   private readonly unlockedAvatarsKey =
     DAILY_REWARD_CONFIG.storageKeys.unlockedAvatars;
+  private readonly selectedAvatarKey = 'profile_avatar';
 
   private userSub?: Subscription;
 
@@ -33,12 +35,14 @@ export class DailyRewardService {
     currentDay: 1,
     lastClaimDate: null,
     claimedToday: false,
-    unlockedAvatarIds: [],
+  };
+
+  private cachedAvatar = {
     selectedAvatar: 'letter',
+    unlockedAvatarIds: [] as string[],
   };
 
   readonly rewards: DailyReward[] = DAILY_REWARDS;
-  readonly dailyAvatars: DailyAvatarReward[] = DAILY_AVATARS;
   readonly epicChestRewards: DailyChestReward[] = EPIC_CHEST_REWARDS;
 
   constructor(
@@ -46,6 +50,14 @@ export class DailyRewardService {
     private userStatsService: UserStatsService,
   ) {
     this.listenToUser();
+  }
+
+  get dailyAvatars(): AvatarModel[] {
+    return AVATARS.filter((avatar) => avatar.source === 'daily');
+  }
+
+  get epicAvatars(): AvatarModel[] {
+    return AVATARS.filter((avatar) => avatar.source === 'epic');
   }
 
   getState(): DailyRewardState {
@@ -69,13 +81,24 @@ export class DailyRewardService {
     return this.rewards[normalizedDay - 1];
   }
 
-  getRandomDailyAvatar(): DailyAvatarReward {
-    const index = Math.floor(Math.random() * this.dailyAvatars.length);
+  getRandomDailyAvatar(): AvatarModel {
+    const avatars = this.dailyAvatars;
+    const index = Math.floor(Math.random() * avatars.length);
 
-    return this.dailyAvatars[index];
+    return avatars[index];
   }
 
-  async claimToday() {
+  getRandomEpicAvatar(): AvatarModel | undefined {
+    const avatars = this.epicAvatars;
+
+    if (avatars.length === 0) return undefined;
+
+    const index = Math.floor(Math.random() * avatars.length);
+
+    return avatars[index];
+  }
+
+  async claimToday(): Promise<void> {
     const user = await firstValueFrom(this.auth.user$);
 
     const state = this.getState();
@@ -102,11 +125,11 @@ export class DailyRewardService {
     await this.userStatsService.updateDailyRewardData(user.uid, updatedData);
   }
 
-  async simulateDay(day: number) {
+  async simulateDay(day: number): Promise<void> {
     await this.setDebugDay(day);
   }
 
-  async resetDailyReward() {
+  async resetDailyReward(): Promise<void> {
     const user = await firstValueFrom(this.auth.user$);
 
     const updatedData: Partial<UserDailyRewardData> = {
@@ -127,21 +150,14 @@ export class DailyRewardService {
     await this.userStatsService.updateDailyRewardData(user.uid, updatedData);
   }
 
-  async saveUnlockedAvatar(avatar: DailyAvatarReward) {
+  async saveUnlockedAvatar(avatar: AvatarModel): Promise<void> {
     const user = await firstValueFrom(this.auth.user$);
 
-    const alreadyUnlocked = this.cachedDailyReward.unlockedAvatarIds.includes(
-      avatar.id,
-    );
+    if (this.cachedAvatar.unlockedAvatarIds.includes(avatar.id)) return;
 
-    if (alreadyUnlocked) return;
-
-    this.cachedDailyReward = {
-      ...this.cachedDailyReward,
-      unlockedAvatarIds: [
-        ...this.cachedDailyReward.unlockedAvatarIds,
-        avatar.id,
-      ],
+    this.cachedAvatar = {
+      ...this.cachedAvatar,
+      unlockedAvatarIds: [...this.cachedAvatar.unlockedAvatarIds, avatar.id],
     };
 
     if (!user || user.isAnonymous) {
@@ -152,13 +168,17 @@ export class DailyRewardService {
     await this.userStatsService.unlockDailyAvatar(user.uid, avatar.id);
   }
 
-  getUnlockedAvatars(): DailyAvatarReward[] {
-    return this.dailyAvatars.filter((avatar) =>
-      this.cachedDailyReward.unlockedAvatarIds.includes(avatar.id),
+  getUnlockedAvatarIds(): string[] {
+    return this.cachedAvatar.unlockedAvatarIds;
+  }
+
+  getUnlockedAvatars(): AvatarModel[] {
+    return AVATARS.filter((avatar) =>
+      this.cachedAvatar.unlockedAvatarIds.includes(avatar.id),
     );
   }
 
-  async setDebugDay(day: number) {
+  async setDebugDay(day: number): Promise<void> {
     const user = await firstValueFrom(this.auth.user$);
 
     const normalizedDay = Math.min(
@@ -185,11 +205,11 @@ export class DailyRewardService {
     await this.userStatsService.updateDailyRewardData(user.uid, updatedData);
   }
 
-  async resetUnlockedAvatars() {
+  async resetUnlockedAvatars(): Promise<void> {
     const user = await firstValueFrom(this.auth.user$);
 
-    this.cachedDailyReward = {
-      ...this.cachedDailyReward,
+    this.cachedAvatar = {
+      ...this.cachedAvatar,
       unlockedAvatarIds: [],
     };
 
@@ -199,7 +219,7 @@ export class DailyRewardService {
 
     await this.userStatsService.updateDailyRewardData(user.uid, {
       unlockedAvatarIds: [],
-    });
+    } as any);
   }
 
   getRandomEpicChestReward(): DailyChestReward {
@@ -209,26 +229,26 @@ export class DailyRewardService {
   }
 
   getSelectedAvatar(): string {
-    return this.cachedDailyReward.selectedAvatar;
+    return this.cachedAvatar.selectedAvatar;
   }
 
-  async saveSelectedAvatar(avatarId: string) {
+  async saveSelectedAvatar(avatarId: string): Promise<void> {
     const user = await firstValueFrom(this.auth.user$);
 
-    this.cachedDailyReward = {
-      ...this.cachedDailyReward,
+    this.cachedAvatar = {
+      ...this.cachedAvatar,
       selectedAvatar: avatarId,
     };
 
     if (!user || user.isAnonymous) {
-      localStorage.setItem('profile_avatar', avatarId);
+      localStorage.setItem(this.selectedAvatarKey, avatarId);
       return;
     }
 
     await this.userStatsService.saveSelectedAvatar(user.uid, avatarId);
   }
 
-  private listenToUser() {
+  private listenToUser(): void {
     this.userSub = this.auth.user$.subscribe(async (user) => {
       if (!user || user.isAnonymous) {
         this.loadLocalFallback();
@@ -239,19 +259,27 @@ export class DailyRewardService {
         user.uid,
       );
 
+      const profile = await firstValueFrom(
+        this.userStatsService.getUserProfile(user.uid),
+      );
+
       this.cachedDailyReward = {
         ...dailyReward,
         claimedToday: dailyReward.lastClaimDate === this.getTodayKey(),
-        unlockedAvatarIds: dailyReward.unlockedAvatarIds ?? [],
-        selectedAvatar: dailyReward.selectedAvatar ?? 'letter',
+      };
+
+      this.cachedAvatar = {
+        selectedAvatar: profile?.avatar?.selectedAvatar ?? 'letter',
+        unlockedAvatarIds: profile?.avatar?.unlockedAvatarIds ?? [],
       };
     });
   }
 
-  private loadLocalFallback() {
+  private loadLocalFallback(): void {
     const savedState = localStorage.getItem(this.storageKey);
     const savedAvatars = localStorage.getItem(this.unlockedAvatarsKey);
-    const selectedAvatar = localStorage.getItem('profile_avatar') || 'letter';
+    const selectedAvatar =
+      localStorage.getItem(this.selectedAvatarKey) || 'letter';
 
     const state: DailyRewardState = savedState
       ? JSON.parse(savedState)
@@ -261,20 +289,27 @@ export class DailyRewardService {
           claimedToday: false,
         };
 
-    const avatars: DailyAvatarReward[] = savedAvatars
+    const parsedAvatars: unknown[] = savedAvatars
       ? JSON.parse(savedAvatars)
       : [];
+
+    const unlockedAvatarIds = parsedAvatars
+      .map((item: any) => (typeof item === 'string' ? item : item?.id))
+      .filter(Boolean);
 
     this.cachedDailyReward = {
       currentDay: state.currentDay,
       lastClaimDate: state.lastClaimDate,
       claimedToday: state.lastClaimDate === this.getTodayKey(),
-      unlockedAvatarIds: avatars.map((avatar) => avatar.id),
+    };
+
+    this.cachedAvatar = {
       selectedAvatar,
+      unlockedAvatarIds,
     };
   }
 
-  private saveLocalFallback() {
+  private saveLocalFallback(): void {
     const state: DailyRewardState = {
       currentDay: this.cachedDailyReward.currentDay,
       lastClaimDate: this.cachedDailyReward.lastClaimDate,
@@ -284,12 +319,11 @@ export class DailyRewardService {
     localStorage.setItem(this.storageKey, JSON.stringify(state));
   }
 
-  private saveLocalUnlockedAvatarsFallback() {
-    const avatars = this.dailyAvatars.filter((avatar) =>
-      this.cachedDailyReward.unlockedAvatarIds.includes(avatar.id),
+  private saveLocalUnlockedAvatarsFallback(): void {
+    localStorage.setItem(
+      this.unlockedAvatarsKey,
+      JSON.stringify(this.cachedAvatar.unlockedAvatarIds),
     );
-
-    localStorage.setItem(this.unlockedAvatarsKey, JSON.stringify(avatars));
   }
 
   private getTodayKey(): string {

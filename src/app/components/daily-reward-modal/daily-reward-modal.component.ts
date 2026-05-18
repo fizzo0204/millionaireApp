@@ -1,19 +1,21 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
+import { ModalController } from '@ionic/angular';
+
 import { DailyRewardService } from 'src/app/services/daily-reward.service';
 import { CoinsService } from 'src/app/services/coins.service';
 import { UserStatsService } from 'src/app/services/user-stats.service';
 import { AuthService } from 'src/app/services/auth.service';
 import { AdsService } from 'src/app/services/ads.service';
+
 import {
-  DailyAvatarReward,
   DailyChestReward,
   DailyReward,
   CinematicPhase,
   RevealType,
 } from 'src/app/models/daily-reward.model';
-import { ModalController } from '@ionic/angular';
+import { AvatarModel } from 'src/app/models/avatar.model';
 
 @Component({
   selector: 'app-daily-reward-modal',
@@ -26,8 +28,9 @@ export class DailyRewardModalComponent {
   claimedNow = false;
   claimLoading = false;
 
-  unlockedAvatar: DailyAvatarReward | null = null;
+  unlockedAvatar: AvatarModel | null = null;
   chestReward: DailyChestReward | null = null;
+  epicAvatarReward: AvatarModel | null = null;
 
   cinematicVisible = false;
   cinematicPhase: CinematicPhase = 'opening';
@@ -122,6 +125,11 @@ export class DailyRewardModalComponent {
 
       this.chestReward = chestReward;
 
+      if (chestReward.type === 'avatar') {
+        this.epicAvatarReward =
+          this.dailyRewardService.getRandomEpicAvatar() ?? null;
+      }
+
       await this.playChestCinematic(chestReward);
 
       await this.applyChestReward(chestReward);
@@ -137,38 +145,52 @@ export class DailyRewardModalComponent {
         `+${amount} Coins`,
         'coins',
       );
+
       await this.coinsService.addCoins(amount);
+      return;
     }
 
     if (reward.type === 'xp' && reward.amount) {
       const amount = reward.amount * multiplier;
 
       await this.playRewardCinematic('⚡', `+${amount} XP`, 'xp');
+
       await this.addXp(amount);
+      return;
     }
 
     if (reward.type === 'avatar') {
       const avatar = this.dailyRewardService.getRandomDailyAvatar();
 
       await this.dailyRewardService.saveUnlockedAvatar(avatar);
+
       this.unlockedAvatar = avatar;
 
-      await this.playRewardCinematic(avatar.icon, avatar.label, 'avatar');
+      await this.playRewardCinematic(
+        avatar.icon || '🎨',
+        avatar.label,
+        'avatar',
+      );
     }
   }
 
   private async applyChestReward(chestReward: DailyChestReward) {
     if (chestReward.type === 'coins' && chestReward.amount) {
       await this.coinsService.addCoins(chestReward.amount);
+      return;
     }
 
     if (chestReward.type === 'xp' && chestReward.amount) {
       await this.addXp(chestReward.amount);
+      return;
     }
 
-    if (chestReward.type === 'avatar' && chestReward.avatar) {
-      await this.dailyRewardService.saveUnlockedAvatar(chestReward.avatar);
-      this.unlockedAvatar = chestReward.avatar;
+    if (chestReward.type === 'avatar') {
+      if (!this.epicAvatarReward) return;
+
+      await this.dailyRewardService.saveUnlockedAvatar(this.epicAvatarReward);
+
+      this.unlockedAvatar = this.epicAvatarReward;
     }
   }
 
@@ -181,9 +203,18 @@ export class DailyRewardModalComponent {
   }
 
   private async playChestCinematic(chestReward: DailyChestReward) {
-    this.rewardRevealIcon = chestReward.icon;
-    this.rewardRevealLabel = chestReward.label;
-    this.rewardRevealType = 'chest';
+    if (chestReward.type === 'avatar') {
+      this.rewardRevealIcon = this.epicAvatarReward?.icon || chestReward.icon;
+
+      this.rewardRevealLabel =
+        this.epicAvatarReward?.label || chestReward.label;
+
+      this.rewardRevealType = 'chest';
+    } else {
+      this.rewardRevealIcon = chestReward.icon;
+      this.rewardRevealLabel = chestReward.label;
+      this.rewardRevealType = 'chest';
+    }
 
     this.cinematicVisible = true;
     this.cinematicPhase = 'opening';

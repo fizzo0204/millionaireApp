@@ -4,19 +4,15 @@ export type RevealType = 'coins' | 'xp' | 'avatar' | 'chest';
 
 export type CinematicPhase = 'opening' | 'flash' | 'reward';
 
+export type AvatarRewardPool = 'daily' | 'epic';
+
 export interface DailyReward {
   day: number;
   type: DailyRewardType;
   amount?: number;
   label: string;
   icon: string;
-}
-
-export interface DailyAvatarReward {
-  id: string;
-  label: string;
-  icon: string;
-  rarity: 'common' | 'rare' | 'epic';
+  avatarPool?: AvatarRewardPool;
 }
 
 export type DailyChestRewardType = 'coins' | 'xp' | 'avatar';
@@ -27,7 +23,7 @@ export interface DailyChestReward {
   label: string;
   icon: string;
   rarity: 'rare' | 'epic';
-  avatar?: DailyAvatarReward;
+  avatarId?: string;
 }
 
 export interface DailyRewardState {
@@ -40,6 +36,4 @@ export interface UserDailyRewardData {
   currentDay: number;
   lastClaimDate: string | null;
   claimedToday: boolean;
-  unlockedAvatarIds: string[];
-  selectedAvatar: string;
 }

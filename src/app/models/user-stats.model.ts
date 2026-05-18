@@ -14,6 +14,11 @@ export interface UserStats {
   lives: number;
 }
 
+export interface UserAvatarData {
+  selectedAvatar: string;
+  unlockedAvatarIds: string[];
+}
+
 export interface AppUserProfile {
   uid: string;
   displayName: string | null;
@@ -22,6 +27,7 @@ export interface AppUserProfile {
   createdAt: unknown;
   lastLoginAt: unknown;
   stats: UserStats;
+  avatar: UserAvatarData;
 }
 
 export interface QuizHistoryItem {

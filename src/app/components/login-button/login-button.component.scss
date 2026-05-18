@@ -1,117 +1,307 @@
 :host {
+  display: block;
+}
+
+.player-card {
+  position: relative;
+  overflow: hidden;
+
+  min-width: 145px;
+  height: 58px;
+  padding: 7px 12px 7px 8px;
+
+  border: 0;
+  border-radius: 999px;
+
   display: flex;
   align-items: center;
+  gap: 10px;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.15s ease,
+    filter 0.15s ease;
 }
 
-/* LOGIN BUTTON */
-.login-btn {
-  --background: #fff;
-  --color: #1e2f4f;
-  --border-radius: 999px;
-  --box-shadow:
-    inset 0 -2px 0 rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.2);
-
-  min-width: 95px;
-  height: 38px;
-  padding: 0 10px;
-  font-size: 0.7rem;
-  font-weight: 900;
-  text-transform: uppercase;
-
-  &:active {
-    transform: scale(0.96);
-  }
-
-  ion-spinner {
-    --width: 18px;
-    --height: 18px;
-  }
+.player-card:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
-.login-content {
+.player-card:disabled {
+  opacity: 0.75;
+}
+
+.player-card.logged {
+  background: linear-gradient(180deg, #8b5cf6 0%, #4c1d95 100%);
+
+  border: 2px solid rgba(255, 255, 255, 0.14);
+
+  box-shadow:
+    0 6px 0 #2e1065,
+    0 12px 22px rgba(0, 0, 0, 0.34),
+    inset 0 2px 0 rgba(255, 255, 255, 0.18);
+}
+
+.player-card.guest {
+  background: linear-gradient(180deg, #ffea00 0%, #ffb800 100%);
+
+  box-shadow:
+    0 6px 0 #b77900,
+    0 12px 22px rgba(0, 0, 0, 0.34),
+    inset 0 2px 0 rgba(255, 255, 255, 0.3);
+
+  animation: guestPulse 2.6s ease-in-out infinite;
+}
+
+.card-glow {
+  position: absolute;
+  inset: 0;
+
+  background:
+    radial-gradient(
+      circle at 20% 20%,
+      rgba(255, 255, 255, 0.24),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 80% 80%,
+      rgba(255, 255, 255, 0.14),
+      transparent 35%
+    );
+}
+
+.card-shine {
+  position: absolute;
+  inset: 0;
+  transform: translateX(-120%);
+
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.38) 46%,
+    transparent 72%
+  );
+
+  animation: shine 5s ease-in-out infinite;
+}
+
+.avatar-wrap,
+.guest-icon {
+  position: relative;
+  z-index: 2;
+
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+
+  flex-shrink: 0;
+
+  overflow: hidden;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(255, 255, 255, 0.16);
+
+  border: 2px solid rgba(255, 255, 255, 0.18);
+
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.22),
+    0 4px 8px rgba(0, 0, 0, 0.24);
+}
+
+.avatar-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-fallback {
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 1000;
+}
+
+.online-dot {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+
+  background: #00ff7b;
+  border: 2px solid #fff;
+
+  box-shadow: 0 0 8px rgba(0, 255, 123, 0.7);
+}
+
+.guest-icon {
+  background: linear-gradient(180deg, #fff7c2, #ffffff);
+}
+
+.guest-icon ion-icon {
+  color: #d97706;
+  font-size: 1.3rem;
+}
+
+.player-info {
+  position: relative;
+  z-index: 2;
+
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
+}
+
+.player-tag {
+  margin-bottom: 2px;
+
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.55rem;
+  font-weight: 1000;
+  letter-spacing: 0.12em;
+}
+
+.guest-tag {
+  color: rgba(50, 35, 0, 0.75);
+}
+
+.player-info strong {
+  color: #fff;
+  font-size: 0.84rem;
+  font-weight: 1000;
   line-height: 1;
 }
 
-.user-label {
-  font-size: 0.58rem;
-  color: #64748b;
+.player-card.guest .player-info strong {
+  color: #1f2937;
+}
+
+.player-level,
+.guest-reward {
+  margin-top: 4px;
+
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.player-level {
+  color: #ffe600;
+  font-size: 0.65rem;
   font-weight: 900;
 }
 
-.google-login {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 0.72rem;
-  font-weight: 900;
-  color: #1e2f4f;
-
-  ion-icon {
-    font-size: 0.9rem;
-  }
-}
-
-/* UTENTE LOGGATO */
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  height: 38px;
-  max-width: 150px;
-  padding: 0 8px;
-  border-radius: 999px;
-  background: #fff;
-  color: #1e2f4f;
-  box-shadow:
-    inset 0 -2px 0 rgba(0, 0, 0, 0.12),
-    0 4px 10px rgba(0, 0, 0, 0.2);
-
-  img {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-}
-
-.username {
+.player-level ion-icon {
   font-size: 0.7rem;
+}
+
+.guest-reward {
+  color: rgba(40, 40, 40, 0.82);
+  font-size: 0.63rem;
   font-weight: 900;
-  white-space: nowrap;
 }
 
-@media (max-width: 390px) {
-  .user-info {
-    max-width: 135px;
+.mini-coin {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+
+  filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.45))
+    drop-shadow(0 0 8px rgba(255, 200, 0, 0.25));
+}
+
+ion-spinner {
+  position: relative;
+  z-index: 2;
+  color: #1f2937;
+  margin: 0 auto;
+}
+
+@keyframes shine {
+  0%,
+  65% {
+    transform: translateX(-120%);
   }
 
-  .username {
-    font-size: 0.66rem;
+  100% {
+    transform: translateX(120%);
   }
 }
 
-@media (max-width: 370px) {
-  .login-btn {
-    min-width: 80px;
-    height: 34px;
-    font-size: 0.65rem;
+@keyframes guestPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
   }
 
-  .user-info {
-    height: 34px;
-    max-width: 120px;
-    padding: 0 6px;
+  50% {
+    transform: scale(1.02);
+    filter: brightness(1.04);
+  }
+}
 
-    img {
-      width: 20px;
-      height: 20px;
-    }
+@media (max-width: 430px) {
+  .player-card {
+    min-width: 132px;
+    height: 54px;
+    padding-right: 10px;
   }
 
-  .username {
-    font-size: 0.62rem;
+  .avatar-wrap,
+  .guest-icon {
+    width: 38px;
+    height: 38px;
   }
+
+  .player-info strong {
+    font-size: 0.78rem;
+  }
+
+  .guest-reward,
+  .player-level {
+    font-size: 0.58rem;
+  }
+}
+
+.guest-premium {
+  background: linear-gradient(180deg, #2563eb 0%, #1e3a8a 100%);
+  border: 2px solid rgba(255, 234, 0, 0.55);
+
+  box-shadow:
+    0 6px 0 #0f1f54,
+    0 12px 22px rgba(0, 0, 0, 0.34),
+    0 0 16px rgba(255, 234, 0, 0.26),
+    inset 0 2px 0 rgba(255, 255, 255, 0.18);
+}
+
+.guest-avatar-premium {
+  background: linear-gradient(180deg, #ffea00, #ffc400);
+}
+
+.guest-avatar-premium ion-icon {
+  color: #172033;
+  font-size: 1.25rem;
+}
+
+.guest-dot {
+  background: #ffea00;
+  box-shadow: 0 0 8px rgba(255, 234, 0, 0.8);
+}
+
+.guest-premium .player-tag {
+  color: #ffea00;
+}
+
+.guest-premium .player-info strong {
+  color: #fff;
+}
+
+.guest-premium .player-level {
+  color: #dbeafe;
 }

@@ -24,6 +24,10 @@ import {
   lockClosedOutline,
   logoFacebook,
   logoGoogle,
+  flash,
+  gift,
+  personOutline,
+  lockClosed,
 } from 'ionicons/icons';
 
 import { defineCustomElements as ionicElements } from '@ionic/core/loader';
@@ -64,4 +68,8 @@ addIcons({
   'lock-closed-outline': lockClosedOutline,
   'logo-facebook': logoFacebook,
   'logo-google': logoGoogle,
+  flash: flash,
+  gift: gift,
+  'person-outline': personOutline,
+  'lock-closed': lockClosed,
 });
