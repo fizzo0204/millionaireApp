@@ -1,0 +1,74 @@
+@if (state$ | async; as state) {
+  @if (state.visible && state.level !== null) {
+    <div class="level-up-backdrop" role="dialog" aria-modal="true">
+      <div class="level-up-rays"></div>
+      <div class="level-up-glow"></div>
+
+      <div class="level-up-particles" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+
+      <div class="level-up-scene">
+        <div class="level-up-badge">LEVEL UP</div>
+
+        <div class="level-up-image-wrap">
+          <div class="level-up-ring"></div>
+          <img src="assets/ui/lvlUp.webp" alt="Level up" />
+        </div>
+
+        <div class="level-up-copy">
+          <span>Nuovo livello raggiunto</span>
+          <h2>Livello {{ state.level }}</h2>
+          <p>La tua energia sale. Continua cosi!</p>
+        </div>
+
+        @if (state.coinsReward > 0) {
+          <div class="level-up-reward">
+            <span>Premio livello</span>
+            <strong>
+              <img src="assets/ui/coin-turtle.webp" alt="Coins" />
+              +{{ state.coinsReward }} Coins
+            </strong>
+          </div>
+        }
+
+        <div class="level-up-actions">
+          @if (state.coinsReward > 0 && !state.rewardDoubled) {
+            <button
+              class="level-up-double-button"
+              type="button"
+              (click)="watchAdAndDoubleReward()"
+              [disabled]="state.doubleLoading || state.claimLoading"
+            >
+              @if (!state.doubleLoading) {
+                <ion-icon name="play"></ion-icon>
+                Guarda video e raddoppia
+              } @else {
+                Video in corso...
+              }
+            </button>
+          }
+
+          <button
+            class="level-up-button"
+            type="button"
+            (click)="continue()"
+            [disabled]="state.doubleLoading || state.claimLoading"
+          >
+            @if (!state.claimLoading) {
+              Continua
+              <ion-icon name="chevron-forward-outline"></ion-icon>
+            } @else {
+              Salvataggio...
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+}

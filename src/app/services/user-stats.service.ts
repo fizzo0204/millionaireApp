@@ -49,6 +49,7 @@ export class UserStatsService {
     streakDays: 0,
     xp: 0,
     level: USER_STATS_CONFIG.defaultLevel,
+    levelRewardLastClaimedLevel: USER_STATS_CONFIG.defaultLevel,
     coins: USER_STATS_CONFIG.defaultCoins,
     lives: USER_STATS_CONFIG.defaultLives,
     lastQuizPlayedAt: null,
@@ -499,6 +500,58 @@ export class UserStatsService {
         'stats.xp': increment(amount),
         'stats.level': updatedLevel,
       });
+    });
+  }
+
+  async claimLevelUpCoinsReward(
+    uid: string,
+    previousLevel: number,
+    currentLevel: number,
+    requestedCoinsReward: number,
+  ): Promise<number> {
+    if (currentLevel <= previousLevel || requestedCoinsReward <= 0) return 0;
+
+    const userRef = doc(this.firestore, `users/${uid}`);
+
+    return runTransaction(this.firestore, async (transaction) => {
+      const snapshot = await transaction.get(userRef);
+
+      if (!snapshot.exists()) return 0;
+
+      const data = snapshot.data();
+      const stats = data['stats'];
+      const lastClaimedLevel =
+        typeof stats?.levelRewardLastClaimedLevel === 'number'
+          ? stats.levelRewardLastClaimedLevel
+          : previousLevel;
+      const rewardFromLevel = Math.max(lastClaimedLevel, previousLevel);
+      const levelsToReward = Math.max(0, currentLevel - rewardFromLevel);
+
+      if (levelsToReward <= 0) {
+        transaction.update(userRef, {
+          'stats.levelRewardLastClaimedLevel': Math.max(
+            lastClaimedLevel,
+            currentLevel,
+          ),
+        });
+
+        return 0;
+      }
+
+      const coinsReward =
+        levelsToReward * USER_STATS_CONFIG.levelUpCoinsReward;
+      const doubledCoinsReward = coinsReward * 2;
+      const safeCoinsReward =
+        requestedCoinsReward >= doubledCoinsReward
+          ? doubledCoinsReward
+          : coinsReward;
+
+      transaction.update(userRef, {
+        'stats.coins': increment(safeCoinsReward),
+        'stats.levelRewardLastClaimedLevel': currentLevel,
+      });
+
+      return safeCoinsReward;
     });
   }
 

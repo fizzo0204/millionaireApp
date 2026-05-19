@@ -10,6 +10,7 @@ export interface UserStats {
   lastLifeUpdate?: unknown;
   xp: number;
   level: number;
+  levelRewardLastClaimedLevel?: number;
   coins: number;
   lives: number;
 }
