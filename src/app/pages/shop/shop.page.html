@@ -72,7 +72,7 @@
         </ion-button>
       </div>
 
-      @if (lives$ | async; as lives) {
+      @let lives = lives$ | async; @if (lives !== null && lives !== undefined) {
       <div class="shop-card life-card">
         <div class="badge" [class.full]="lives >= maxLives">
           {{ lives >= maxLives ? "Pieno" : "Gratis" }}

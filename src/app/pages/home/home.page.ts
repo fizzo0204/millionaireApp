@@ -93,14 +93,18 @@ export class HomePage implements OnInit, OnDestroy {
 
     this.coinsLoading = true;
 
-    const reward = await this.ads.showRewardedAd();
+    try {
+      const reward = await this.ads.showRewardedAd();
 
-    if (reward) {
-      await this.coinsService.addCoins(10);
-      this.triggerCoinPulse();
+      if (reward) {
+        await this.coinsService.addCoins(10);
+        this.triggerCoinPulse();
+      }
+    } catch (error) {
+      console.error('Errore rewarded ad monete:', error);
+    } finally {
+      this.coinsLoading = false;
     }
-
-    this.coinsLoading = false;
   }
 
   async watchLifeAd() {
@@ -112,13 +116,17 @@ export class HomePage implements OnInit, OnDestroy {
 
     this.lifeLoading = true;
 
-    const reward = await this.ads.showRewardedAd();
+    try {
+      const reward = await this.ads.showRewardedAd();
 
-    if (reward) {
-      await this.livesService.addLife(1);
+      if (reward) {
+        await this.livesService.addLife(1);
+      }
+    } catch (error) {
+      console.error('Errore rewarded ad vita:', error);
+    } finally {
+      this.lifeLoading = false;
     }
-
-    this.lifeLoading = false;
   }
 
   triggerCoinPulse() {

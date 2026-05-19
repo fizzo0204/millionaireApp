@@ -17,17 +17,40 @@ import { PluginListenerHandle } from '@capacitor/core';
 })
 export class AdsService {
   private bannerVisible = false;
+  private adMobInitialized = false;
+  private initializePromise?: Promise<boolean>;
 
   constructor(private audioService: AudioService) {
-    this.initialize();
+    void this.initialize();
   }
 
-  async initialize() {
-    await AdMob.initialize();
+  async initialize(): Promise<boolean> {
+    if (this.adMobInitialized) return true;
+
+    if (this.initializePromise) return this.initializePromise;
+
+    this.initializePromise = AdMob.initialize()
+      .then(() => {
+        this.adMobInitialized = true;
+        return true;
+      })
+      .catch((error) => {
+        console.warn('Errore inizializzazione AdMob:', error);
+        return false;
+      })
+      .finally(() => {
+        this.initializePromise = undefined;
+      });
+
+    return this.initializePromise;
   }
 
   async showBanner() {
     if (this.bannerVisible) return;
+
+    const initialized = await this.initialize();
+
+    if (!initialized) return;
 
     const options: BannerAdOptions = {
       adId: ADS_CONFIG.banner.adId,
@@ -35,22 +58,35 @@ export class AdsService {
       position: BannerAdPosition.BOTTOM_CENTER,
     };
 
-    await AdMob.showBanner(options);
-    this.bannerVisible = true;
+    try {
+      await AdMob.showBanner(options);
+      this.bannerVisible = true;
+    } catch (error) {
+      this.bannerVisible = false;
+      console.warn('Errore banner AdMob:', error);
+    }
   }
 
   async hideBanner() {
-    await AdMob.hideBanner();
-    this.bannerVisible = false;
+    try {
+      await AdMob.hideBanner();
+    } catch (error) {
+      console.warn('Errore hide banner AdMob:', error);
+    } finally {
+      this.bannerVisible = false;
+    }
   }
 
   async showRewardedAd(): Promise<boolean> {
     let hasReward = false;
+    let adWasShown = false;
+    let finished = false;
 
     let showedListener: PluginListenerHandle | undefined;
     let rewardedListener: PluginListenerHandle | undefined;
     let dismissedListener: PluginListenerHandle | undefined;
     let failedListener: PluginListenerHandle | undefined;
+    let showTimeout: ReturnType<typeof setTimeout> | undefined;
 
     try {
       const options: RewardAdOptions = {
@@ -59,6 +95,15 @@ export class AdsService {
 
       const resultPromise = new Promise<boolean>(async (resolve) => {
         const finish = async (result: boolean) => {
+          if (finished) return;
+
+          finished = true;
+
+          if (showTimeout) {
+            clearTimeout(showTimeout);
+            showTimeout = undefined;
+          }
+
           await this.audioService.playMusic();
 
           showedListener?.remove();
@@ -72,6 +117,13 @@ export class AdsService {
         showedListener = await AdMob.addListener(
           RewardAdPluginEvents.Showed,
           () => {
+            adWasShown = true;
+
+            if (showTimeout) {
+              clearTimeout(showTimeout);
+              showTimeout = undefined;
+            }
+
             this.audioService.pauseMusic();
           },
         );
@@ -98,6 +150,12 @@ export class AdsService {
             await finish(false);
           },
         );
+
+        showTimeout = setTimeout(() => {
+          if (!adWasShown) {
+            finish(false);
+          }
+        }, 30000);
       });
 
       await AdMob.prepareRewardVideoAd(options);
@@ -106,6 +164,11 @@ export class AdsService {
       return await resultPromise;
     } catch (err) {
       console.error('❌ Errore rewarded video:', err);
+
+      if (showTimeout) {
+        clearTimeout(showTimeout);
+        showTimeout = undefined;
+      }
 
       showedListener?.remove();
       rewardedListener?.remove();

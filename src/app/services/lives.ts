@@ -7,6 +7,8 @@ import {
   updateDoc,
   serverTimestamp,
   increment,
+  UpdateData,
+  DocumentData,
 } from '@angular/fire/firestore';
 import { AuthService } from './auth.service';
 import { LIVES_CONFIG } from 'src/app/config/lives.config';
@@ -25,6 +27,8 @@ export class LivesService {
 
   private livesSubject = new BehaviorSubject<number>(LIVES_CONFIG.maxLives);
   private countdownSubject = new BehaviorSubject<string>('');
+  private lastLifeUpdateTime: number | null = null;
+  private isRecoveringLives = false;
 
   lives$ = this.livesSubject.asObservable();
   countdown$ = this.countdownSubject.asObservable();
@@ -41,6 +45,7 @@ export class LivesService {
       if (!user || user.isAnonymous) {
         this.livesSubject.next(LIVES_CONFIG.maxLives);
         this.countdownSubject.next('');
+        this.lastLifeUpdateTime = null;
         return;
       }
 
@@ -50,6 +55,9 @@ export class LivesService {
         const userProfile = profile as AppUserProfile | undefined;
         const lives = userProfile?.stats?.lives ?? LIVES_CONFIG.maxLives;
         this.livesSubject.next(lives);
+        this.lastLifeUpdateTime = this.getLastLifeUpdateTime(
+          userProfile?.stats?.lastLifeUpdate,
+        );
       });
     });
   }
@@ -69,10 +77,15 @@ export class LivesService {
 
     const userRef = doc(this.firestore, `users/${user.uid}`);
 
-    await updateDoc(userRef, {
+    const updates: UpdateData<DocumentData> = {
       [LIVES_CONFIG.firestorePaths.lives]: increment(-1),
-      [LIVES_CONFIG.firestorePaths.lastLifeUpdate]: serverTimestamp(),
-    });
+    };
+
+    if (currentLives >= LIVES_CONFIG.maxLives || !this.lastLifeUpdateTime) {
+      updates[LIVES_CONFIG.firestorePaths.lastLifeUpdate] = serverTimestamp();
+    }
+
+    await updateDoc(userRef, updates);
 
     return true;
   }
@@ -87,11 +100,17 @@ export class LivesService {
 
     const userRef = doc(this.firestore, `users/${user.uid}`);
 
-    await updateDoc(userRef, {
+    const updates: UpdateData<DocumentData> = {
       [LIVES_CONFIG.firestorePaths.lives]: updatedLives,
-      [LIVES_CONFIG.firestorePaths.lastLifeUpdate]:
-        updatedLives >= LIVES_CONFIG.maxLives ? null : serverTimestamp(),
-    });
+    };
+
+    if (updatedLives >= LIVES_CONFIG.maxLives) {
+      updates[LIVES_CONFIG.firestorePaths.lastLifeUpdate] = null;
+    } else if (!this.lastLifeUpdateTime) {
+      updates[LIVES_CONFIG.firestorePaths.lastLifeUpdate] = serverTimestamp();
+    }
+
+    await updateDoc(userRef, updates);
   }
 
   private startCountdown() {
@@ -104,48 +123,52 @@ export class LivesService {
   }
 
   private async recoverLivesIfNeeded() {
-    const user = await firstValueFrom(this.auth.user$);
+    if (this.isRecoveringLives) return;
 
-    if (!user || user.isAnonymous) return;
+    this.isRecoveringLives = true;
 
-    const lives = this.getLives();
+    try {
+      const user = await firstValueFrom(this.auth.user$);
 
-    if (lives >= LIVES_CONFIG.maxLives) {
-      this.countdownSubject.next('');
-      return;
+      if (!user || user.isAnonymous) return;
+
+      const lives = this.getLives();
+
+      if (lives >= LIVES_CONFIG.maxLives) {
+        this.countdownSubject.next('');
+        return;
+      }
+
+      const userRef = doc(this.firestore, `users/${user.uid}`);
+      const lastUpdateTime = this.lastLifeUpdateTime;
+
+      if (!lastUpdateTime) return;
+      const now = Date.now();
+
+      const diff = now - lastUpdateTime;
+      const recoveredLives = Math.floor(diff / LIVES_CONFIG.recoveryTime);
+
+      if (recoveredLives <= 0) return;
+
+      const updatedLives = Math.min(
+        LIVES_CONFIG.maxLives,
+        lives + recoveredLives,
+      );
+
+      const newLastUpdate =
+        updatedLives >= LIVES_CONFIG.maxLives
+          ? null
+          : new Date(
+              lastUpdateTime + recoveredLives * LIVES_CONFIG.recoveryTime,
+            );
+
+      await updateDoc(userRef, {
+        [LIVES_CONFIG.firestorePaths.lives]: updatedLives,
+        [LIVES_CONFIG.firestorePaths.lastLifeUpdate]: newLastUpdate,
+      });
+    } finally {
+      this.isRecoveringLives = false;
     }
-
-    const userRef = doc(this.firestore, `users/${user.uid}`);
-    const profile = (await firstValueFrom(docData(userRef))) as
-      | AppUserProfile
-      | undefined;
-
-    const lastUpdateTime = this.getLastLifeUpdateTime(
-      profile?.stats?.lastLifeUpdate,
-    );
-
-    if (!lastUpdateTime) return;
-    const now = Date.now();
-
-    const diff = now - lastUpdateTime;
-    const recoveredLives = Math.floor(diff / LIVES_CONFIG.recoveryTime);
-
-    if (recoveredLives <= 0) return;
-
-    const updatedLives = Math.min(
-      LIVES_CONFIG.maxLives,
-      lives + recoveredLives,
-    );
-
-    const newLastUpdate =
-      updatedLives >= LIVES_CONFIG.maxLives
-        ? null
-        : new Date(lastUpdateTime + recoveredLives * LIVES_CONFIG.recoveryTime);
-
-    await updateDoc(userRef, {
-      [LIVES_CONFIG.firestorePaths.lives]: updatedLives,
-      [LIVES_CONFIG.firestorePaths.lastLifeUpdate]: newLastUpdate,
-    });
   }
 
   private async updateCountdown() {
@@ -163,14 +186,7 @@ export class LivesService {
       return;
     }
 
-    const userRef = doc(this.firestore, `users/${user.uid}`);
-    const profile = (await firstValueFrom(docData(userRef))) as
-      | AppUserProfile
-      | undefined;
-
-    const lastUpdateTime = this.getLastLifeUpdateTime(
-      profile?.stats?.lastLifeUpdate,
-    );
+    const lastUpdateTime = this.lastLifeUpdateTime;
 
     if (!lastUpdateTime) {
       this.countdownSubject.next('');

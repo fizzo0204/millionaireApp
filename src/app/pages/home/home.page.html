@@ -97,7 +97,7 @@
         </button>
       </div>
 
-      @if (lives$ | async; as lives) {
+      @let lives = lives$ | async; @if (lives !== null && lives !== undefined) {
       <div class="reward-card lives-reward" [class.full]="lives >= maxLives">
         <div class="reward-card-top">
           <div class="reward-icon">❤️</div>
