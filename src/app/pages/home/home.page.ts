@@ -25,8 +25,8 @@ import { ModalController } from '@ionic/angular';
 export class HomePage implements OnInit, OnDestroy {
   private userSub?: Subscription;
   private livesSub?: Subscription;
-  private previousLives?: number;
 
+  private previousLives?: number;
   readonly maxLives = 5;
 
   showAnonModal = false;

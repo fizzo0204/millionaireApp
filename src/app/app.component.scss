@@ -23,8 +23,6 @@ app-bottom-nav {
   position: relative;
   overflow: hidden;
   margin: 18px 0;
-
-  /* 🔥 fix ghost pages */
   isolation: isolate;
 }
 

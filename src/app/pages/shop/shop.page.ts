@@ -2,7 +2,6 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { Observable, Subscription } from 'rxjs';
-
 import { AdsService } from 'src/app/services/ads.service';
 import { CoinsService } from 'src/app/services/coins.service';
 import { LivesService } from 'src/app/services/lives';
@@ -16,14 +15,14 @@ import { LivesService } from 'src/app/services/lives';
 })
 export class ShopPage implements OnInit, OnDestroy {
   private livesSub?: Subscription;
-  private previousLives?: number;
+
   coinRewardPulse = false;
-
-  readonly maxLives = 5;
-
   coinsLoading = false;
   lifeLoading = false;
   lifeRecoveredPulse = false;
+
+  private previousLives?: number;
+  readonly maxLives = 5;
 
   coins$: Observable<number>;
   lives$: Observable<number>;

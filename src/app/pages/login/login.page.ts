@@ -3,7 +3,6 @@ import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { Observable } from 'rxjs';
 import { User } from 'firebase/auth';
-
 import { AuthService } from '../../services/auth.service';
 
 @Component({

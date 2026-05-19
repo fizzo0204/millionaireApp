@@ -10,15 +10,12 @@
   border-radius: 26px;
   position: relative;
   overflow: hidden;
-
   display: grid;
   grid-template-columns: 52px 1fr 1px 96px;
   align-items: center;
   gap: 12px;
-
   background: linear-gradient(135deg, rgba(7, 44, 82, 0.96), #031f3d);
   border: 1px solid rgba(96, 165, 250, 0.28);
-
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.05),
     0 10px 24px rgba(0, 0, 0, 0.3);
@@ -41,14 +38,11 @@
   border: 0;
   border-radius: 50%;
   z-index: 2;
-
   display: grid;
   place-items: center;
-
   color: #fff;
   background: rgba(96, 165, 250, 0.16);
   border: 1px solid rgba(96, 165, 250, 0.42);
-
   box-shadow:
     0 0 16px rgba(56, 189, 248, 0.35),
     inset 0 0 0 1px rgba(255, 255, 255, 0.06);
@@ -65,7 +59,6 @@
 .levels-title-wrap {
   position: relative;
   z-index: 2;
-
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -76,34 +69,25 @@
   height: 52px;
   margin-bottom: 3px;
   border-radius: 50%;
-
   display: grid;
   place-items: center;
-
   font-size: 1.75rem;
   color: #fff;
-
   background: rgba(255, 255, 255, 0.13);
   border: 2px solid rgba(96, 165, 250, 0.75);
-
   box-shadow:
     0 0 18px rgba(96, 165, 250, 0.36),
     inset 0 0 0 2px rgba(255, 255, 255, 0.08);
-
   animation: levelsBadgePulse 1.8s ease-in-out infinite;
 }
 
 .levels-header h1 {
   margin: 0;
-
   font-size: 1.8rem;
   line-height: 1;
-
   font-weight: 900;
   color: #ffea00;
-
   text-align: center;
-
   text-shadow:
     0 3px 0 rgba(129, 90, 0, 0.7),
     0 8px 12px rgba(0, 0, 0, 0.35);
@@ -113,21 +97,16 @@
   margin-top: 8px;
   padding: 7px 13px;
   border-radius: 999px;
-
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
-
   white-space: nowrap;
-
   color: #031f3d;
   font-size: 0.68rem;
   font-weight: 900;
-
   background: linear-gradient(180deg, #dbeafe, #60a5fa);
   border: 1px solid rgba(255, 255, 255, 0.42);
-
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.55),
     0 4px 0 rgba(30, 64, 175, 0.65),
@@ -147,7 +126,6 @@
   width: 1px;
   height: 92px;
   z-index: 2;
-
   background: linear-gradient(
     180deg,
     transparent,
@@ -159,7 +137,6 @@
 .category-badge {
   position: relative;
   z-index: 2;
-
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -170,14 +147,10 @@
   width: 62px;
   height: 62px;
   border-radius: 50%;
-
   display: grid;
   place-items: center;
-
   font-size: 2rem;
-
   background: rgba(255, 255, 255, 0.16);
-
   box-shadow:
     inset 0 0 0 3px rgba(255, 255, 255, 0.12),
     0 8px 16px rgba(0, 0, 0, 0.28);
@@ -187,13 +160,10 @@
   margin-top: -5px;
   padding: 5px 12px;
   border-radius: 999px;
-
   font-size: 0.72rem;
   font-weight: 900;
   color: #fff;
-
   background: rgba(7, 44, 82, 0.95);
-
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.08),
     0 5px 10px rgba(0, 0, 0, 0.25);
@@ -246,7 +216,6 @@
   0%,
   100% {
     transform: scale(1);
-
     box-shadow:
       0 0 18px rgba(96, 165, 250, 0.36),
       inset 0 0 0 2px rgba(255, 255, 255, 0.08);
@@ -254,7 +223,6 @@
 
   50% {
     transform: scale(1.06);
-
     box-shadow:
       0 0 26px rgba(96, 165, 250, 0.58),
       inset 0 0 0 2px rgba(255, 255, 255, 0.12);
@@ -272,24 +240,19 @@
 .level-card {
   position: relative;
   overflow: hidden;
-
   min-height: 132px;
   border: 0;
   border-radius: 24px;
   padding: 16px 8px;
-
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-
   color: #fff;
   background: linear-gradient(135deg, #0ea5e9, #0757c8);
-
   box-shadow:
     inset 0 0 0 2px rgba(255, 255, 255, 0.09),
     0 8px 16px rgba(0, 0, 0, 0.26);
-
   transition:
     transform 0.14s ease,
     filter 0.14s ease;
@@ -304,17 +267,13 @@
   width: 42px;
   height: 42px;
   border-radius: 50%;
-
   display: grid;
   place-items: center;
-
   font-size: 1.25rem;
   font-weight: 1000;
-
   color: #fff;
   background: rgba(17, 37, 72, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.12);
-
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.05),
     0 6px 12px rgba(0, 0, 0, 0.3);
@@ -322,12 +281,10 @@
 
 .level-card strong {
   margin-top: 10px;
-
   color: #ffea00;
   font-size: 3rem;
   line-height: 1;
   font-weight: 1000;
-
   text-shadow:
     0 3px 0 rgba(129, 90, 0, 0.75),
     0 8px 14px rgba(0, 0, 0, 0.35);
@@ -338,9 +295,7 @@
   opacity: 0.55;
   filter: grayscale(0.25);
   cursor: default;
-
   background: linear-gradient(135deg, #334155, #0f172a);
-
   box-shadow:
     inset 0 0 0 2px rgba(255, 255, 255, 0.04),
     0 7px 14px rgba(0, 0, 0, 0.24);
@@ -358,7 +313,6 @@
 /* COMPLETED */
 .level-card.completed {
   background: linear-gradient(135deg, #22c55e, #15803d);
-
   box-shadow:
     inset 0 0 0 2px rgba(255, 255, 255, 0.14),
     0 0 18px rgba(255, 234, 0, 0.18),
@@ -368,7 +322,6 @@
 .level-card.completed .level-status {
   color: #052e16;
   background: #ffea00;
-
   box-shadow:
     0 0 14px rgba(255, 234, 0, 0.45),
     inset 0 0 0 2px rgba(255, 255, 255, 0.38);
@@ -380,7 +333,6 @@
     margin-top: 24px;
     min-height: 132px;
     padding: 12px;
-
     grid-template-columns: 44px 1fr 1px 78px;
     gap: 9px;
   }
@@ -459,33 +411,23 @@
   position: fixed;
   inset: 0;
   z-index: 99999;
-
   display: grid;
   place-items: center;
-
   padding: 24px;
-
   background: rgba(2, 8, 23, 0.72);
   backdrop-filter: blur(6px);
 }
 
 .no-lives-modal {
   position: relative;
-
   width: 100%;
   max-width: 360px;
-
   padding: 24px 20px 20px;
   border-radius: 28px;
-
   text-align: center;
-
   background: radial-gradient(circle at top, #063f7d, #001a33);
-
   border: 1px solid rgba(255, 255, 255, 0.1);
-
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-
   animation: modalPop 280ms cubic-bezier(0.22, 1.2, 0.36, 1);
 }
 
@@ -496,7 +438,6 @@
 
 .no-lives-modal h2 {
   margin: 0 0 10px;
-
   color: #ffea00;
   font-size: 1.5rem;
   font-weight: 900;
@@ -504,7 +445,6 @@
 
 .no-lives-modal p {
   margin: 0 0 18px;
-
   color: #dbeafe;
   font-size: 0.88rem;
   line-height: 1.4;
@@ -514,22 +454,16 @@
 .watch-life-btn {
   width: 100%;
   min-height: 52px;
-
   border: 0;
   border-radius: 18px;
-
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-
   color: #fff;
-
   font-size: 0.82rem;
   font-weight: 900;
-
   background: linear-gradient(135deg, #a855f7, #7e22ce);
-
   box-shadow:
     0 6px 0 rgba(88, 28, 135, 0.8),
     0 12px 18px rgba(0, 0, 0, 0.28);
@@ -539,18 +473,13 @@
   position: absolute;
   top: 12px;
   right: 12px;
-
   width: 36px;
   height: 36px;
-
   border: 0;
   border-radius: 50%;
-
   display: grid;
   place-items: center;
-
   color: #fff;
-
   background: rgba(255, 255, 255, 0.12);
 
   ion-icon {
@@ -581,21 +510,17 @@
 
 .level-card.new-unlocked {
   border-color: rgba(255, 234, 0, 0.9);
-
   box-shadow:
     0 0 0 rgba(255, 234, 0, 0),
     0 0 28px rgba(255, 234, 0, 0.42),
     0 12px 24px rgba(0, 0, 0, 0.3);
-
   animation: newLevelPulse 1.8s infinite;
 }
 
 .level-card.new-unlocked::before {
   content: "";
-
   position: absolute;
   inset: -40%;
-
   background: conic-gradient(
     from 0deg,
     transparent,
@@ -604,7 +529,6 @@
     rgba(255, 255, 255, 0.08),
     transparent
   );
-
   animation: newLevelSpin 5s linear infinite;
 }
 
@@ -616,18 +540,13 @@
 .new-badge {
   position: absolute;
   top: 10px;
-  // right: 10px;
-
   padding: 4px 8px;
   border-radius: 999px;
-
   background: linear-gradient(180deg, #ffea00, #ffc400);
-
   color: #04111f;
   font-size: 0.58rem;
   font-weight: 1000;
   letter-spacing: 0.04em;
-
   box-shadow:
     0 4px 10px rgba(255, 196, 0, 0.35),
     inset 0 -1px 0 rgba(0, 0, 0, 0.15);
@@ -637,7 +556,6 @@
   0%,
   100% {
     transform: translateY(0) scale(1);
-
     box-shadow:
       0 0 0 rgba(255, 234, 0, 0),
       0 0 18px rgba(255, 234, 0, 0.28);
@@ -645,7 +563,6 @@
 
   50% {
     transform: translateY(-4px) scale(1.03);
-
     box-shadow:
       0 0 28px rgba(255, 234, 0, 0.45),
       0 0 42px rgba(255, 234, 0, 0.22);
@@ -668,7 +585,6 @@
 
 .level-card.completed.just-completed .level-status {
   animation: completeIconPop 900ms cubic-bezier(0.22, 1.5, 0.36, 1);
-
   box-shadow:
     0 0 28px rgba(74, 222, 128, 0.55),
     0 0 52px rgba(74, 222, 128, 0.24);
@@ -683,7 +599,6 @@
 
 .level-card.completed.just-completed .level-complete-burst {
   opacity: 1;
-
   background:
     radial-gradient(circle, rgba(74, 222, 128, 0.45), transparent 26%),
     conic-gradient(
@@ -694,7 +609,6 @@
       rgba(74, 222, 128, 0.28),
       transparent
     );
-
   animation: completeBurstSpin 1.2s ease;
 }
 

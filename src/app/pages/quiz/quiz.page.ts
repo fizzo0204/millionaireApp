@@ -39,31 +39,37 @@ export class QuizPage implements OnInit, OnDestroy {
   private haptics = inject(HapticsService);
 
   private appStateListener?: PluginListenerHandle;
+
   private adInProgress = false;
   private lifeLostForLeaving = false;
   private navigatingAway = false;
-
-  categoryId = '';
-  difficultyId: DifficultyId = 'easy';
-  levelNumber = 1;
-  displayLevelNumber = 1;
-  totalLevels = 30;
   levelAlreadyCompleted = false;
 
+  difficultyId: DifficultyId = 'easy';
   categoryTitle = 'Quiz';
   categoryIcon = '❓';
   difficultyTitle = 'Easy';
+  categoryId = '';
+  rewardMessage = '';
+  rewardUnlockedMessage = '';
 
-  questions: QuestionModel[] = [];
+  timeLeft = 15;
+  readonly maxTime = 15;
+  audiencePercentages = [15, 20, 50, 15];
+  levelNumber = 1;
+  displayLevelNumber = 1;
+  totalLevels = 30;
   currentIndex = 0;
-
   correctAnswers = 0;
   wrongAnswers = 0;
-
+  rewardXp = 0;
+  neededCoins = 0;
   selectedAnswerIndex: number | null = null;
-
   hiddenAnswers: number[] = [];
+
+  questions: QuestionModel[] = [];
   usedHelps: HelpId[] = [];
+  helpAnimation: HelpId | null = null;
 
   loading = true;
   answered = false;
@@ -75,22 +81,13 @@ export class QuizPage implements OnInit, OnDestroy {
   showExitModal = false;
   showRewardModal = false;
   switchingQuestion = false;
-  helpAnimation: HelpId | null = null;
 
-  rewardXp = 0;
-  rewardMessage = '';
-  rewardUnlockedMessage = '';
-  neededCoins = 0;
   coins$ = this.coinsService.coins$;
   lives$ = this.livesService.lives$;
 
-  timeLeft = 15;
-  readonly maxTime = 15;
   private timer?: ReturnType<typeof setInterval>;
 
   helps: HelpModel[] = [...HELPS];
-
-  audiencePercentages = [15, 20, 50, 15];
 
   async ngOnInit() {
     this.categoryId = this.route.snapshot.paramMap.get('categoryId') || '';

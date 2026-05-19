@@ -12,39 +12,29 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-
   display: grid;
   place-items: center;
-
   padding: 22px;
-
   background:
     radial-gradient(circle at top, rgba(30, 64, 175, 0.28), transparent 38%),
     rgba(2, 6, 23, 0.88);
-
   backdrop-filter: blur(10px);
 }
 
 .daily-modal {
   position: relative;
   overflow: hidden;
-
   width: 100%;
   max-width: 335px;
-
   padding: 20px;
   border-radius: 28px;
-
   color: #fff;
   text-align: center;
-
   background: radial-gradient(circle at top, #0f4cbd, #061d48);
   border: 1px solid rgba(255, 255, 255, 0.1);
-
   box-shadow:
     0 0 32px rgba(59, 130, 246, 0.35),
     0 24px 50px rgba(0, 0, 0, 0.48);
-
   animation: dailyPop 420ms cubic-bezier(0.22, 1.35, 0.36, 1);
 }
 
@@ -56,7 +46,6 @@
 .daily-glow {
   position: absolute;
   inset: -80px;
-
   background:
     radial-gradient(circle, rgba(255, 234, 0, 0.24), transparent 34%),
     conic-gradient(
@@ -67,7 +56,6 @@
       rgba(96, 165, 250, 0.18),
       transparent
     );
-
   animation: dailySpin 8s linear infinite;
 }
 
@@ -107,13 +95,10 @@
   min-height: 72px;
   padding: 7px 5px;
   border-radius: 18px;
-
   display: grid;
   place-items: center;
-
   background: rgba(7, 44, 82, 0.74);
   border: 1px solid rgba(148, 163, 184, 0.25);
-
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.03),
     0 8px 14px rgba(0, 0, 0, 0.22);
@@ -123,13 +108,10 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-
   display: grid;
   place-items: center;
-
   color: #031f3d;
   background: #dbeafe;
-
   font-size: 0.72rem;
   font-weight: 1000;
 }
@@ -184,27 +166,20 @@
 .claim-btn {
   margin-top: 14px;
   padding: 13px;
-
   color: #04111f;
   font-size: 0.96rem;
-
   background: linear-gradient(180deg, #ffea00, #ffc400);
-
   box-shadow:
     0 7px 0 rgba(129, 90, 0, 0.75),
     0 12px 18px rgba(255, 196, 0, 0.24);
-
   animation: claimGlow 1.8s infinite;
 }
 
 .double-btn {
   padding: 12px;
-
   color: #fff;
   font-size: 0.86rem;
-
   background: linear-gradient(135deg, #a855f7, #7e22ce);
-
   box-shadow:
     0 5px 0 rgba(88, 28, 135, 0.85),
     0 10px 14px rgba(0, 0, 0, 0.24);
@@ -219,11 +194,9 @@
   margin-top: 14px;
   padding: 11px 12px;
   border-radius: 16px;
-
   color: #4ade80;
   font-size: 0.9rem;
   font-weight: 1000;
-
   background: rgba(34, 197, 94, 0.12);
   border: 1px solid rgba(74, 222, 128, 0.28);
 }
@@ -237,10 +210,8 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-
   color: #fff;
   text-align: center;
-
   background:
     radial-gradient(
       circle at 50% 34%,
@@ -253,7 +224,6 @@
       transparent 32%
     ),
     linear-gradient(180deg, #020617 0%, #031a3f 52%, #020617 100%);
-
   animation: premiumSceneIn 260ms ease both;
 }
 
@@ -302,13 +272,10 @@
 .scene-rays {
   left: 50%;
   bottom: -12%;
-
   width: 130vw;
   height: 90%;
-
   transform: translateX(-50%);
   transform-origin: 50% 100%;
-
   background: conic-gradient(
     from 210deg at 50% 100%,
     transparent 0deg,
@@ -319,7 +286,6 @@
     rgba(255, 213, 79, 0.16) 68deg,
     transparent 84deg
   );
-
   filter: blur(1px);
   animation: rayPulse 2.8s ease-in-out infinite;
 }
@@ -339,39 +305,30 @@
   top: 6%;
   left: 50%;
   z-index: 30;
-
   width: min(82vw, 340px);
   height: 58px;
-
   transform: translateX(-50%);
-
   display: grid;
   place-items: center;
-
   animation: ribbonDrop 620ms cubic-bezier(0.22, 1.35, 0.36, 1) both;
 }
 
 .ribbon-main {
   position: relative;
   z-index: 2;
-
   width: 88%;
   padding: 9px 10px 10px;
   border-radius: 999px;
-
   color: #fff7cc;
   font-size: clamp(0.9rem, 4.4vw, 1.18rem);
   font-weight: 1000;
   letter-spacing: 0.4px;
-
   text-shadow:
     0 3px 0 #7c2d12,
     0 5px 0 rgba(69, 26, 3, 0.65),
     0 0 16px rgba(255, 234, 0, 0.4);
-
   background: linear-gradient(180deg, #a855f7 0%, #6d28d9 52%, #4c1d95 100%);
   border: 3px solid #facc15;
-
   box-shadow:
     inset 0 3px 0 rgba(255, 255, 255, 0.22),
     inset 0 -4px 0 rgba(49, 12, 96, 0.4),
@@ -382,10 +339,8 @@
 .ribbon-side {
   position: absolute;
   top: 19px;
-
   width: 48px;
   height: 25px;
-
   background: linear-gradient(180deg, #8b5cf6, #4c1d95);
   border: 3px solid #facc15;
   box-shadow: 0 4px 0 #92400e;
@@ -425,11 +380,9 @@
   width: min(56vw, 230px);
   height: min(56vw, 230px);
   border-radius: 50%;
-
   background:
     radial-gradient(circle, rgba(255, 234, 0, 0.78), transparent 58%),
     radial-gradient(circle, rgba(168, 85, 247, 0.25), transparent 72%);
-
   filter: blur(4px);
   animation: auraPulsePremium 1.2s ease-in-out infinite;
 }
@@ -437,12 +390,9 @@
 .premium-chest.closed {
   position: relative;
   z-index: 3;
-
   font-size: clamp(4.3rem, 18vw, 6rem);
-
   filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.42))
     drop-shadow(0 0 28px rgba(255, 196, 0, 0.42));
-
   animation:
     chestShakePremium 620ms ease-in-out infinite,
     chestHover 1.6s ease-in-out infinite;
@@ -453,23 +403,17 @@
   left: 50%;
   bottom: 12%;
   z-index: 28;
-
   transform: translateX(-50%);
-
   padding: 9px 18px;
   border-radius: 999px;
-
   color: #04111f;
   font-size: 0.86rem;
   font-weight: 1000;
   white-space: nowrap;
-
   background: linear-gradient(180deg, #ffea00, #ffc400);
-
   box-shadow:
     0 6px 0 rgba(129, 90, 0, 0.78),
     0 14px 24px rgba(255, 196, 0, 0.24);
-
   animation: copyPulse 1.1s ease-in-out infinite;
 }
 
@@ -480,40 +424,32 @@
     rgba(255, 234, 0, 0.38) 20%,
     transparent 54%
   );
-
   animation: flashFade 650ms ease-out both;
 }
 
 .flash-ring {
   position: absolute;
-
   width: 190px;
   height: 190px;
   border-radius: 50%;
-
   border: 5px solid rgba(255, 234, 0, 0.8);
-
   box-shadow:
     0 0 38px rgba(255, 234, 0, 0.7),
     inset 0 0 28px rgba(255, 234, 0, 0.45);
-
   animation: flashRing 650ms ease-out both;
 }
 
 .flash-title {
   position: relative;
   z-index: 3;
-
   color: #fff7cc;
   font-size: clamp(2.3rem, 11vw, 4rem);
   font-weight: 1000;
   letter-spacing: 2px;
-
   text-shadow:
     0 5px 0 #7c2d12,
     0 9px 0 rgba(69, 26, 3, 0.55),
     0 0 24px rgba(255, 234, 0, 0.65);
-
   animation: flashTitlePop 650ms cubic-bezier(0.22, 1.5, 0.36, 1) both;
 }
 
@@ -522,16 +458,12 @@
   top: 17%;
   left: 50%;
   z-index: 35;
-
   transform: translateX(-50%);
-
   color: #f8fafc;
   font-size: clamp(0.9rem, 4vw, 1.08rem);
   font-weight: 1000;
   white-space: nowrap;
-
   text-shadow: 0 3px 12px rgba(0, 0, 0, 0.55);
-
   animation: rewardSubtitleIn 420ms ease 120ms both;
 }
 
@@ -540,27 +472,21 @@
   top: 22%;
   left: 50%;
   z-index: 35;
-
   width: 100%;
   transform: translateX(-50%);
-
   display: grid;
   place-items: center;
-
   animation: rewardFloat 1.9s ease-in-out infinite;
 }
 
 .reward-light {
   position: absolute;
-
   width: min(46vw, 175px);
   height: min(46vw, 175px);
   border-radius: 50%;
-
   background:
     radial-gradient(circle, rgba(255, 234, 0, 0.58), transparent 56%),
     radial-gradient(circle, rgba(255, 255, 255, 0.26), transparent 34%);
-
   filter: blur(3px);
   animation: rewardLightPulse 1.4s ease-in-out infinite;
 }
@@ -568,32 +494,25 @@
 .reward-icon-premium {
   position: relative;
   z-index: 2;
-
   font-size: clamp(3.7rem, 15vw, 5.2rem);
   line-height: 1;
-
   filter: drop-shadow(0 12px 12px rgba(0, 0, 0, 0.42))
     drop-shadow(0 0 24px rgba(255, 234, 0, 0.65));
-
   animation: rewardIconPop 680ms cubic-bezier(0.22, 1.48, 0.36, 1) both;
 }
 
 .reward-label-premium {
   position: relative;
   z-index: 3;
-
   margin-top: -2px;
-
   color: #fff7cc;
   font-size: clamp(2.1rem, 9vw, 3.15rem);
   font-weight: 1000;
   letter-spacing: 1px;
-
   text-shadow:
     0 4px 0 #7c2d12,
     0 7px 0 rgba(69, 26, 3, 0.55),
     0 0 20px rgba(255, 234, 0, 0.58);
-
   animation: rewardAmountPop 640ms cubic-bezier(0.22, 1.48, 0.36, 1) 140ms both;
 }
 
@@ -607,43 +526,33 @@
   left: 50%;
   top: 47%;
   z-index: 34;
-
   transform: translateX(-50%);
-
   display: grid;
   place-items: center;
-
   animation: chestOpenIn 580ms cubic-bezier(0.22, 1.45, 0.36, 1) both;
 }
 
 .chest-img {
   width: min(76vw, 330px);
   height: auto;
-
   object-fit: contain;
-
   filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.45))
     drop-shadow(0 0 36px rgba(255, 196, 0, 0.42));
 }
 
 .chest-light {
   position: absolute;
-
   left: 50%;
   top: -28px;
-
   width: min(48vw, 160px);
   height: 100px;
-
   transform: translateX(-50%);
-
   background: radial-gradient(
     ellipse at center,
     rgba(255, 255, 255, 0.95),
     rgba(255, 234, 0, 0.6) 20%,
     transparent 64%
   );
-
   filter: blur(2px);
   animation: chestLightBurst 1.1s ease-in-out infinite;
 }
@@ -657,36 +566,26 @@
   left: 50%;
   bottom: max(95px, calc(env(safe-area-inset-bottom) + 75px));
   z-index: 30;
-
   transform: translateX(-50%);
-
   display: flex;
   align-items: center;
   gap: 10px;
-
   padding: 10px 18px;
-
   border-radius: 999px;
-
   color: #fff7cc;
   font-size: clamp(0.9rem, 4vw, 1.1rem);
   font-weight: 1000;
   letter-spacing: 0.4px;
   white-space: nowrap;
-
   background: rgba(8, 15, 35, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.08);
-
   backdrop-filter: blur(8px);
-
   box-shadow:
     0 0 18px rgba(168, 85, 247, 0.25),
     inset 0 0 0 1px rgba(255, 255, 255, 0.04);
-
   text-shadow:
     0 2px 0 rgba(30, 41, 59, 0.7),
     0 0 12px rgba(255, 234, 0, 0.3);
-
   animation: tapPremiumPulse 1.4s ease-in-out infinite;
 }
 

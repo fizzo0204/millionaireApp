@@ -2,7 +2,6 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { ModalController } from '@ionic/angular';
-
 import { DailyRewardService } from 'src/app/services/daily-reward.service';
 import { CoinsService } from 'src/app/services/coins.service';
 import { UserStatsService } from 'src/app/services/user-stats.service';
@@ -27,17 +26,17 @@ import { AvatarModel } from 'src/app/models/avatar.model';
 export class DailyRewardModalComponent {
   claimedNow = false;
   claimLoading = false;
+  cinematicVisible = false;
 
   unlockedAvatar: AvatarModel | null = null;
   chestReward: DailyChestReward | null = null;
   epicAvatarReward: AvatarModel | null = null;
 
-  cinematicVisible = false;
   cinematicPhase: CinematicPhase = 'opening';
+  rewardRevealType: RevealType = 'coins';
 
   rewardRevealLabel = '';
   rewardRevealIcon = '';
-  rewardRevealType: RevealType = 'coins';
 
   constructor(
     public dailyRewardService: DailyRewardService,

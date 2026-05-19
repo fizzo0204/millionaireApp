@@ -41,12 +41,12 @@ export class AppComponent implements OnDestroy {
 
   showAppLoader = true;
   hideBottomNav = false;
+  private musicStarted = false;
+  private isMobile = false;
+
   ui = inject(UiService);
   private routerSub?: Subscription;
   private appStateListener?: PluginListenerHandle;
-
-  private musicStarted = false;
-  private isMobile = false;
 
   constructor(
     private platform: Platform,

@@ -1,10 +1,8 @@
 export type DailyRewardType = 'coins' | 'xp' | 'avatar' | 'chest';
-
 export type RevealType = 'coins' | 'xp' | 'avatar' | 'chest';
-
 export type CinematicPhase = 'opening' | 'flash' | 'reward';
-
 export type AvatarRewardPool = 'daily' | 'epic';
+export type DailyChestRewardType = 'coins' | 'xp' | 'avatar';
 
 export interface DailyReward {
   day: number;
@@ -14,8 +12,6 @@ export interface DailyReward {
   icon: string;
   avatarPool?: AvatarRewardPool;
 }
-
-export type DailyChestRewardType = 'coins' | 'xp' | 'avatar';
 
 export interface DailyChestReward {
   type: DailyChestRewardType;

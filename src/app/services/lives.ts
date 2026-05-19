@@ -21,14 +21,13 @@ export class LivesService {
 
   private userSub?: Subscription;
   private livesDocSub?: Subscription;
+  private timerSub?: Subscription;
 
   private livesSubject = new BehaviorSubject<number>(LIVES_CONFIG.maxLives);
-  lives$ = this.livesSubject.asObservable();
-
   private countdownSubject = new BehaviorSubject<string>('');
-  countdown$ = this.countdownSubject.asObservable();
 
-  private timerSub?: Subscription;
+  lives$ = this.livesSubject.asObservable();
+  countdown$ = this.countdownSubject.asObservable();
 
   constructor() {
     this.listenToUserLives();

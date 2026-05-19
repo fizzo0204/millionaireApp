@@ -29,15 +29,16 @@ export class LevelsPage {
 
   categoryId = '';
   difficultyId: DifficultyId = 'easy';
-
-  levels: LevelModel[] = [];
-  previousCompletedLevelNumbers: number[] = [];
-  showNoLivesModal = false;
-  lifeLoading = false;
   categoryTitle = 'Quiz';
   categoryIcon = '❓';
   categoryClass = 'default';
   difficultyTitle = 'Easy';
+
+  levels: LevelModel[] = [];
+  previousCompletedLevelNumbers: number[] = [];
+
+  showNoLivesModal = false;
+  lifeLoading = false;
 
   ngOnInit() {
     this.categoryId = this.route.snapshot.paramMap.get('categoryId') || '';

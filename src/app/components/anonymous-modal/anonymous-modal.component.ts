@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
-
 import { AuthService } from 'src/app/services/auth.service';
 
 @Component({
@@ -23,7 +22,7 @@ export class AnonymousModalComponent {
     try {
       await this.auth.googleSignIn();
     } catch {
-      console.log('Login non completato o annullato.');
+      alert('Login non completato o annullato.');
     } finally {
       this.loading = false;
     }
@@ -33,11 +32,10 @@ export class AnonymousModalComponent {
     if (this.loading) return;
 
     this.loading = true;
-
     try {
       await this.auth.facebookSignIn();
     } catch {
-      console.log('Login Facebook non completato o annullato.');
+      alert('Login Facebook non completato o annullato.');
     } finally {
       this.loading = false;
     }

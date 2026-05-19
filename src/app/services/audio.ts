@@ -8,15 +8,15 @@ import { STORAGE_KEYS } from 'src/app/config/storage-keys.config';
 export class AudioService {
   private music?: HTMLAudioElement;
   private clickPool: HTMLAudioElement[] = [];
+
   private clickIndex = 0;
   private readonly CLICK_POOL_SIZE = 5;
 
   private clickEnabled = true;
-
   private musicEnabled = true;
+  private isStartingMusic = false;
 
   private fadeInterval?: ReturnType<typeof setInterval>;
-  private isStartingMusic = false;
 
   constructor() {
     const clickSaved = localStorage.getItem(STORAGE_KEYS.clickEnabled);

@@ -21,9 +21,9 @@ import { firebaseAuth } from 'src/app/config/firebase.config';
 })
 export class AuthService {
   private userSubject = new BehaviorSubject<User | null>(null);
-  user$ = this.userSubject.asObservable();
-
   private loadingSubject = new BehaviorSubject<boolean>(false);
+
+  user$ = this.userSubject.asObservable();
   isLoading$ = this.loadingSubject.asObservable();
 
   private initialAuthResolved = false;

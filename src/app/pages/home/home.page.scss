@@ -82,20 +82,16 @@ ion-content.home-content {
   min-height: 140px;
   padding: 14px;
   border-radius: 18px;
-
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 10px;
-
   text-align: center;
   cursor: pointer;
-
   box-shadow:
     inset 0 0 0 2px rgba(255, 255, 255, 0.08),
     0 10px 18px rgba(0, 0, 0, 0.28);
-
   transition:
     transform 0.16s ease,
     filter 0.16s ease;
@@ -126,14 +122,10 @@ ion-content.home-content {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-
   display: grid;
   place-items: center;
-
   font-size: 1.6rem;
-
   background: rgba(255, 255, 255, 0.2);
-
   box-shadow:
     inset 0 0 0 2px rgba(255, 255, 255, 0.12),
     0 7px 14px rgba(0, 0, 0, 0.22);
@@ -190,20 +182,15 @@ ion-content.home-content {
 /* REWARDS */
 .reward-grid {
   position: relative;
-
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-
   margin-top: 20px;
   padding: 14px;
   padding-bottom: 14px;
-
   border-radius: 24px;
-
   background: rgba(3, 31, 61, 0.62);
   border: 2px dashed rgba(96, 165, 250, 0.34);
-
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.04),
     0 10px 24px rgba(0, 0, 0, 0.22);
@@ -214,39 +201,29 @@ ion-content.home-content {
   position: absolute;
   top: -11px;
   left: 16px;
-
   padding: 4px 10px;
   border-radius: 999px;
-
   color: #ffea00;
   background: #031f3d;
-
   font-size: 0.68rem;
   font-weight: 1000;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-
   border: 1px solid rgba(96, 165, 250, 0.35);
 }
 
 .reward-card {
   position: relative;
   overflow: hidden;
-
   min-height: 150px;
   padding: 14px 10px;
-
   border-radius: 20px;
-
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: 12px;
-
   text-align: center;
-
   border: 1px solid rgba(255, 255, 255, 0.16);
-
   box-shadow:
     inset 0 0 0 2px rgba(255, 255, 255, 0.07),
     0 8px 18px rgba(0, 0, 0, 0.24);
@@ -257,12 +234,9 @@ ion-content.home-content {
   position: absolute;
   right: -30px;
   top: -32px;
-
   width: 92px;
   height: 92px;
-
   border-radius: 50%;
-
   background: rgba(255, 255, 255, 0.09);
 }
 
@@ -295,14 +269,10 @@ ion-content.home-content {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-
   display: grid;
   place-items: center;
-
   font-size: 1.55rem;
-
   background: rgba(255, 255, 255, 0.22);
-
   box-shadow:
     inset 0 0 0 2px rgba(255, 255, 255, 0.12),
     0 7px 14px rgba(0, 0, 0, 0.22);
@@ -327,23 +297,18 @@ ion-content.home-content {
   min-height: 42px;
   border: 0;
   border-radius: 14px;
-
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-
   color: #000;
   background: #ffcc00;
-
   font-size: 0.68rem;
   font-weight: 1000;
   text-transform: uppercase;
-
   box-shadow:
     0 5px 0 rgba(129, 90, 0, 0.75),
     0 10px 16px rgba(0, 0, 0, 0.25);
-
   transition:
     transform 0.14s ease,
     filter 0.14s ease;
@@ -387,10 +352,8 @@ ion-content.home-content {
   position: absolute;
   top: 10px;
   right: 14px;
-
   font-size: 1rem;
   font-weight: 900;
-
   pointer-events: none;
 }
 
@@ -499,18 +462,13 @@ ion-content.home-content {
 .daily-test-btn {
   width: 100%;
   margin-bottom: 18px;
-
   border: 0;
   border-radius: 18px;
-
   padding: 14px;
-
   color: #04111f;
   font-size: 0.9rem;
   font-weight: 1000;
-
   background: linear-gradient(180deg, #ffea00, #ffc400);
-
   box-shadow:
     0 8px 0 rgba(129, 90, 0, 0.75),
     0 14px 20px rgba(255, 196, 0, 0.24);

@@ -14,7 +14,6 @@
   overflow: hidden;
   color: #fff;
   text-align: center;
-
   background:
     radial-gradient(
       circle at 50% 32%,
@@ -78,7 +77,6 @@
   height: 90%;
   transform: translateX(-50%);
   transform-origin: 50% 100%;
-
   background: conic-gradient(
     from 210deg at 50% 100%,
     transparent 0deg,
@@ -89,7 +87,6 @@
     rgba(255, 213, 79, 0.16) 68deg,
     transparent 84deg
   );
-
   filter: blur(0.08rem);
   animation: rayPulse 2.8s ease-in-out infinite;
 }
@@ -110,30 +107,24 @@
   top: max(0, calc(env(safe-area-inset-top) + 2vh));
   left: 50%;
   z-index: 30;
-
   width: min(76vw, 20rem);
   height: clamp(2.8rem, 7vh, 3.4rem);
-
   transform: translateX(-50%);
   display: grid;
   place-items: center;
-
   animation: ribbonDrop 620ms cubic-bezier(0.22, 1.35, 0.36, 1) both;
 }
 
 .ribbon-main {
   position: relative;
   z-index: 2;
-
   width: 88%;
   padding: 0.45rem 0.65rem 0.5rem;
   border-radius: 999rem;
-
   color: #fff7cc;
   font-size: clamp(0.86rem, 3.6vw, 1.05rem);
   font-weight: 1000;
   letter-spacing: 0.025rem;
-
   text-shadow:
     0 0.18rem 0 #7c2d12,
     0 0.32rem 0 rgba(69, 26, 3, 0.65),
@@ -141,7 +132,6 @@
 
   background: linear-gradient(180deg, #a855f7 0%, #6d28d9 52%, #4c1d95 100%);
   border: 0.18rem solid #facc15;
-
   box-shadow:
     inset 0 0.18rem 0 rgba(255, 255, 255, 0.22),
     inset 0 -0.25rem 0 rgba(49, 12, 96, 0.4),
@@ -178,15 +168,12 @@
   top: 13.5vh;
   bottom: max(10vh, calc(env(safe-area-inset-bottom) + 8vh));
   z-index: 25;
-
   width: min(86vw, 22rem);
   margin: 0 auto;
-
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-
   animation: contentPop 520ms cubic-bezier(0.22, 1.35, 0.36, 1) 120ms both;
 }
 
@@ -196,7 +183,6 @@
   width: clamp(9rem, 42vw, 12rem);
   height: clamp(9rem, 42vw, 12rem);
   border-radius: 50%;
-
   background:
     radial-gradient(circle, rgba(255, 234, 0, 0.48), transparent 55%),
     radial-gradient(circle, rgba(255, 255, 255, 0.18), transparent 35%);
@@ -208,29 +194,22 @@
 .login-logo {
   position: relative;
   z-index: 2;
-
   width: clamp(5.8rem, 25vw, 7.2rem);
   margin-bottom: clamp(0.45rem, 1.4vh, 0.7rem);
-
   object-fit: contain;
-
   filter: drop-shadow(0 0.9rem 1.1rem rgba(0, 0, 0, 0.42))
     drop-shadow(0 0 1.6rem rgba(255, 234, 0, 0.45));
-
   animation: logoFloat 1.9s ease-in-out infinite;
 }
 
 h2 {
   position: relative;
   z-index: 2;
-
   margin: 0 0 clamp(0.4rem, 1vh, 0.55rem);
-
   color: #ffea00;
   font-size: clamp(1.55rem, 6.2vw, 2.15rem);
   line-height: 1.02;
   font-weight: 1000;
-
   text-shadow:
     0 0.22rem 0 #7c2d12,
     0 0.42rem 0 rgba(69, 26, 3, 0.46),
@@ -240,15 +219,12 @@ h2 {
 p {
   position: relative;
   z-index: 2;
-
   width: min(88%, 20rem);
   margin: 0 0 clamp(0.8rem, 2vh, 1rem);
-
   color: #f8fafc;
   font-size: clamp(0.9rem, 3.5vw, 1.05rem);
   line-height: 1.35;
   font-weight: 850;
-
   text-shadow: 0 0.2rem 0.75rem rgba(0, 0, 0, 0.55);
 }
 
@@ -256,7 +232,6 @@ p {
 .benefits {
   position: relative;
   z-index: 2;
-
   width: 100%;
   display: grid;
   gap: clamp(0.45rem, 1.3vh, 0.65rem);
@@ -267,24 +242,18 @@ p {
   min-height: clamp(2.4rem, 5.7vh, 2.9rem);
   padding: 0.45rem 0.9rem;
   border-radius: 999rem;
-
   display: grid;
   grid-template-columns: 12% 1fr 12%;
   align-items: center;
-
   color: #fff7cc;
   font-size: clamp(0.84rem, 3.4vw, 1rem);
   font-weight: 1000;
-
   background: rgba(8, 15, 35, 0.46);
   border: 0.07rem solid rgba(255, 255, 255, 0.08);
-
   backdrop-filter: blur(0.5rem);
-
   box-shadow:
     0 0 1.1rem rgba(168, 85, 247, 0.16),
     inset 0 0 0 0.07rem rgba(255, 255, 255, 0.04);
-
   text-shadow:
     0 0.13rem 0 rgba(30, 41, 59, 0.7),
     0 0 0.75rem rgba(255, 234, 0, 0.25);
@@ -310,11 +279,8 @@ p {
 .benefit-icon img.feature-coin {
   width: 34px;
   height: 34px;
-
   object-fit: contain;
-
   transform: translateY(1px);
-
   filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.45))
     drop-shadow(0 0 8px rgba(255, 200, 0, 0.25));
 }
@@ -328,7 +294,6 @@ p {
 .login-actions {
   position: relative;
   z-index: 2;
-
   width: 100%;
   display: grid;
   gap: clamp(0.65rem, 1.7vh, 0.85rem);
@@ -340,16 +305,12 @@ p {
   padding: 0.65rem 1rem;
   border: 0;
   border-radius: 999rem;
-
   display: grid;
   grid-template-columns: 13% 1fr 13%;
   align-items: center;
-
   font-size: clamp(0.95rem, 3.8vw, 1.1rem);
   font-weight: 1000;
-
   cursor: pointer;
-
   transition:
     transform 0.15s ease,
     filter 0.15s ease,
@@ -358,15 +319,11 @@ p {
 
 .provider-icon {
   grid-column: 1;
-
   width: clamp(2rem, 7.5vw, 2.35rem);
   height: clamp(2rem, 7.5vw, 2.35rem);
-
   justify-self: start;
-
   display: grid;
   place-items: center;
-
   border-radius: 50%;
   background: #fff;
 }
@@ -391,7 +348,6 @@ p {
 .google-btn {
   color: #04111f;
   background: linear-gradient(180deg, #ffea00, #ffc400);
-
   box-shadow:
     0 0.42rem 0 rgba(129, 90, 0, 0.78),
     0 0.75rem 1.25rem rgba(255, 196, 0, 0.24);
@@ -404,7 +360,6 @@ p {
 .facebook-btn {
   color: #fff;
   background: linear-gradient(180deg, #38a1ff, #1664d9);
-
   box-shadow:
     0 0.42rem 0 rgba(11, 52, 122, 0.9),
     0 0.75rem 1.25rem rgba(0, 0, 0, 0.34);
@@ -417,19 +372,15 @@ p {
 .safe-copy {
   position: relative;
   z-index: 2;
-
   margin-top: clamp(0.55rem, 1.5vh, 0.8rem);
   padding: 0.45rem 0.9rem;
   border-radius: 999rem;
-
   color: #fff7cc;
   font-size: clamp(0.68rem, 2.6vw, 0.78rem);
   line-height: 1.12;
   font-weight: 900;
-
   background: rgba(8, 15, 35, 0.5);
   border: 0.07rem solid rgba(255, 255, 255, 0.08);
-
   backdrop-filter: blur(0.5rem);
 }
 

@@ -81,7 +81,6 @@ export class AdsService {
           async (reward: AdMobRewardItem) => {
             if (reward && reward.amount > 0) {
               hasReward = true;
-              console.log('🎉 Reward ottenuto:', reward);
             }
           },
         );

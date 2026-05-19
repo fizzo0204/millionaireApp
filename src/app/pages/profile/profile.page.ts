@@ -3,11 +3,9 @@ import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { User } from 'firebase/auth';
 import { firstValueFrom, map, Observable, of, switchMap } from 'rxjs';
-
 import { UserStatsService } from 'src/app/services/user-stats.service';
 import { DailyRewardService } from 'src/app/services/daily-reward.service';
 import { AuthService } from 'src/app/services/auth.service';
-
 import { AchievementModel } from 'src/app/models/achievement.model';
 import { ProfileStatModel } from 'src/app/models/profile-stat.model';
 import { AVATARS } from 'src/app/data/avatars.data';

@@ -1,21 +1,17 @@
 import { Injectable } from '@angular/core';
 import { firstValueFrom, Subscription } from 'rxjs';
-
 import {
   DailyReward,
   DailyChestReward,
   DailyRewardState,
   UserDailyRewardData,
 } from 'src/app/models/daily-reward.model';
-
 import {
   DAILY_REWARDS,
   EPIC_CHEST_REWARDS,
 } from 'src/app/data/daily-rewards.data';
-
 import { AVATARS } from 'src/app/data/avatars.data';
 import { AvatarModel } from 'src/app/models/avatar.model';
-
 import { DAILY_REWARD_CONFIG } from 'src/app/config/daily-reward.config';
 import { AuthService } from 'src/app/services/auth.service';
 import { UserStatsService } from 'src/app/services/user-stats.service';

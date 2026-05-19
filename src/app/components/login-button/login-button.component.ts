@@ -4,7 +4,6 @@ import { IonicModule } from '@ionic/angular';
 import { Observable, map, of, shareReplay, switchMap } from 'rxjs';
 import { User } from 'firebase/auth';
 import { Router } from '@angular/router';
-
 import { AuthService } from '../../services/auth.service';
 import { UserStatsService } from 'src/app/services/user-stats.service';
 import { AVATARS } from 'src/app/data/avatars.data';
@@ -19,6 +18,7 @@ import { AppUserProfile } from 'src/app/models/user-stats.model';
 })
 export class LoginButtonComponent {
   user$: Observable<User | null> = this.auth.user$;
+
   loading$ = this.auth.isLoading$;
 
   profile$: Observable<AppUserProfile | undefined> = this.user$.pipe(
