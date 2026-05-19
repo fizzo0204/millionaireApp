@@ -309,6 +309,18 @@
         Continua così!
       </div>
 
+      @if (!rewardDoubled) {
+      <button
+        class="reward-double-btn"
+        type="button"
+        (click)="watchAdAndDoubleReward()"
+        [disabled]="rewardDoubleLoading"
+      >
+        @if (!rewardDoubleLoading) { ▶ Guarda video e raddoppia } @else { Video
+        in corso... }
+      </button>
+      }
+
       <button class="reward-btn" type="button" (click)="continueAfterReward()">
         Continua
         <ion-icon name="chevron-forward-outline"></ion-icon>

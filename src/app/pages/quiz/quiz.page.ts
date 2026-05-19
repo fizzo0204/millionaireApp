@@ -44,6 +44,8 @@ export class QuizPage implements OnInit, OnDestroy {
   private lifeLostForLeaving = false;
   private navigatingAway = false;
   levelAlreadyCompleted = false;
+  rewardDoubleLoading = false;
+  rewardDoubled = false;
 
   difficultyId: DifficultyId = 'easy';
   categoryTitle = 'Quiz';
@@ -414,6 +416,8 @@ export class QuizPage implements OnInit, OnDestroy {
         }
 
         this.rewardXp = this.correctAnswers * 10;
+        this.rewardDoubled = false;
+        this.rewardDoubleLoading = false;
         this.rewardMessage = `Hai completato il livello ${this.levelNumber}!`;
         this.rewardUnlockedMessage = `Livello ${this.levelNumber + 1} sbloccato`;
         this.showRewardModal = true;
@@ -530,6 +534,35 @@ export class QuizPage implements OnInit, OnDestroy {
     this.navigatingAway = true;
 
     this.goToLevelsPage();
+  }
+
+  async watchAdAndDoubleReward() {
+    if (this.rewardDoubleLoading || this.rewardDoubled || this.rewardXp <= 0) {
+      return;
+    }
+
+    this.rewardDoubleLoading = true;
+    this.adInProgress = true;
+
+    try {
+      const reward = await this.ads.showRewardedAd();
+
+      if (!reward) return;
+
+      const user = await firstValueFrom(this.auth.user$);
+
+      if (!user || user.isAnonymous) return;
+
+      const bonusXp = this.rewardXp;
+
+      await this.userStatsService.addXp(user.uid, bonusXp);
+
+      this.rewardXp += bonusXp;
+      this.rewardDoubled = true;
+    } finally {
+      this.adInProgress = false;
+      this.rewardDoubleLoading = false;
+    }
   }
 
   goBack() {
