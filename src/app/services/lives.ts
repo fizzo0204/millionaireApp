@@ -6,9 +6,9 @@ import {
   docData,
   updateDoc,
   serverTimestamp,
-  increment,
   UpdateData,
   DocumentData,
+  runTransaction,
 } from '@angular/fire/firestore';
 import { AuthService } from './auth.service';
 import { LIVES_CONFIG } from 'src/app/config/lives.config';
@@ -71,23 +71,33 @@ export class LivesService {
 
     if (!user || user.isAnonymous) return false;
 
-    const currentLives = this.getLives();
-
-    if (currentLives <= 0) return false;
-
     const userRef = doc(this.firestore, `users/${user.uid}`);
 
-    const updates: UpdateData<DocumentData> = {
-      [LIVES_CONFIG.firestorePaths.lives]: increment(-1),
-    };
+    return runTransaction(this.firestore, async (transaction) => {
+      const snapshot = await transaction.get(userRef);
 
-    if (currentLives >= LIVES_CONFIG.maxLives || !this.lastLifeUpdateTime) {
-      updates[LIVES_CONFIG.firestorePaths.lastLifeUpdate] = serverTimestamp();
-    }
+      if (!snapshot.exists()) return false;
 
-    await updateDoc(userRef, updates);
+      const profile = snapshot.data() as AppUserProfile;
+      const currentLives = profile.stats?.lives ?? LIVES_CONFIG.maxLives;
 
-    return true;
+      if (currentLives <= 0) return false;
+
+      const lastLifeUpdateTime = this.getLastLifeUpdateTime(
+        profile.stats?.lastLifeUpdate,
+      );
+
+      const updates: UpdateData<DocumentData> = {
+        [LIVES_CONFIG.firestorePaths.lives]: currentLives - 1,
+      };
+
+      if (currentLives >= LIVES_CONFIG.maxLives || !lastLifeUpdateTime) {
+        updates[LIVES_CONFIG.firestorePaths.lastLifeUpdate] = serverTimestamp();
+      }
+
+      transaction.update(userRef, updates);
+      return true;
+    });
   }
 
   async addLife(amount: number = 1) {
