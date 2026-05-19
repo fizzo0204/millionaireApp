@@ -33,3 +33,10 @@ export interface UserDailyRewardData {
   lastClaimDate: string | null;
   claimedToday: boolean;
 }
+
+export interface DailyRewardClaimPayload {
+  rewardDay: number;
+  coins?: number;
+  xp?: number;
+  avatarId?: string;
+}

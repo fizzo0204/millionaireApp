@@ -30,7 +30,10 @@ import { User } from 'firebase/auth';
 import { Observable } from 'rxjs';
 import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
 import { DifficultyId } from '../models/difficulty.model';
-import { UserDailyRewardData } from 'src/app/models/daily-reward.model';
+import {
+  DailyRewardClaimPayload,
+  UserDailyRewardData,
+} from 'src/app/models/daily-reward.model';
 
 @Injectable({
   providedIn: 'root',
@@ -155,6 +158,146 @@ export class UserStatsService {
     const userRef = doc(this.firestore, `users/${uid}`);
 
     await updateDoc(userRef, updatePayload);
+  }
+
+  async claimDailyReward(
+    uid: string,
+    todayKey: string,
+    expectedRewardDay: number,
+    maxRewardDay: number,
+    rewardPayload: DailyRewardClaimPayload,
+  ): Promise<UserDailyRewardData | null> {
+    const userRef = doc(this.firestore, `users/${uid}`);
+
+    return runTransaction(this.firestore, async (transaction) => {
+      const snapshot = await transaction.get(userRef);
+
+      if (!snapshot.exists()) return null;
+
+      const data = snapshot.data();
+      const dailyReward = {
+        ...this.defaultDailyReward,
+        ...(data['dailyReward'] as Partial<UserDailyRewardData> | undefined),
+      };
+
+      if (dailyReward.lastClaimDate === todayKey) return null;
+
+      const currentDay = Math.min(
+        Math.max(dailyReward.currentDay ?? 1, 1),
+        maxRewardDay,
+      );
+
+      if (
+        currentDay !== expectedRewardDay ||
+        rewardPayload.rewardDay !== expectedRewardDay
+      ) {
+        return null;
+      }
+
+      const nextDay = currentDay >= maxRewardDay ? 1 : currentDay + 1;
+
+      const updatedDailyReward: UserDailyRewardData = {
+        currentDay: nextDay,
+        lastClaimDate: todayKey,
+        claimedToday: true,
+      };
+
+      const updates: UpdateData<DocumentData> = {
+        'dailyReward.currentDay': updatedDailyReward.currentDay,
+        'dailyReward.lastClaimDate': updatedDailyReward.lastClaimDate,
+        'dailyReward.claimedToday': updatedDailyReward.claimedToday,
+      };
+
+      if (rewardPayload.coins && rewardPayload.coins > 0) {
+        const currentCoins =
+          typeof data['stats']?.coins === 'number'
+            ? data['stats'].coins
+            : this.defaultStats.coins;
+
+        updates['stats.coins'] = currentCoins + rewardPayload.coins;
+      }
+
+      if (rewardPayload.xp && rewardPayload.xp > 0) {
+        const currentXp =
+          typeof data['stats']?.xp === 'number'
+            ? data['stats'].xp
+            : this.defaultStats.xp;
+
+        const updatedXp = currentXp + rewardPayload.xp;
+        const updatedLevel = Math.max(
+          1,
+          Math.floor(updatedXp / USER_STATS_CONFIG.xpPerLevel) +
+            USER_STATS_CONFIG.defaultLevel,
+        );
+
+        updates['stats.xp'] = updatedXp;
+        updates['stats.level'] = updatedLevel;
+      }
+
+      if (rewardPayload.avatarId) {
+        const avatar = data['avatar'] as Partial<UserAvatarData> | undefined;
+        const unlockedAvatarIds = Array.isArray(avatar?.unlockedAvatarIds)
+          ? avatar.unlockedAvatarIds
+          : [];
+
+        updates['avatar.unlockedAvatarIds'] = unlockedAvatarIds.includes(
+          rewardPayload.avatarId,
+        )
+          ? unlockedAvatarIds
+          : [...unlockedAvatarIds, rewardPayload.avatarId];
+
+        if (!avatar?.selectedAvatar) {
+          updates['avatar.selectedAvatar'] = this.defaultAvatar.selectedAvatar;
+        }
+      }
+
+      transaction.update(userRef, updates);
+
+      return updatedDailyReward;
+    });
+  }
+
+  async applyDailyRewardBonus(
+    uid: string,
+    rewardPayload: DailyRewardClaimPayload,
+  ): Promise<boolean> {
+    const userRef = doc(this.firestore, `users/${uid}`);
+
+    return runTransaction(this.firestore, async (transaction) => {
+      const snapshot = await transaction.get(userRef);
+
+      if (!snapshot.exists()) return false;
+
+      const data = snapshot.data();
+      const updates: UpdateData<DocumentData> = {};
+
+      if (rewardPayload.coins && rewardPayload.coins > 0) {
+        updates['stats.coins'] = increment(rewardPayload.coins);
+      }
+
+      if (rewardPayload.xp && rewardPayload.xp > 0) {
+        const currentXp =
+          typeof data['stats']?.xp === 'number'
+            ? data['stats'].xp
+            : this.defaultStats.xp;
+
+        const updatedXp = currentXp + rewardPayload.xp;
+        const updatedLevel = Math.max(
+          1,
+          Math.floor(updatedXp / USER_STATS_CONFIG.xpPerLevel) +
+            USER_STATS_CONFIG.defaultLevel,
+        );
+
+        updates['stats.xp'] = increment(rewardPayload.xp);
+        updates['stats.level'] = updatedLevel;
+      }
+
+      if (Object.keys(updates).length === 0) return false;
+
+      transaction.update(userRef, updates);
+
+      return true;
+    });
   }
 
   async getAvatarData(uid: string): Promise<UserAvatarData> {

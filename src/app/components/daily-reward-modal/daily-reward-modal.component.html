@@ -46,15 +46,6 @@
               Preparazione...
             }
           </button>
-
-          <button
-            class="double-btn"
-            type="button"
-            (click)="claimDoubleReward()"
-            [disabled]="claimLoading"
-          >
-            ▶ Guarda video e raddoppia
-          </button>
         </div>
       } @else {
         @if (!cinematicVisible) {
@@ -130,7 +121,39 @@
             />
           </div>
 
-          <div class="tap-copy">Tocca per continuare</div>
+          <div class="reward-actions" (click)="$event.stopPropagation()">
+            @if (canDoubleReward) {
+              <button
+                class="reward-double-btn"
+                type="button"
+                (click)="doubleCurrentReward($event)"
+                [disabled]="doubleRewardLoading"
+              >
+                @if (!doubleRewardLoading) {
+                  ▶ Guarda video e raddoppia
+                } @else {
+                  Video in corso...
+                }
+              </button>
+
+              <button
+                class="reward-continue-btn"
+                type="button"
+                (click)="finishCinematic(true)"
+                [disabled]="doubleRewardLoading"
+              >
+                Continua
+              </button>
+            } @else {
+              <button
+                class="reward-continue-btn primary"
+                type="button"
+                (click)="finishCinematic(true)"
+              >
+                Continua
+              </button>
+            }
+          </div>
         </div>
       }
     </div>

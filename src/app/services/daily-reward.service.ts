@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { firstValueFrom, Subscription } from 'rxjs';
 import {
   DailyReward,
+  DailyRewardClaimPayload,
   DailyChestReward,
   DailyRewardState,
   UserDailyRewardData,
@@ -95,30 +96,103 @@ export class DailyRewardService {
   }
 
   async claimToday(): Promise<void> {
+    await this.claimTodayWithReward({
+      rewardDay: this.getState().currentDay,
+    });
+  }
+
+  async claimTodayWithReward(
+    rewardPayload: DailyRewardClaimPayload,
+  ): Promise<boolean> {
     const user = await firstValueFrom(this.auth.user$);
 
     const state = this.getState();
+    const todayKey = this.getTodayKey();
+
+    if (state.claimedToday || rewardPayload.rewardDay !== state.currentDay) {
+      return false;
+    }
 
     const nextDay =
       state.currentDay >= DAILY_REWARD_CONFIG.maxDay ? 1 : state.currentDay + 1;
 
-    const updatedData: Partial<UserDailyRewardData> = {
+    const updatedData: UserDailyRewardData = {
       currentDay: nextDay,
-      lastClaimDate: this.getTodayKey(),
+      lastClaimDate: todayKey,
       claimedToday: true,
     };
 
-    this.cachedDailyReward = {
-      ...this.cachedDailyReward,
-      ...updatedData,
-    };
-
     if (!user || user.isAnonymous) {
+      this.cachedDailyReward = updatedData;
+
+      if (
+        rewardPayload.avatarId &&
+        !this.cachedAvatar.unlockedAvatarIds.includes(rewardPayload.avatarId)
+      ) {
+        this.cachedAvatar = {
+          ...this.cachedAvatar,
+          unlockedAvatarIds: [
+            ...this.cachedAvatar.unlockedAvatarIds,
+            rewardPayload.avatarId,
+          ],
+        };
+
+        this.saveLocalUnlockedAvatarsFallback();
+      }
+
       this.saveLocalFallback();
-      return;
+      return true;
     }
 
-    await this.userStatsService.updateDailyRewardData(user.uid, updatedData);
+    const claimedDailyReward = await this.userStatsService.claimDailyReward(
+      user.uid,
+      todayKey,
+      state.currentDay,
+      DAILY_REWARD_CONFIG.maxDay,
+      rewardPayload,
+    );
+
+    if (!claimedDailyReward) {
+      await this.refreshRemoteCache(user.uid);
+      return false;
+    }
+
+    this.cachedDailyReward = claimedDailyReward;
+
+    if (
+      rewardPayload.avatarId &&
+      !this.cachedAvatar.unlockedAvatarIds.includes(rewardPayload.avatarId)
+    ) {
+      this.cachedAvatar = {
+        ...this.cachedAvatar,
+        unlockedAvatarIds: [
+          ...this.cachedAvatar.unlockedAvatarIds,
+          rewardPayload.avatarId,
+        ],
+      };
+    }
+
+    return true;
+  }
+
+  async applyRewardBonus(
+    rewardPayload: DailyRewardClaimPayload,
+  ): Promise<boolean> {
+    const user = await firstValueFrom(this.auth.user$);
+
+    if (!user || user.isAnonymous) return false;
+
+    if (
+      (!rewardPayload.coins || rewardPayload.coins <= 0) &&
+      (!rewardPayload.xp || rewardPayload.xp <= 0)
+    ) {
+      return false;
+    }
+
+    return this.userStatsService.applyDailyRewardBonus(
+      user.uid,
+      rewardPayload,
+    );
   }
 
   async simulateDay(day: number): Promise<void> {
@@ -251,24 +325,26 @@ export class DailyRewardService {
         return;
       }
 
-      const dailyReward = await this.userStatsService.getDailyRewardData(
-        user.uid,
-      );
-
-      const profile = await firstValueFrom(
-        this.userStatsService.getUserProfile(user.uid),
-      );
-
-      this.cachedDailyReward = {
-        ...dailyReward,
-        claimedToday: dailyReward.lastClaimDate === this.getTodayKey(),
-      };
-
-      this.cachedAvatar = {
-        selectedAvatar: profile?.avatar?.selectedAvatar ?? 'letter',
-        unlockedAvatarIds: profile?.avatar?.unlockedAvatarIds ?? [],
-      };
+      await this.refreshRemoteCache(user.uid);
     });
+  }
+
+  private async refreshRemoteCache(uid: string): Promise<void> {
+    const dailyReward = await this.userStatsService.getDailyRewardData(uid);
+
+    const profile = await firstValueFrom(
+      this.userStatsService.getUserProfile(uid),
+    );
+
+    this.cachedDailyReward = {
+      ...dailyReward,
+      claimedToday: dailyReward.lastClaimDate === this.getTodayKey(),
+    };
+
+    this.cachedAvatar = {
+      selectedAvatar: profile?.avatar?.selectedAvatar ?? 'letter',
+      unlockedAvatarIds: profile?.avatar?.unlockedAvatarIds ?? [],
+    };
   }
 
   private loadLocalFallback(): void {

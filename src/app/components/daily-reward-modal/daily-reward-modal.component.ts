@@ -1,20 +1,27 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { firstValueFrom } from 'rxjs';
 import { ModalController } from '@ionic/angular';
 import { DailyRewardService } from 'src/app/services/daily-reward.service';
-import { CoinsService } from 'src/app/services/coins.service';
-import { UserStatsService } from 'src/app/services/user-stats.service';
-import { AuthService } from 'src/app/services/auth.service';
 import { AdsService } from 'src/app/services/ads.service';
 
 import {
   DailyChestReward,
   DailyReward,
+  DailyRewardClaimPayload,
   CinematicPhase,
   RevealType,
 } from 'src/app/models/daily-reward.model';
 import { AvatarModel } from 'src/app/models/avatar.model';
+
+interface PreparedDailyRewardClaim {
+  payload: DailyRewardClaimPayload;
+  revealIcon: string;
+  revealLabel: string;
+  revealType: RevealType;
+  chestReward?: DailyChestReward;
+  unlockedAvatar?: AvatarModel;
+  epicAvatarReward?: AvatarModel;
+}
 
 @Component({
   selector: 'app-daily-reward-modal',
@@ -26,6 +33,8 @@ import { AvatarModel } from 'src/app/models/avatar.model';
 export class DailyRewardModalComponent {
   claimedNow = false;
   claimLoading = false;
+  doubleRewardLoading = false;
+  doubleRewardClaimed = false;
   cinematicVisible = false;
 
   unlockedAvatar: AvatarModel | null = null;
@@ -38,11 +47,10 @@ export class DailyRewardModalComponent {
   rewardRevealLabel = '';
   rewardRevealIcon = '';
 
+  private doubleRewardPayload: DailyRewardClaimPayload | null = null;
+
   constructor(
     public dailyRewardService: DailyRewardService,
-    private coinsService: CoinsService,
-    private userStatsService: UserStatsService,
-    private auth: AuthService,
     private ads: AdsService,
     private modalCtrl: ModalController,
   ) {}
@@ -76,129 +84,213 @@ export class DailyRewardModalComponent {
       const reward = this.dailyRewardService.getCurrentReward();
 
       await this.handleReward(reward, 1);
-
-      await this.dailyRewardService.claimToday();
-      this.claimedNow = true;
     } finally {
       this.claimLoading = false;
     }
   }
 
-  async claimDoubleReward() {
-    if (this.claimLoading || this.hasClaimed) return;
+  get canDoubleReward() {
+    return (
+      this.cinematicVisible &&
+      this.cinematicPhase === 'reward' &&
+      !!this.doubleRewardPayload &&
+      !this.doubleRewardClaimed
+    );
+  }
 
-    this.claimLoading = true;
+  finishCinematic(force = false) {
+    if (!this.cinematicVisible || this.cinematicPhase !== 'reward') return;
+    if (this.doubleRewardLoading) return;
+    if (this.canDoubleReward && !force) return;
+
+    this.cinematicVisible = false;
+    this.continue();
+  }
+
+  async doubleCurrentReward(event?: Event) {
+    event?.stopPropagation();
+
+    if (
+      this.doubleRewardLoading ||
+      !this.canDoubleReward ||
+      !this.doubleRewardPayload
+    ) {
+      return;
+    }
+
+    this.doubleRewardLoading = true;
 
     try {
       const rewarded = await this.ads.showRewardedAd();
 
       if (!rewarded) return;
 
-      const reward = this.dailyRewardService.getCurrentReward();
+      const applied = await this.dailyRewardService.applyRewardBonus(
+        this.doubleRewardPayload,
+      );
 
-      await this.handleReward(reward, 2);
+      if (!applied) return;
 
-      await this.dailyRewardService.claimToday();
-      this.claimedNow = true;
+      this.doubleRewardClaimed = true;
+      this.updateRevealLabelAfterDouble(this.doubleRewardPayload);
     } finally {
-      this.claimLoading = false;
+      this.doubleRewardLoading = false;
     }
-  }
-
-  finishCinematic() {
-    if (!this.cinematicVisible || this.cinematicPhase !== 'reward') return;
-
-    this.cinematicVisible = false;
-    this.continue();
   }
 
   continue() {
     this.modalCtrl.dismiss();
   }
 
-  private async handleReward(reward: DailyReward, multiplier: number) {
-    if (reward.type === 'chest') {
-      this.claimedNow = true;
+  private async handleReward(
+    reward: DailyReward,
+    multiplier: number,
+  ): Promise<boolean> {
+    const preparedClaim = this.prepareRewardClaim(reward, multiplier);
 
-      const chestReward = this.dailyRewardService.getRandomEpicChestReward();
+    if (!preparedClaim) return false;
 
-      this.chestReward = chestReward;
+    const claimed = await this.dailyRewardService.claimTodayWithReward(
+      preparedClaim.payload,
+    );
 
-      if (chestReward.type === 'avatar') {
-        this.epicAvatarReward =
-          this.dailyRewardService.getRandomEpicAvatar() ?? null;
-      }
+    if (!claimed) return false;
 
-      await this.playChestCinematic(chestReward);
+    this.claimedNow = true;
+    this.chestReward = preparedClaim.chestReward ?? null;
+    this.epicAvatarReward = preparedClaim.epicAvatarReward ?? null;
+    this.unlockedAvatar = preparedClaim.unlockedAvatar ?? null;
+    this.doubleRewardPayload = this.getDoubleRewardPayload(
+      preparedClaim.payload,
+    );
+    this.doubleRewardClaimed = false;
 
-      await this.applyChestReward(chestReward);
+    if (preparedClaim.chestReward) {
+      await this.playChestCinematic(preparedClaim.chestReward);
+    } else {
+      await this.playRewardCinematic(
+        preparedClaim.revealIcon,
+        preparedClaim.revealLabel,
+        preparedClaim.revealType,
+      );
+    }
 
+    return true;
+  }
+
+  private getDoubleRewardPayload(
+    payload: DailyRewardClaimPayload,
+  ): DailyRewardClaimPayload | null {
+    if (payload.coins && payload.coins > 0) {
+      return {
+        rewardDay: payload.rewardDay,
+        coins: payload.coins,
+      };
+    }
+
+    if (payload.xp && payload.xp > 0) {
+      return {
+        rewardDay: payload.rewardDay,
+        xp: payload.xp,
+      };
+    }
+
+    return null;
+  }
+
+  private updateRevealLabelAfterDouble(payload: DailyRewardClaimPayload) {
+    if (payload.coins && payload.coins > 0) {
+      this.rewardRevealLabel = `+${payload.coins * 2} Coins`;
       return;
     }
 
+    if (payload.xp && payload.xp > 0) {
+      this.rewardRevealLabel = `+${payload.xp * 2} XP`;
+    }
+  }
+
+  private prepareRewardClaim(
+    reward: DailyReward,
+    multiplier: number,
+  ): PreparedDailyRewardClaim | null {
     if (reward.type === 'coins' && reward.amount) {
       const amount = reward.amount * multiplier;
 
-      await this.playRewardCinematic(
-        'assets/ui/coin-turtle.webp',
-        `+${amount} Coins`,
-        'coins',
-      );
-
-      await this.coinsService.addCoins(amount);
-      return;
+      return {
+        payload: {
+          rewardDay: reward.day,
+          coins: amount,
+        },
+        revealIcon: 'assets/ui/coin-turtle.webp',
+        revealLabel: `+${amount} Coins`,
+        revealType: 'coins',
+      };
     }
 
     if (reward.type === 'xp' && reward.amount) {
       const amount = reward.amount * multiplier;
 
-      await this.playRewardCinematic('⚡', `+${amount} XP`, 'xp');
-
-      await this.addXp(amount);
-      return;
+      return {
+        payload: {
+          rewardDay: reward.day,
+          xp: amount,
+        },
+        revealIcon: reward.icon,
+        revealLabel: `+${amount} XP`,
+        revealType: 'xp',
+      };
     }
 
     if (reward.type === 'avatar') {
       const avatar = this.dailyRewardService.getRandomDailyAvatar();
 
-      await this.dailyRewardService.saveUnlockedAvatar(avatar);
-
-      this.unlockedAvatar = avatar;
-
-      await this.playRewardCinematic(
-        avatar.icon || '🎨',
-        avatar.label,
-        'avatar',
-      );
-    }
-  }
-
-  private async applyChestReward(chestReward: DailyChestReward) {
-    if (chestReward.type === 'coins' && chestReward.amount) {
-      await this.coinsService.addCoins(chestReward.amount);
-      return;
+      return {
+        payload: {
+          rewardDay: reward.day,
+          avatarId: avatar.id,
+        },
+        revealIcon: avatar.icon || reward.icon,
+        revealLabel: avatar.label,
+        revealType: 'avatar',
+        unlockedAvatar: avatar,
+      };
     }
 
-    if (chestReward.type === 'xp' && chestReward.amount) {
-      await this.addXp(chestReward.amount);
-      return;
+    if (reward.type === 'chest') {
+      const chestReward = this.dailyRewardService.getRandomEpicChestReward();
+      const epicAvatarReward =
+        chestReward.type === 'avatar'
+          ? this.dailyRewardService.getRandomEpicAvatar()
+          : undefined;
+
+      const payload: DailyRewardClaimPayload = {
+        rewardDay: reward.day,
+      };
+
+      if (chestReward.type === 'coins' && chestReward.amount) {
+        payload.coins = chestReward.amount;
+      }
+
+      if (chestReward.type === 'xp' && chestReward.amount) {
+        payload.xp = chestReward.amount;
+      }
+
+      if (chestReward.type === 'avatar' && epicAvatarReward) {
+        payload.avatarId = epicAvatarReward.id;
+      }
+
+      return {
+        payload,
+        revealIcon: epicAvatarReward?.icon || chestReward.icon,
+        revealLabel: epicAvatarReward?.label || chestReward.label,
+        revealType: 'chest',
+        chestReward,
+        epicAvatarReward,
+        unlockedAvatar: epicAvatarReward,
+      };
     }
 
-    if (chestReward.type === 'avatar') {
-      if (!this.epicAvatarReward) return;
-
-      await this.dailyRewardService.saveUnlockedAvatar(this.epicAvatarReward);
-
-      this.unlockedAvatar = this.epicAvatarReward;
-    }
-  }
-
-  private async addXp(amount: number) {
-    const user = await firstValueFrom(this.auth.user$);
-
-    if (user && !user.isAnonymous) {
-      await this.userStatsService.addXp(user.uid, amount);
-    }
+    return null;
   }
 
   private async playChestCinematic(chestReward: DailyChestReward) {
