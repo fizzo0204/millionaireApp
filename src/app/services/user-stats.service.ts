@@ -476,23 +476,29 @@ export class UserStatsService {
 
   async addXp(uid: string, amount: number): Promise<void> {
     const userRef = doc(this.firestore, `users/${uid}`);
-    const snapshot = await getDoc(userRef);
 
-    if (!snapshot.exists()) return;
+    await runTransaction(this.firestore, async (transaction) => {
+      const snapshot = await transaction.get(userRef);
 
-    const data = snapshot.data();
-    const currentXp = data['stats']?.xp ?? 0;
+      if (!snapshot.exists()) return;
 
-    const updatedXp = currentXp + amount;
-    const updatedLevel = Math.max(
-      1,
-      Math.floor(updatedXp / USER_STATS_CONFIG.xpPerLevel) +
-        USER_STATS_CONFIG.defaultLevel,
-    );
+      const data = snapshot.data();
+      const currentXp =
+        typeof data['stats']?.xp === 'number'
+          ? data['stats'].xp
+          : this.defaultStats.xp;
 
-    await updateDoc(userRef, {
-      'stats.xp': increment(amount),
-      'stats.level': updatedLevel,
+      const updatedXp = currentXp + amount;
+      const updatedLevel = Math.max(
+        1,
+        Math.floor(updatedXp / USER_STATS_CONFIG.xpPerLevel) +
+          USER_STATS_CONFIG.defaultLevel,
+      );
+
+      transaction.update(userRef, {
+        'stats.xp': increment(amount),
+        'stats.level': updatedLevel,
+      });
     });
   }
 

@@ -14,6 +14,7 @@ import {
   AppUserProfile,
   QuizHistoryItem,
 } from 'src/app/models/user-stats.model';
+import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
 
 @Component({
   selector: 'app-profile',
@@ -73,11 +74,15 @@ export class ProfilePage {
   }
 
   get maxXp(): number {
-    return 1000;
+    return USER_STATS_CONFIG.xpPerLevel;
+  }
+
+  getCurrentLevelXp(xp: number): number {
+    return Math.max(0, xp) % this.maxXp;
   }
 
   getXpPercent(xp: number): number {
-    return Math.min(100, Math.round((xp / this.maxXp) * 100));
+    return Math.round((this.getCurrentLevelXp(xp) / this.maxXp) * 100);
   }
 
   getTitle(level: number): string {
