@@ -1,13 +1,21 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
-import { Observable, map, of, shareReplay, switchMap } from 'rxjs';
+import {
+  Observable,
+  firstValueFrom,
+  map,
+  of,
+  shareReplay,
+  switchMap,
+} from 'rxjs';
 import { User } from 'firebase/auth';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { UserStatsService } from 'src/app/services/user-stats.service';
 import { AVATARS } from 'src/app/data/avatars.data';
 import { AppUserProfile } from 'src/app/models/user-stats.model';
+import { AuthPromptService } from 'src/app/services/auth-prompt.service';
 
 @Component({
   selector: 'app-login-button',
@@ -23,7 +31,7 @@ export class LoginButtonComponent {
 
   profile$: Observable<AppUserProfile | undefined> = this.user$.pipe(
     switchMap((user) => {
-      if (!user || user.isAnonymous) return of(undefined);
+      if (!user) return of(undefined);
 
       return this.userStatsService.getUserProfile(user.uid);
     }),
@@ -44,15 +52,22 @@ export class LoginButtonComponent {
   constructor(
     private auth: AuthService,
     private userStatsService: UserStatsService,
+    private authPromptService: AuthPromptService,
     private router: Router,
   ) {}
 
   getFirstName(user: User): string {
+    if (user.isAnonymous) return 'Ospite';
+
     return (user.displayName || 'Utente').split(' ')[0];
   }
 
+  getPlayerTag(user: User): string {
+    return user.isAnonymous ? 'OSPITE' : 'PLAYER';
+  }
+
   getAvatarLetter(user: User | null): string {
-    if (!user || user.isAnonymous) return 'U';
+    if (!user) return 'U';
 
     return this.getFirstName(user).charAt(0).toUpperCase();
   }
@@ -73,6 +88,17 @@ export class LoginButtonComponent {
   }
 
   async navigateToProfile() {
+    const user = await firstValueFrom(this.user$);
+
+    if (user?.isAnonymous) {
+      // Da ospite il bottone profilo diventa un invito gentile a collegare l'account.
+      await this.authPromptService.openGuestLoginPrompt({
+        force: true,
+        source: 'navbar',
+      });
+      return;
+    }
+
     await this.router.navigateByUrl('/profile');
   }
 }

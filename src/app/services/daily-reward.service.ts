@@ -122,7 +122,7 @@ export class DailyRewardService {
       claimedToday: true,
     };
 
-    if (!user || user.isAnonymous) {
+    if (!user) {
       this.cachedDailyReward = updatedData;
 
       if (
@@ -180,7 +180,7 @@ export class DailyRewardService {
   ): Promise<boolean> {
     const user = await firstValueFrom(this.auth.user$);
 
-    if (!user || user.isAnonymous) return false;
+    if (!user) return false;
 
     if (
       (!rewardPayload.coins || rewardPayload.coins <= 0) &&
@@ -215,7 +215,7 @@ export class DailyRewardService {
 
     localStorage.removeItem(this.storageKey);
 
-    if (!user || user.isAnonymous) return;
+    if (!user) return;
 
     await this.userStatsService.updateDailyRewardData(user.uid, updatedData);
   }
@@ -230,7 +230,7 @@ export class DailyRewardService {
       unlockedAvatarIds: [...this.cachedAvatar.unlockedAvatarIds, avatar.id],
     };
 
-    if (!user || user.isAnonymous) {
+    if (!user) {
       this.saveLocalUnlockedAvatarsFallback();
       return;
     }
@@ -267,7 +267,7 @@ export class DailyRewardService {
       ...updatedData,
     };
 
-    if (!user || user.isAnonymous) {
+    if (!user) {
       this.saveLocalFallback();
       return;
     }
@@ -285,11 +285,11 @@ export class DailyRewardService {
 
     localStorage.removeItem(this.unlockedAvatarsKey);
 
-    if (!user || user.isAnonymous) return;
+    if (!user) return;
 
-    await this.userStatsService.updateDailyRewardData(user.uid, {
+    await this.userStatsService.updateAvatarData(user.uid, {
       unlockedAvatarIds: [],
-    } as any);
+    });
   }
 
   getRandomEpicChestReward(): DailyChestReward {
@@ -310,7 +310,7 @@ export class DailyRewardService {
       selectedAvatar: avatarId,
     };
 
-    if (!user || user.isAnonymous) {
+    if (!user) {
       localStorage.setItem(this.selectedAvatarKey, avatarId);
       return;
     }
@@ -320,13 +320,57 @@ export class DailyRewardService {
 
   private listenToUser(): void {
     this.userSub = this.auth.user$.subscribe(async (user) => {
-      if (!user || user.isAnonymous) {
+      if (!user) {
         this.loadLocalFallback();
         return;
       }
 
+      if (user.isAnonymous) {
+        await this.migrateLocalFallbackToRemote(user.uid);
+      }
+
       await this.refreshRemoteCache(user.uid);
     });
+  }
+
+  private async migrateLocalFallbackToRemote(uid: string): Promise<void> {
+    /*
+     * Prima l'anonimo usava localStorage per daily reward e avatar.
+     * Ora l'ospite e un profilo Firestore: copiamo una sola volta quei dati
+     * locali nel documento dell'utente anonimo, cosi chi aveva gia giocato
+     * non perde le ricompense ottenute.
+     */
+    const savedState = localStorage.getItem(this.storageKey);
+    const savedAvatars = localStorage.getItem(this.unlockedAvatarsKey);
+    const selectedAvatar = localStorage.getItem(this.selectedAvatarKey);
+
+    if (!savedState && !savedAvatars && !selectedAvatar) return;
+
+    if (savedState) {
+      const state = JSON.parse(savedState) as Partial<DailyRewardState>;
+
+      await this.userStatsService.updateDailyRewardData(uid, {
+        currentDay: state.currentDay ?? 1,
+        lastClaimDate: state.lastClaimDate ?? null,
+        claimedToday: state.lastClaimDate === this.getTodayKey(),
+      });
+    }
+
+    if (savedAvatars || selectedAvatar) {
+      const remoteAvatar = await this.userStatsService.getAvatarData(uid);
+      const localAvatarIds = this.parseLocalAvatarIds(savedAvatars);
+
+      await this.userStatsService.updateAvatarData(uid, {
+        selectedAvatar: selectedAvatar ?? remoteAvatar.selectedAvatar,
+        unlockedAvatarIds: Array.from(
+          new Set([...remoteAvatar.unlockedAvatarIds, ...localAvatarIds]),
+        ),
+      });
+    }
+
+    localStorage.removeItem(this.storageKey);
+    localStorage.removeItem(this.unlockedAvatarsKey);
+    localStorage.removeItem(this.selectedAvatarKey);
   }
 
   private async refreshRemoteCache(uid: string): Promise<void> {
@@ -347,6 +391,16 @@ export class DailyRewardService {
     };
   }
 
+  private parseLocalAvatarIds(savedAvatars: string | null): string[] {
+    if (!savedAvatars) return [];
+
+    const parsedAvatars: unknown[] = JSON.parse(savedAvatars);
+
+    return parsedAvatars
+      .map((item: any) => (typeof item === 'string' ? item : item?.id))
+      .filter(Boolean);
+  }
+
   private loadLocalFallback(): void {
     const savedState = localStorage.getItem(this.storageKey);
     const savedAvatars = localStorage.getItem(this.unlockedAvatarsKey);
@@ -361,13 +415,7 @@ export class DailyRewardService {
           claimedToday: false,
         };
 
-    const parsedAvatars: unknown[] = savedAvatars
-      ? JSON.parse(savedAvatars)
-      : [];
-
-    const unlockedAvatarIds = parsedAvatars
-      .map((item: any) => (typeof item === 'string' ? item : item?.id))
-      .filter(Boolean);
+    const unlockedAvatarIds = this.parseLocalAvatarIds(savedAvatars);
 
     this.cachedDailyReward = {
       currentDay: state.currentDay,

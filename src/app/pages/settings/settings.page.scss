@@ -98,6 +98,76 @@
     filter 0.15s ease;
 }
 
+.login-card {
+  width: 100%;
+  padding: 16px;
+  border: 2px solid rgba(255, 234, 0, 0.76);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #ffffff;
+  background: linear-gradient(
+    135deg,
+    rgba(37, 99, 235, 0.9),
+    rgba(20, 83, 45, 0.88)
+  );
+  cursor: pointer;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 8px 18px rgba(0, 0, 0, 0.28);
+  transition:
+    transform 0.15s ease,
+    filter 0.15s ease;
+}
+
+.login-card:active {
+  transform: scale(0.97);
+  filter: brightness(1.08);
+}
+
+.login-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #172033;
+  background: linear-gradient(180deg, #ffea00, #ffc400);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.login-icon ion-icon {
+  font-size: 1.55rem;
+}
+
+.login-text {
+  flex: 1;
+  text-align: left;
+}
+
+.login-text h3 {
+  margin: 0;
+  color: #ffea00;
+  font-size: 1.05rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.login-text p {
+  margin: 3px 0 0;
+  color: #e0f2fe;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.login-arrow {
+  color: #ffea00;
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+
 .logout-card:active {
   transform: scale(0.97);
   filter: brightness(1.08);

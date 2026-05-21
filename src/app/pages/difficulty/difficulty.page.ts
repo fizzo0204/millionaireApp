@@ -66,10 +66,11 @@ export class DifficultyPage {
   async loadDifficultyProgress() {
     const user = await firstValueFrom(this.auth.user$);
 
-    if (!user || user.isAnonymous) {
+    if (!user) {
       return;
     }
 
+    // Anche l'ospite anonimo salva lo stato delle difficolta nel proprio UID.
     const onlineProgress = await this.progressService.getUserCategoryProgress(
       user.uid,
       this.categoryId,

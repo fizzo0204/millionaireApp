@@ -369,6 +369,18 @@ p {
   color: #1877f2;
 }
 
+.guest-btn {
+  color: #f8fafc;
+  background: linear-gradient(180deg, #334155, #111827);
+  box-shadow:
+    0 0.42rem 0 rgba(2, 6, 23, 0.92),
+    0 0.75rem 1.25rem rgba(0, 0, 0, 0.34);
+}
+
+.guest-btn ion-icon {
+  color: #111827;
+}
+
 .safe-copy {
   position: relative;
   z-index: 2;

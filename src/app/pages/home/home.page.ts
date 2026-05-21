@@ -4,7 +4,6 @@ import { CommonModule } from '@angular/common';
 import { Observable, Subscription, map, of, switchMap } from 'rxjs';
 import { Router } from '@angular/router';
 import { UserStatsService } from 'src/app/services/user-stats.service';
-import { AnonymousModalComponent } from '../../components/anonymous-modal/anonymous-modal.component';
 import { AuthService } from 'src/app/services/auth.service';
 import { AdsService } from 'src/app/services/ads.service';
 import { CoinsService } from 'src/app/services/coins.service';
@@ -14,22 +13,21 @@ import { UiService } from 'src/app/services/ui.service';
 import { CATEGORIES } from 'src/app/data/categories.data';
 import { CategoryModel } from 'src/app/models/category.model';
 import { ModalController } from '@ionic/angular/standalone';
+import { AuthPromptService } from 'src/app/services/auth-prompt.service';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [IonicModule, CommonModule, AnonymousModalComponent],
+  imports: [IonicModule, CommonModule],
   templateUrl: './home.page.html',
   styleUrls: ['./home.page.scss'],
 })
 export class HomePage implements OnInit, OnDestroy {
-  private userSub?: Subscription;
   private livesSub?: Subscription;
 
   private previousLives?: number;
   readonly maxLives = 5;
 
-  showAnonModal = false;
   coinsLoading = false;
   lifeLoading = false;
   showDailyReward = false;
@@ -41,7 +39,7 @@ export class HomePage implements OnInit, OnDestroy {
   livesCountdown$: Observable<string>;
   quizPlayed$: Observable<number> = this.auth.user$.pipe(
     switchMap((user) => {
-      if (!user || user.isAnonymous) {
+      if (!user) {
         return of(0);
       }
 
@@ -62,6 +60,7 @@ export class HomePage implements OnInit, OnDestroy {
     private userStatsService: UserStatsService,
     private ui: UiService,
     private modalCtrl: ModalController,
+    private authPromptService: AuthPromptService,
   ) {
     this.coins$ = this.coinsService.coins$;
     this.lives$ = this.livesService.lives$;
@@ -71,10 +70,6 @@ export class HomePage implements OnInit, OnDestroy {
   ngOnInit() {
     this.ads.showBanner();
 
-    this.userSub = this.auth.user$.subscribe((user) => {
-      this.showAnonModal = !!user?.isAnonymous;
-    });
-
     this.livesSub = this.lives$.subscribe((lives) => {
       if (this.previousLives !== undefined && lives > this.previousLives) {
         this.triggerLifePulse();
@@ -82,6 +77,14 @@ export class HomePage implements OnInit, OnDestroy {
 
       this.previousLives = lives;
     });
+  }
+
+  ionViewWillEnter() {
+    /*
+     * Il login non blocca piu il gioco. Quando l'ospite torna in home,
+     * ogni tanto proponiamo il salvataggio cloud con Google/Facebook.
+     */
+    this.authPromptService.scheduleHomeGuestLoginPrompt();
   }
 
   selectCategory(categoryId: string) {
@@ -146,7 +149,6 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.userSub?.unsubscribe();
     this.livesSub?.unsubscribe();
     this.ads.hideBanner();
   }

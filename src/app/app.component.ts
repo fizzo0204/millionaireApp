@@ -135,8 +135,9 @@ export class AppComponent implements OnDestroy {
     this.levelSub = this.auth.user$
       .pipe(
         switchMap((user) => {
-          if (!user || user.isAnonymous) return of(null);
+          if (!user) return of(null);
 
+          // Il level-up vale anche per il profilo ospite anonimo.
           return this.userStatsService.getUserProfile(user.uid).pipe(
             map((profile) => {
               const stats = profile?.stats;

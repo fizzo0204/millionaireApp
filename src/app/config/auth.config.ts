@@ -20,4 +20,11 @@ export const AUTH_CONFIG = {
     coins: 0,
     xp: 0,
   },
+
+  guestPrompt: {
+    // Mostriamo il prompt solo ogni tanto quando l'ospite torna in home.
+    homeCooldownMs: 15 * 60 * 1000,
+    homeOpenDelayMs: 450,
+    lastDismissedStorageKey: 'auth_guest_prompt_last_dismissed_at',
+  },
 };

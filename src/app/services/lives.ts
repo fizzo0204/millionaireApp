@@ -42,13 +42,14 @@ export class LivesService {
     this.userSub = this.auth.user$.subscribe((user) => {
       this.livesDocSub?.unsubscribe();
 
-      if (!user || user.isAnonymous) {
+      if (!user) {
         this.livesSubject.next(LIVES_CONFIG.maxLives);
         this.countdownSubject.next('');
         this.lastLifeUpdateTime = null;
         return;
       }
 
+      // L'ospite anonimo usa lo stesso documento Firestore degli account collegati.
       const userRef = doc(this.firestore, `users/${user.uid}`);
 
       this.livesDocSub = docData(userRef).subscribe((profile) => {
@@ -69,7 +70,7 @@ export class LivesService {
   async spendLife(): Promise<boolean> {
     const user = await firstValueFrom(this.auth.user$);
 
-    if (!user || user.isAnonymous) return false;
+    if (!user) return false;
 
     const userRef = doc(this.firestore, `users/${user.uid}`);
 
@@ -103,7 +104,7 @@ export class LivesService {
   async addLife(amount: number = 1) {
     const user = await firstValueFrom(this.auth.user$);
 
-    if (!user || user.isAnonymous) return;
+    if (!user) return;
 
     const currentLives = this.getLives();
     const updatedLives = Math.min(LIVES_CONFIG.maxLives, currentLives + amount);
@@ -140,7 +141,7 @@ export class LivesService {
     try {
       const user = await firstValueFrom(this.auth.user$);
 
-      if (!user || user.isAnonymous) return;
+      if (!user) return;
 
       const lives = this.getLives();
 
@@ -184,7 +185,7 @@ export class LivesService {
   private async updateCountdown() {
     const user = await firstValueFrom(this.auth.user$);
 
-    if (!user || user.isAnonymous) {
+    if (!user) {
       this.countdownSubject.next('');
       return;
     }

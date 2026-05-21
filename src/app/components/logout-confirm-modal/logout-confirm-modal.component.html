@@ -1,0 +1,28 @@
+<div class="logout-modal-backdrop">
+  <div class="logout-modal">
+    <button class="close-btn" type="button" (click)="keepPlaying()">
+      <ion-icon name="close-outline"></ion-icon>
+    </button>
+
+    <div class="modal-icon">
+      <ion-icon name="log-out-outline"></ion-icon>
+    </div>
+
+    <h2>Vuoi uscire?</h2>
+
+    <p>
+      I progressi restano salvati sul tuo account. Dopo il logout entrerai come
+      nuovo ospite finche non accedi di nuovo.
+    </p>
+
+    <div class="actions">
+      <button class="secondary-btn" type="button" (click)="keepPlaying()">
+        Annulla
+      </button>
+
+      <button class="danger-btn" type="button" (click)="confirmLogout()">
+        Logout
+      </button>
+    </div>
+  </div>
+</div>

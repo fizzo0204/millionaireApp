@@ -15,6 +15,8 @@ export interface UserAuthProfile {
   createdFromProviderId: AppAuthProviderId;
   loginRewardClaimed: boolean;
   lastMergeCheckedAt?: unknown;
+  migratedFromAnonymousUid?: string;
+  migratedAt?: unknown;
 }
 
 export type AccountConflictDecision = 'use-existing-profile' | 'keep-current';

@@ -40,3 +40,14 @@ export interface QuizHistoryItem {
   totalQuestions: number;
   playedAt: unknown;
 }
+
+export interface UserProfileDocumentSnapshot {
+  id: string;
+  data: Record<string, unknown>;
+}
+
+export interface UserProfileMigrationSnapshot {
+  uid: string;
+  profile: Record<string, unknown> | null;
+  subcollections: Record<string, UserProfileDocumentSnapshot[]>;
+}

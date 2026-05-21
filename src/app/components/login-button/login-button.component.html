@@ -1,14 +1,15 @@
 <ng-container>
   @if (user$ | async; as user) {
-    @if (!user.isAnonymous) {
-      <button
-        class="player-card logged"
-        type="button"
-        (click)="navigateToProfile()"
-      >
-        <div class="card-glow"></div>
-        <div class="card-shine"></div>
+    <button
+      class="player-card logged"
+      type="button"
+      (click)="navigateToProfile()"
+      [disabled]="loading$ | async"
+    >
+      <div class="card-glow"></div>
+      <div class="card-shine"></div>
 
+      @if (!(loading$ | async)) {
         <div class="avatar-wrap">
           <div class="avatar-fallback">
             {{ getSelectedAvatarIcon(user, selectedAvatar$ | async) }}
@@ -18,7 +19,7 @@
         </div>
 
         <div class="player-info">
-          <span class="player-tag">PLAYER</span>
+          <span class="player-tag">{{ getPlayerTag(user) }}</span>
 
           <strong>{{ getFirstName(user) }}</strong>
 
@@ -27,35 +28,9 @@
             <span>Lv. {{ level$ | async }}</span>
           </div>
         </div>
-      </button>
-    } @else {
-      <button
-        class="player-card logged guest-premium"
-        type="button"
-        [disabled]="loading$ | async"
-      >
-        <div class="card-glow"></div>
-        <div class="card-shine"></div>
-
-        @if (!(loading$ | async)) {
-          <div class="avatar-wrap guest-avatar-premium">
-            <ion-icon name="person-outline"></ion-icon>
-            <div class="online-dot guest-dot"></div>
-          </div>
-
-          <div class="player-info">
-            <span class="player-tag">OSPITE</span>
-            <strong>Accedi</strong>
-
-            <div class="player-level">
-              <ion-icon name="lock-closed"></ion-icon>
-              <span>Salva dati</span>
-            </div>
-          </div>
-        } @else {
-          <ion-spinner name="dots"></ion-spinner>
-        }
-      </button>
-    }
+      } @else {
+        <ion-spinner name="dots"></ion-spinner>
+      }
+    </button>
   }
 </ng-container>

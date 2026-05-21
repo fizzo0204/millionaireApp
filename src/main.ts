@@ -28,6 +28,10 @@ import {
   gift,
   personOutline,
   lockClosed,
+  refreshOutline,
+  trashOutline,
+  cloudDoneOutline,
+  play,
 } from 'ionicons/icons';
 
 import { defineCustomElements as ionicElements } from '@ionic/core/loader';
@@ -72,4 +76,8 @@ addIcons({
   gift: gift,
   'person-outline': personOutline,
   'lock-closed': lockClosed,
+  'refresh-outline': refreshOutline,
+  'trash-outline': trashOutline,
+  'cloud-done-outline': cloudDoneOutline,
+  play: play,
 });

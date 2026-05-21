@@ -370,7 +370,7 @@ export class QuizPage implements OnInit, OnDestroy {
 
     const user = await firstValueFrom(this.auth.user$);
 
-    if (user && !user.isAnonymous) {
+    if (user) {
       const levelAlreadyCompleted = await this.progressService.isLevelCompleted(
         user.uid,
         this.categoryId,
@@ -551,7 +551,7 @@ export class QuizPage implements OnInit, OnDestroy {
 
       const user = await firstValueFrom(this.auth.user$);
 
-      if (!user || user.isAnonymous) return;
+      if (!user) return;
 
       const bonusXp = this.rewardXp;
 

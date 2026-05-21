@@ -87,8 +87,9 @@ export class LevelsPage {
   async loadLevelProgress() {
     const user = await firstValueFrom(this.auth.user$);
 
-    if (!user || user.isAnonymous) return;
+    if (!user) return;
 
+    // L'ospite anonimo ha livelli completati salvati come ogni altro profilo.
     const completedLevelNumbers =
       await this.progressService.getCompletedLevelNumbers(
         user.uid,

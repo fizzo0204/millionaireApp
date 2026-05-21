@@ -304,15 +304,19 @@ ion-modal.anon-modal::part(backdrop) {
 }
 
 ion-modal.anon-modal {
-  --width: 90%;
-  --max-width: 380px;
-  --height: auto;
-  --border-radius: 20px;
+  --width: 100vw;
+  --height: 100vh;
+  --border-radius: 0;
   --background: transparent;
+  --box-shadow: none;
 
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+ion-modal.anon-modal::part(content) {
+  background: transparent;
 }
 
 .daily-reward-ion-modal {
@@ -336,6 +340,18 @@ ion-modal.anon-modal {
 }
 
 .account-conflict-ion-modal::part(content) {
+  background: transparent;
+}
+
+.logout-confirm-ion-modal {
+  --width: 100vw;
+  --height: 100vh;
+  --border-radius: 0;
+  --background: transparent;
+  --box-shadow: none;
+}
+
+.logout-confirm-ion-modal::part(content) {
   background: transparent;
 }
 

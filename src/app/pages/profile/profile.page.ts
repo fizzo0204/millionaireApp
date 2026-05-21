@@ -28,7 +28,7 @@ export class ProfilePage {
 
   profile$: Observable<AppUserProfile | undefined> = this.user$.pipe(
     switchMap((user) => {
-      if (!user || user.isAnonymous) return of(undefined);
+      if (!user) return of(undefined);
       return this.userStatsService.getUserProfile(user.uid);
     }),
   );
@@ -39,7 +39,7 @@ export class ProfilePage {
 
   recentResults$: Observable<QuizHistoryItem[]> = this.user$.pipe(
     switchMap((user) => {
-      if (!user || user.isAnonymous) return of([]);
+      if (!user) return of([]);
       return this.userStatsService.getRecentQuizHistory(user.uid, 5);
     }),
   );
@@ -258,7 +258,9 @@ export class ProfilePage {
   }
 
   getPlayerName(user: User | null): string {
-    if (!user || user.isAnonymous) return 'Giocatore';
+    if (!user) return 'Giocatore';
+    if (user.isAnonymous) return 'Ospite';
+
     return user.displayName?.split(' ')[0] || 'Giocatore';
   }
 

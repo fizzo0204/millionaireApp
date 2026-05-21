@@ -38,6 +38,23 @@
         ></ion-toggle>
       </div>
 
+      @if (user$ | async; as user) { @if (user.isAnonymous) {
+      <button class="login-card" type="button" (click)="openLoginPrompt()">
+        <div class="login-icon">
+          <ion-icon name="person-outline"></ion-icon>
+        </div>
+
+        <div class="login-text">
+          <h3>Collega account</h3>
+          <p>Salva i progressi con Google o Facebook</p>
+        </div>
+
+        <ion-icon
+          class="login-arrow"
+          name="chevron-forward-outline"
+        ></ion-icon>
+      </button>
+      } @else {
       <button class="logout-card" type="button" (click)="logout()">
         <div class="logout-icon">
           <ion-icon name="log-out-outline"></ion-icon>
@@ -53,6 +70,7 @@
           name="chevron-forward-outline"
         ></ion-icon>
       </button>
+      } }
       <button
         class="logout-card"
         type="button"

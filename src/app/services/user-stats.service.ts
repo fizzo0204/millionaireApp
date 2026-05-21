@@ -25,6 +25,7 @@ import {
   AppUserProfile,
   QuizHistoryItem,
   UserAvatarData,
+  UserProfileMigrationSnapshot,
 } from 'src/app/models/user-stats.model';
 import { User } from 'firebase/auth';
 import { Observable } from 'rxjs';
@@ -42,6 +43,12 @@ import {
 })
 export class UserStatsService {
   private firestore = inject(Firestore);
+
+  readonly progressSubcollectionNames = [
+    'completedLevels',
+    'quizHistory',
+    'progress',
+  ] as const;
 
   readonly defaultStats: UserStats = {
     quizPlayed: 0,
@@ -95,6 +102,11 @@ export class UserStatsService {
   }
 
   async ensureUserProfile(user: User): Promise<void> {
+    /*
+     * Crea o aggiorna il documento principale dell'utente.
+     * Vale anche per Firebase Anonymous Auth: quel profilo e il nostro
+     * "ospite giocabile" e potra essere collegato piu avanti a Google/Facebook.
+     */
     const userRef = doc(this.firestore, `users/${user.uid}`);
     const snapshot = await getDoc(userRef);
     const authProfile = this.getDefaultAuthProfile(user);
@@ -161,14 +173,179 @@ export class UserStatsService {
 
   async mergeCurrentProgressIntoLinkedAccount(uid: string): Promise<void> {
     /*
-     * TODO merge progressi:
-     * Quando un profilo ospite/Play Games viene collegato a un Google/Facebook
-     * mai usato prima, qui copieremo gli eventuali fallback locali rimasti
-     * fuori da Firestore. Se il provider esiste gia non chiameremo questo metodo:
-     * l'utente scegliera se caricare il vecchio profilo e i due profili resteranno
-     * separati.
+     * Merge progressi per provider nuovi:
+     * con linkWithCredential Firebase mantiene lo stesso UID dell'ospite.
+     * Quindi stats, coins, dailyReward, avatar e sottocollezioni sono gia
+     * nello stesso profilo; qui registriamo solo che il passaggio e avvenuto.
+     * Se il provider esiste gia, AuthService non chiama questo metodo e carica
+     * il vecchio profilo solo dopo conferma dell'utente.
      */
     await this.ensureProfileMigrationMarkers(uid);
+  }
+
+  hasMeaningfulSavedProgress(
+    profileData: Record<string, unknown> | null | undefined,
+    hasSubcollectionData = false,
+  ): boolean {
+    /*
+     * Un account Firebase Auth puo esistere anche senza una vera partita
+     * salvata. Usiamo questo controllo per mostrare la modale di conflitto
+     * solo quando troviamo progressi reali, non un profilo vuoto/default.
+     */
+    if (!profileData) return false;
+    if (hasSubcollectionData) return true;
+
+    const stats = profileData['stats'] as Partial<UserStats> | undefined;
+    const dailyReward = profileData['dailyReward'] as
+      | Partial<UserDailyRewardData>
+      | undefined;
+    const avatar = profileData['avatar'] as
+      | Partial<UserAvatarData>
+      | undefined;
+    const auth = profileData['auth'] as Partial<UserAuthProfile> | undefined;
+
+    const hasStatsProgress = Boolean(
+      (stats?.quizPlayed ?? 0) > 0 ||
+        (stats?.correctAnswers ?? 0) > 0 ||
+        (stats?.wrongAnswers ?? 0) > 0 ||
+        (stats?.bestScore ?? 0) > 0 ||
+        (stats?.streakDays ?? 0) > 0 ||
+        Boolean(stats?.lastQuizPlayedAt) ||
+        Boolean(stats?.lastLifeUpdate) ||
+        (stats?.xp ?? this.defaultStats.xp) !== this.defaultStats.xp ||
+        (stats?.level ?? this.defaultStats.level) !== this.defaultStats.level ||
+        (stats?.coins ?? this.defaultStats.coins) !==
+          this.defaultStats.coins ||
+        (stats?.lives ?? this.defaultStats.lives) !== this.defaultStats.lives ||
+        (stats?.levelRewardLastClaimedLevel ??
+          this.defaultStats.levelRewardLastClaimedLevel) !==
+          this.defaultStats.levelRewardLastClaimedLevel,
+    );
+
+    const hasDailyRewardProgress = Boolean(
+      dailyReward?.lastClaimDate ||
+        dailyReward?.claimedToday ||
+        (dailyReward?.currentDay ?? this.defaultDailyReward.currentDay) !==
+          this.defaultDailyReward.currentDay,
+    );
+
+    const hasAvatarProgress = Boolean(
+      (avatar?.selectedAvatar ?? this.defaultAvatar.selectedAvatar) !==
+        this.defaultAvatar.selectedAvatar ||
+        (avatar?.unlockedAvatarIds?.length ?? 0) > 0,
+    );
+
+    const hasAuthRewardProgress = auth?.loginRewardClaimed === true;
+
+    return (
+      hasStatsProgress ||
+      hasDailyRewardProgress ||
+      hasAvatarProgress ||
+      hasAuthRewardProgress
+    );
+  }
+
+  async createProfileMigrationSnapshot(
+    uid: string,
+  ): Promise<UserProfileMigrationSnapshot> {
+    /*
+     * Prima di cambiare account salviamo in memoria tutto cio che appartiene
+     * all'ospite. Se Google/Facebook esiste solo in Auth ma non ha progressi,
+     * possiamo copiare questi dati sul nuovo UID senza perdere monete o reward.
+     */
+    const userRef = doc(this.firestore, `users/${uid}`);
+    const snapshot = await getDoc(userRef);
+    const subcollections: UserProfileMigrationSnapshot['subcollections'] = {};
+
+    for (const collectionName of this.progressSubcollectionNames) {
+      const collectionRef = collection(
+        this.firestore,
+        `users/${uid}/${collectionName}`,
+      );
+      const collectionSnapshot = await getDocs(collectionRef);
+
+      subcollections[collectionName] = collectionSnapshot.docs.map(
+        (document) => ({
+          id: document.id,
+          data: document.data() as Record<string, unknown>,
+        }),
+      );
+    }
+
+    return {
+      uid,
+      profile: snapshot.exists()
+        ? (snapshot.data() as Record<string, unknown>)
+        : null,
+      subcollections,
+    };
+  }
+
+  async restoreGuestSnapshotIntoLinkedAccount(
+    user: User,
+    snapshot: UserProfileMigrationSnapshot,
+  ): Promise<void> {
+    /*
+     * Questo e il merge "cross UID": serve solo quando Firebase Auth aveva gia
+     * un account Google/Facebook, ma TurtleMind non aveva progressi salvati per
+     * quel profilo. In quel caso importiamo il profilo ospite sul nuovo UID.
+     */
+    const userRef = doc(this.firestore, `users/${user.uid}`);
+    const sourceProfile = snapshot.profile ?? {};
+    const sourceAuth = (sourceProfile['auth'] ?? {}) as Partial<UserAuthProfile>;
+    const authProfile = this.getDefaultAuthProfile(user);
+
+    await setDoc(
+      userRef,
+      {
+        ...sourceProfile,
+        uid: user.uid,
+        displayName: user.displayName,
+        email: user.email,
+        photoURL: user.photoURL,
+        createdAt: sourceProfile['createdAt'] ?? serverTimestamp(),
+        lastLoginAt: serverTimestamp(),
+        stats: {
+          ...this.defaultStats,
+          ...((sourceProfile['stats'] as Partial<UserStats> | undefined) ?? {}),
+        },
+        dailyReward: {
+          ...this.defaultDailyReward,
+          ...((sourceProfile['dailyReward'] as
+            | Partial<UserDailyRewardData>
+            | undefined) ?? {}),
+        },
+        avatar: {
+          ...this.defaultAvatar,
+          ...((sourceProfile['avatar'] as Partial<UserAvatarData> | undefined) ??
+            {}),
+        },
+        auth: {
+          ...sourceAuth,
+          providerIds: authProfile.providerIds,
+          createdFromProviderId:
+            sourceAuth.createdFromProviderId ?? AUTH_CONFIG.providers.anonymous,
+          loginRewardClaimed: sourceAuth.loginRewardClaimed ?? false,
+          lastMergeCheckedAt: serverTimestamp(),
+          migratedFromAnonymousUid: snapshot.uid,
+          migratedAt: serverTimestamp(),
+        },
+      },
+      { merge: true },
+    );
+
+    for (const [collectionName, documents] of Object.entries(
+      snapshot.subcollections,
+    )) {
+      for (const documentSnapshot of documents) {
+        const targetRef = doc(
+          this.firestore,
+          `users/${user.uid}/${collectionName}/${documentSnapshot.id}`,
+        );
+
+        await setDoc(targetRef, documentSnapshot.data, { merge: true });
+      }
+    }
   }
 
   private async ensureProfileMigrationMarkers(uid: string): Promise<void> {
@@ -628,9 +805,7 @@ export class UserStatsService {
   async resetUserDebugData(uid: string): Promise<void> {
     const userRef = doc(this.firestore, `users/${uid}`);
 
-    const collectionsToClear = ['completedLevels', 'quizHistory', 'progress'];
-
-    for (const collectionName of collectionsToClear) {
+    for (const collectionName of this.progressSubcollectionNames) {
       const collectionRef = collection(
         this.firestore,
         `users/${uid}/${collectionName}`,
