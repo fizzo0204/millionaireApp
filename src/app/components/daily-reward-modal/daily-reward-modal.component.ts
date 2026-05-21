@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ModalController } from '@ionic/angular';
+import { ModalController } from '@ionic/angular/standalone';
 import { DailyRewardService } from 'src/app/services/daily-reward.service';
 import { AdsService } from 'src/app/services/ads.service';
 

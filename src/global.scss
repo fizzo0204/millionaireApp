@@ -327,6 +327,18 @@ ion-modal.anon-modal {
   background: transparent;
 }
 
+.account-conflict-ion-modal {
+  --width: 100vw;
+  --height: 100vh;
+  --border-radius: 0;
+  --background: transparent;
+  --box-shadow: none;
+}
+
+.account-conflict-ion-modal::part(content) {
+  background: transparent;
+}
+
 .coin-icon {
   width: 34px;
   height: 34px;

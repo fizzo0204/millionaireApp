@@ -29,6 +29,8 @@ import {
 import { User } from 'firebase/auth';
 import { Observable } from 'rxjs';
 import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
+import { AUTH_CONFIG } from 'src/app/config/auth.config';
+import { AppAuthProviderId, UserAuthProfile } from 'src/app/models/auth.model';
 import { DifficultyId } from '../models/difficulty.model';
 import {
   DailyRewardClaimPayload,
@@ -66,9 +68,36 @@ export class UserStatsService {
     claimedToday: false,
   };
 
+  private getProviderIds(user: User): AppAuthProviderId[] {
+    const providerIds = user.providerData
+      .map((provider) => provider.providerId as AppAuthProviderId)
+      .filter(Boolean);
+
+    if (providerIds.length === 0) {
+      return [
+        user.isAnonymous
+          ? AUTH_CONFIG.providers.anonymous
+          : AUTH_CONFIG.providers.google,
+      ];
+    }
+
+    return Array.from(new Set(providerIds));
+  }
+
+  private getDefaultAuthProfile(user: User): UserAuthProfile {
+    const providerIds = this.getProviderIds(user);
+
+    return {
+      providerIds,
+      createdFromProviderId: providerIds[0] ?? AUTH_CONFIG.providers.anonymous,
+      loginRewardClaimed: false,
+    };
+  }
+
   async ensureUserProfile(user: User): Promise<void> {
     const userRef = doc(this.firestore, `users/${user.uid}`);
     const snapshot = await getDoc(userRef);
+    const authProfile = this.getDefaultAuthProfile(user);
 
     if (!snapshot.exists()) {
       await setDoc(userRef, {
@@ -81,6 +110,7 @@ export class UserStatsService {
         stats: this.defaultStats,
         dailyReward: this.defaultDailyReward,
         avatar: this.defaultAvatar,
+        auth: authProfile,
       });
 
       return;
@@ -99,6 +129,10 @@ export class UserStatsService {
       updates['dailyReward'] = this.defaultDailyReward;
     }
 
+    if (!data['stats']) {
+      updates['stats'] = this.defaultStats;
+    }
+
     if (!data['avatar']) {
       updates['avatar'] = {
         selectedAvatar:
@@ -112,7 +146,43 @@ export class UserStatsService {
       };
     }
 
+    updates['auth.providerIds'] = authProfile.providerIds;
+
+    if (!data['auth']?.createdFromProviderId) {
+      updates['auth.createdFromProviderId'] = authProfile.createdFromProviderId;
+    }
+
+    if (typeof data['auth']?.loginRewardClaimed !== 'boolean') {
+      updates['auth.loginRewardClaimed'] = false;
+    }
+
     await updateDoc(userRef, updates);
+  }
+
+  async mergeCurrentProgressIntoLinkedAccount(uid: string): Promise<void> {
+    /*
+     * TODO merge progressi:
+     * Quando un profilo ospite/Play Games viene collegato a un Google/Facebook
+     * mai usato prima, qui copieremo gli eventuali fallback locali rimasti
+     * fuori da Firestore. Se il provider esiste gia non chiameremo questo metodo:
+     * l'utente scegliera se caricare il vecchio profilo e i due profili resteranno
+     * separati.
+     */
+    await this.ensureProfileMigrationMarkers(uid);
+  }
+
+  private async ensureProfileMigrationMarkers(uid: string): Promise<void> {
+    const userRef = doc(this.firestore, `users/${uid}`);
+
+    await setDoc(
+      userRef,
+      {
+        auth: {
+          lastMergeCheckedAt: serverTimestamp(),
+        },
+      },
+      { merge: true },
+    );
   }
 
   getUserProfile(uid: string): Observable<AppUserProfile | undefined> {

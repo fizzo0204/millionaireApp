@@ -13,7 +13,7 @@ import { DailyRewardModalComponent } from 'src/app/components/daily-reward-modal
 import { UiService } from 'src/app/services/ui.service';
 import { CATEGORIES } from 'src/app/data/categories.data';
 import { CategoryModel } from 'src/app/models/category.model';
-import { ModalController } from '@ionic/angular';
+import { ModalController } from '@ionic/angular/standalone';
 
 @Component({
   selector: 'app-home',

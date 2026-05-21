@@ -1,0 +1,25 @@
+<div class="conflict-modal">
+  <div class="modal-shell">
+    <div class="modal-icon">
+      <ion-icon name="cloud-done-outline"></ion-icon>
+    </div>
+
+    <h2>Progressi gia presenti</h2>
+
+    <p>
+      Questo account {{ providerLabel }} ha gia progressi salvati in
+      TurtleMind. Se continui, caricheremo quel profilo e i progressi attuali
+      resteranno separati.
+    </p>
+
+    <div class="actions">
+      <button class="secondary-btn" type="button" (click)="keepCurrentProfile()">
+        Resta qui
+      </button>
+
+      <button class="primary-btn" type="button" (click)="useExistingProfile()">
+        Carica profilo
+      </button>
+    </div>
+  </div>
+</div>

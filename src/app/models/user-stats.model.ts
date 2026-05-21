@@ -1,4 +1,5 @@
 import { DifficultyId } from './difficulty.model';
+import { UserAuthProfile } from './auth.model';
 
 export interface UserStats {
   quizPlayed: number;
@@ -29,6 +30,7 @@ export interface AppUserProfile {
   lastLoginAt: unknown;
   stats: UserStats;
   avatar: UserAvatarData;
+  auth?: UserAuthProfile;
 }
 
 export interface QuizHistoryItem {

@@ -15,6 +15,10 @@ import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { UserStatsService } from './user-stats.service';
 import { firebaseAuth } from 'src/app/config/firebase.config';
+import { AUTH_CONFIG } from 'src/app/config/auth.config';
+import { AppAuthProviderId } from 'src/app/models/auth.model';
+import { AccountLinkService } from './account-link.service';
+import { PlayGamesAuthService } from './play-games-auth.service';
 
 @Injectable({
   providedIn: 'root',
@@ -28,7 +32,11 @@ export class AuthService {
 
   private initialAuthResolved = false;
 
-  constructor(private userStatsService: UserStatsService) {
+  constructor(
+    private userStatsService: UserStatsService,
+    private accountLinkService: AccountLinkService,
+    private playGamesAuthService: PlayGamesAuthService,
+  ) {
     onAuthStateChanged(firebaseAuth, async (user) => {
       console.log(
         '👤 Stato auth cambiato →',
@@ -44,6 +52,13 @@ export class AuthService {
         this.initialAuthResolved = true;
 
         if (!user) {
+          const playGamesSignedIn =
+            await this.playGamesAuthService.tryAutoSignIn();
+
+          if (playGamesSignedIn) {
+            return;
+          }
+
           console.log('🚪 Nessun utente → creo accesso anonimo...');
           const anon = await signInAnonymously(firebaseAuth);
           this.userSubject.next(anon.user);
@@ -89,11 +104,26 @@ export class AuthService {
       if (currentUser && currentUser.isAnonymous) {
         console.log('🔗 Provo a collegare account anonimo a Google...');
         try {
-          await linkWithCredential(currentUser, credential);
+          const linkedUser = await linkWithCredential(currentUser, credential);
+          await this.userStatsService.ensureUserProfile(linkedUser.user);
+          await this.userStatsService.mergeCurrentProgressIntoLinkedAccount(
+            linkedUser.user.uid,
+          );
           console.log('✅ Account anonimo collegato a Google');
         } catch (err: any) {
           if (err.code === 'auth/credential-already-in-use') {
-            console.warn('⚠️ Account Google già esistente → login diretto');
+            const shouldSwitch = await this.confirmExistingProviderSwitch(
+              AUTH_CONFIG.providers.google,
+            );
+
+            if (!shouldSwitch) {
+              console.warn(
+                'Account Google gia esistente: resto sul profilo attuale',
+              );
+              return false;
+            }
+
+            console.warn('Account Google gia esistente: carico profilo salvato');
             await signInWithCredential(firebaseAuth, credential);
           } else {
             throw err;
@@ -152,11 +182,28 @@ export class AuthService {
       if (currentUser && currentUser.isAnonymous) {
         console.log('🔗 Provo a collegare account anonimo a Facebook...');
         try {
-          await linkWithCredential(currentUser, credential);
+          const linkedUser = await linkWithCredential(currentUser, credential);
+          await this.userStatsService.ensureUserProfile(linkedUser.user);
+          await this.userStatsService.mergeCurrentProgressIntoLinkedAccount(
+            linkedUser.user.uid,
+          );
           console.log('✅ Account anonimo collegato a Facebook');
         } catch (err: any) {
           if (err.code === 'auth/credential-already-in-use') {
-            console.warn('⚠️ Account Facebook già esistente → login diretto');
+            const shouldSwitch = await this.confirmExistingProviderSwitch(
+              AUTH_CONFIG.providers.facebook,
+            );
+
+            if (!shouldSwitch) {
+              console.warn(
+                'Account Facebook gia esistente: resto sul profilo attuale',
+              );
+              return false;
+            }
+
+            console.warn(
+              'Account Facebook gia esistente: carico profilo salvato',
+            );
             await signInWithCredential(firebaseAuth, credential);
           } else {
             throw err;
@@ -195,5 +242,18 @@ export class AuthService {
     } finally {
       this.loadingSubject.next(false);
     }
+  }
+
+  private async confirmExistingProviderSwitch(
+    providerId: AppAuthProviderId,
+  ): Promise<boolean> {
+    /*
+     * Se Google/Facebook esiste gia, non facciamo merge automatico.
+     * L'utente puo caricare il vecchio profilo oppure restare su quello attuale.
+     */
+    const decision =
+      await this.accountLinkService.confirmExistingAccountSwitch(providerId);
+
+    return decision === 'use-existing-profile';
   }
 }
