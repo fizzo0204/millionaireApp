@@ -358,6 +358,8 @@ export class AuthService {
           guestSnapshot,
         );
 
+        await this.userStatsService.deleteUserProfileData(guestSnapshot.uid);
+
         this.userSubject.next(signedInUser.user);
         return true;
       }
@@ -373,21 +375,29 @@ export class AuthService {
     console.warn('Account gia esistente: carico profilo salvato');
 
     if (credential) {
-      await signInWithCredential(firebaseAuth, credential);
+      const signedInUser = await signInWithCredential(firebaseAuth, credential);
+
+      if (guestSnapshot && guestSnapshot.uid !== signedInUser.user.uid) {
+        await this.userStatsService.deleteUserProfileData(guestSnapshot.uid);
+      }
+
       return true;
     }
 
     if (signInFallback) {
       await signInFallback();
+
+      if (guestSnapshot) {
+        await this.userStatsService.deleteUserProfileData(guestSnapshot.uid);
+      }
+
       return true;
     }
 
     return false;
   }
 
-  private async createCurrentGuestSnapshot(): Promise<
-    UserProfileMigrationSnapshot | null
-  > {
+  private async createCurrentGuestSnapshot(): Promise<UserProfileMigrationSnapshot | null> {
     const currentUser = firebaseAuth.currentUser;
 
     if (!currentUser?.isAnonymous) return null;

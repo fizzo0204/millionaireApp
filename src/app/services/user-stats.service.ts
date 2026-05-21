@@ -199,40 +199,37 @@ export class UserStatsService {
     const dailyReward = profileData['dailyReward'] as
       | Partial<UserDailyRewardData>
       | undefined;
-    const avatar = profileData['avatar'] as
-      | Partial<UserAvatarData>
-      | undefined;
+    const avatar = profileData['avatar'] as Partial<UserAvatarData> | undefined;
     const auth = profileData['auth'] as Partial<UserAuthProfile> | undefined;
 
     const hasStatsProgress = Boolean(
       (stats?.quizPlayed ?? 0) > 0 ||
-        (stats?.correctAnswers ?? 0) > 0 ||
-        (stats?.wrongAnswers ?? 0) > 0 ||
-        (stats?.bestScore ?? 0) > 0 ||
-        (stats?.streakDays ?? 0) > 0 ||
-        Boolean(stats?.lastQuizPlayedAt) ||
-        Boolean(stats?.lastLifeUpdate) ||
-        (stats?.xp ?? this.defaultStats.xp) !== this.defaultStats.xp ||
-        (stats?.level ?? this.defaultStats.level) !== this.defaultStats.level ||
-        (stats?.coins ?? this.defaultStats.coins) !==
-          this.defaultStats.coins ||
-        (stats?.lives ?? this.defaultStats.lives) !== this.defaultStats.lives ||
-        (stats?.levelRewardLastClaimedLevel ??
-          this.defaultStats.levelRewardLastClaimedLevel) !==
-          this.defaultStats.levelRewardLastClaimedLevel,
+      (stats?.correctAnswers ?? 0) > 0 ||
+      (stats?.wrongAnswers ?? 0) > 0 ||
+      (stats?.bestScore ?? 0) > 0 ||
+      (stats?.streakDays ?? 0) > 0 ||
+      Boolean(stats?.lastQuizPlayedAt) ||
+      Boolean(stats?.lastLifeUpdate) ||
+      (stats?.xp ?? this.defaultStats.xp) !== this.defaultStats.xp ||
+      (stats?.level ?? this.defaultStats.level) !== this.defaultStats.level ||
+      (stats?.coins ?? this.defaultStats.coins) !== this.defaultStats.coins ||
+      (stats?.lives ?? this.defaultStats.lives) !== this.defaultStats.lives ||
+      (stats?.levelRewardLastClaimedLevel ??
+        this.defaultStats.levelRewardLastClaimedLevel) !==
+        this.defaultStats.levelRewardLastClaimedLevel,
     );
 
     const hasDailyRewardProgress = Boolean(
       dailyReward?.lastClaimDate ||
-        dailyReward?.claimedToday ||
-        (dailyReward?.currentDay ?? this.defaultDailyReward.currentDay) !==
-          this.defaultDailyReward.currentDay,
+      dailyReward?.claimedToday ||
+      (dailyReward?.currentDay ?? this.defaultDailyReward.currentDay) !==
+        this.defaultDailyReward.currentDay,
     );
 
     const hasAvatarProgress = Boolean(
       (avatar?.selectedAvatar ?? this.defaultAvatar.selectedAvatar) !==
         this.defaultAvatar.selectedAvatar ||
-        (avatar?.unlockedAvatarIds?.length ?? 0) > 0,
+      (avatar?.unlockedAvatarIds?.length ?? 0) > 0,
     );
 
     const hasAuthRewardProgress = auth?.loginRewardClaimed === true;
@@ -292,7 +289,8 @@ export class UserStatsService {
      */
     const userRef = doc(this.firestore, `users/${user.uid}`);
     const sourceProfile = snapshot.profile ?? {};
-    const sourceAuth = (sourceProfile['auth'] ?? {}) as Partial<UserAuthProfile>;
+    const sourceAuth = (sourceProfile['auth'] ??
+      {}) as Partial<UserAuthProfile>;
     const authProfile = this.getDefaultAuthProfile(user);
 
     await setDoc(
@@ -317,8 +315,9 @@ export class UserStatsService {
         },
         avatar: {
           ...this.defaultAvatar,
-          ...((sourceProfile['avatar'] as Partial<UserAvatarData> | undefined) ??
-            {}),
+          ...((sourceProfile['avatar'] as
+            | Partial<UserAvatarData>
+            | undefined) ?? {}),
         },
         auth: {
           ...sourceAuth,
@@ -785,8 +784,7 @@ export class UserStatsService {
         return 0;
       }
 
-      const coinsReward =
-        levelsToReward * USER_STATS_CONFIG.levelUpCoinsReward;
+      const coinsReward = levelsToReward * USER_STATS_CONFIG.levelUpCoinsReward;
       const doubledCoinsReward = coinsReward * 2;
       const safeCoinsReward =
         requestedCoinsReward >= doubledCoinsReward
@@ -800,6 +798,25 @@ export class UserStatsService {
 
       return safeCoinsReward;
     });
+  }
+
+  async deleteUserProfileData(uid: string): Promise<void> {
+    const userRef = doc(this.firestore, `users/${uid}`);
+
+    for (const collectionName of this.progressSubcollectionNames) {
+      const collectionRef = collection(
+        this.firestore,
+        `users/${uid}/${collectionName}`,
+      );
+
+      const snapshot = await getDocs(collectionRef);
+
+      for (const document of snapshot.docs) {
+        await deleteDoc(document.ref);
+      }
+    }
+
+    await deleteDoc(userRef);
   }
 
   async resetUserDebugData(uid: string): Promise<void> {
