@@ -1,4 +1,4 @@
-package io.ionic.starter;
+package com.turtlemind.app;
 
 import android.os.Bundle;
 import android.util.Log;

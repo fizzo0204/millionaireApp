@@ -1,8 +1,8 @@
 <resources>
     <string name="app_name">TurtleMind</string>
     <string name="title_activity_main">TurtleMind</string>
-    <string name="package_name">io.ionic.starter</string>
-    <string name="custom_url_scheme">io.ionic.starter</string>
+    <string name="package_name">com.turtlemind.app</string>
+<string name="custom_url_scheme">com.turtlemind.app</string>
     <string name="facebook_app_id">1688256078877480</string>
     <string name="fb_login_protocol_scheme">fb1688256078877480</string>
     <string name="facebook_client_token">9281a4077c76b81b83c7860d93cdafaf</string>
