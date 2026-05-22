@@ -4,12 +4,6 @@
   <div class="scene-rays"></div>
   <div class="scene-particles"></div>
 
-  <div class="login-ribbon">
-    <div class="ribbon-side left"></div>
-    <div class="ribbon-main">BENVENUTO!</div>
-    <div class="ribbon-side right"></div>
-  </div>
-
   <div class="login-content">
     <div class="logo-aura"></div>
 
@@ -76,6 +70,23 @@
         </span>
       </button>
 
+      @if (showPlayGamesButton$ | async) {
+      <button
+        class="provider-btn play-games-btn"
+        type="button"
+        (click)="playGamesLogin()"
+        [disabled]="loading"
+      >
+        <span class="provider-icon">
+          <ion-icon name="game-controller-outline"></ion-icon>
+        </span>
+
+        <span>
+          {{ loading ? "Accesso in corso..." : "Continua con Play Games" }}
+        </span>
+      </button>
+      }
+
       <button
         class="provider-btn guest-btn"
         type="button"
@@ -86,7 +97,7 @@
           <ion-icon name="person-outline"></ion-icon>
         </span>
 
-        <span>Continua come ospite</span>
+        <span>{{ continueLabel$ | async }}</span>
       </button>
     </div>
 

@@ -38,7 +38,7 @@
         ></ion-toggle>
       </div>
 
-      @if (user$ | async; as user) { @if (user.isAnonymous) {
+      @if (user$ | async; as user) { @if (shouldShowLinkAccount(user)) {
       <button class="login-card" type="button" (click)="openLoginPrompt()">
         <div class="login-icon">
           <ion-icon name="person-outline"></ion-icon>
@@ -46,7 +46,7 @@
 
         <div class="login-text">
           <h3>Collega account</h3>
-          <p>Salva i progressi con Google o Facebook</p>
+          <p>Proteggi i progressi con Google o Facebook</p>
         </div>
 
         <ion-icon

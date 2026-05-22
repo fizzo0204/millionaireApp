@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
+import { User } from 'firebase/auth';
 import { ModalController } from '@ionic/angular/standalone';
 import { firstValueFrom } from 'rxjs';
 import { LogoutConfirmModalComponent } from 'src/app/components/logout-confirm-modal/logout-confirm-modal.component';
@@ -47,6 +48,10 @@ export class SettingsPage {
   toggleClick() {
     this.clickEnabled = !this.clickEnabled;
     this.audioService.setClickEnabled(this.clickEnabled);
+  }
+
+  shouldShowLinkAccount(user: User | null): boolean {
+    return this.authService.isBaseProfile(user);
   }
 
   async logout() {

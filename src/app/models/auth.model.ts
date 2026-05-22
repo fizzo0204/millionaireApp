@@ -15,8 +15,14 @@ export interface UserAuthProfile {
   createdFromProviderId: AppAuthProviderId;
   loginRewardClaimed: boolean;
   lastMergeCheckedAt?: unknown;
+  migratedFromUid?: string;
   migratedFromAnonymousUid?: string;
   migratedAt?: unknown;
+}
+
+export interface ProviderProfileMetadata {
+  displayName?: string | null;
+  photoURL?: string | null;
 }
 
 export type AccountConflictDecision = 'use-existing-profile' | 'keep-current';

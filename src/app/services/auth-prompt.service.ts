@@ -5,6 +5,8 @@ import { firstValueFrom } from 'rxjs';
 import { AUTH_CONFIG } from 'src/app/config/auth.config';
 import { AnonymousModalComponent } from 'src/app/components/anonymous-modal/anonymous-modal.component';
 import { AuthService } from './auth.service';
+import { AppUserProfile } from 'src/app/models/user-stats.model';
+import { UserStatsService } from './user-stats.service';
 
 interface LoginPromptOptions {
   force?: boolean;
@@ -21,13 +23,28 @@ export class AuthPromptService {
     private modalCtrl: ModalController,
     private auth: AuthService,
     private router: Router,
+    private userStatsService: UserStatsService,
   ) {}
 
-  // Apre la modale login solo se l'utente corrente e un ospite anonimo.
+  // Apre la modale login solo se l'utente corrente e un profilo base collegabile.
   async openGuestLoginPrompt(options: LoginPromptOptions = {}): Promise<void> {
     const user = await firstValueFrom(this.auth.user$);
 
-    if (!user?.isAnonymous || this.isPromptOpen) return;
+    if (!this.auth.isBaseProfile(user) || this.isPromptOpen) return;
+
+    const profile = user
+      ? await firstValueFrom(this.userStatsService.getUserProfile(user.uid))
+      : undefined;
+    const isPlayGamesProfile = this.isStoredPlayGamesProfile(profile);
+
+    /*
+     * Il prompt automatico in home serve solo per l'ospite anonimo.
+     * Play Games e gia un profilo automatico: gli proponiamo Google/Facebook
+     * solo quando tocca navbar o settings, senza interrompere il rientro in home.
+     */
+    if (options.source === 'home' && (!user?.isAnonymous || isPlayGamesProfile)) {
+      return;
+    }
 
     if (!options.force && !this.canShowHomePrompt()) return;
 
@@ -81,6 +98,13 @@ export class AuthPromptService {
     localStorage.setItem(
       AUTH_CONFIG.guestPrompt.lastDismissedStorageKey,
       String(Date.now()),
+    );
+  }
+
+  private isStoredPlayGamesProfile(profile?: AppUserProfile): boolean {
+    return Boolean(
+      profile?.auth?.providerIds?.includes(AUTH_CONFIG.providers.playGames) ||
+        profile?.auth?.createdFromProviderId === AUTH_CONFIG.providers.playGames,
     );
   }
 }

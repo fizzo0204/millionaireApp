@@ -9,9 +9,10 @@ export const AUTH_CONFIG = {
   },
 
   playGames: {
-    // Per ora resta spento: lo abilitiamo solo dopo configurazione Play Console/Firebase.
-    enabled: false,
+    // Play Games diventa il profilo automatico su Android quando disponibile.
+    enabled: true,
     autoSignInOnAndroid: true,
+    applicationId: '419647253271',
   },
 
   linkReward: {

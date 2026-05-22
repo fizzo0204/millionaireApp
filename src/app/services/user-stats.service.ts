@@ -31,7 +31,11 @@ import { User } from 'firebase/auth';
 import { Observable } from 'rxjs';
 import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
 import { AUTH_CONFIG } from 'src/app/config/auth.config';
-import { AppAuthProviderId, UserAuthProfile } from 'src/app/models/auth.model';
+import {
+  AppAuthProviderId,
+  ProviderProfileMetadata,
+  UserAuthProfile,
+} from 'src/app/models/auth.model';
 import { DifficultyId } from '../models/difficulty.model';
 import {
   DailyRewardClaimPayload,
@@ -131,11 +135,25 @@ export class UserStatsService {
     const data = snapshot.data();
 
     const updates: UpdateData<DocumentData> = {
-      displayName: user.displayName,
-      email: user.email,
-      photoURL: user.photoURL,
       lastLoginAt: serverTimestamp(),
     };
+
+    /*
+     * Non cancelliamo valori gia salvati con null. Play Games, durante il link
+     * manuale, puo lasciare Firebase JS ancora "anonimo" per qualche istante:
+     * in quel caso il nickname arriva dal plugin nativo e viene salvato a parte.
+     */
+    if (user.displayName) {
+      updates['displayName'] = user.displayName;
+    }
+
+    if (user.email) {
+      updates['email'] = user.email;
+    }
+
+    if (user.photoURL) {
+      updates['photoURL'] = user.photoURL;
+    }
 
     if (!data['dailyReward']) {
       updates['dailyReward'] = this.defaultDailyReward;
@@ -174,13 +192,64 @@ export class UserStatsService {
   async mergeCurrentProgressIntoLinkedAccount(uid: string): Promise<void> {
     /*
      * Merge progressi per provider nuovi:
-     * con linkWithCredential Firebase mantiene lo stesso UID dell'ospite.
+     * con linkWithCredential Firebase mantiene lo stesso UID del profilo corrente.
      * Quindi stats, coins, dailyReward, avatar e sottocollezioni sono gia
      * nello stesso profilo; qui registriamo solo che il passaggio e avvenuto.
      * Se il provider esiste gia, AuthService non chiama questo metodo e carica
      * il vecchio profilo solo dopo conferma dell'utente.
      */
     await this.ensureProfileMigrationMarkers(uid);
+  }
+
+  async markPlayGamesProfile(
+    uid: string,
+    profile?: ProviderProfileMetadata,
+  ): Promise<void> {
+    /*
+     * Play Games entra da Android e poi viene scambiato con Firebase JS.
+     * Questo marker rende esplicito in Firestore che il profilo base non e
+     * anonimo ma Play Games, anche se providerData arrivasse incompleto.
+     */
+    const userRef = doc(this.firestore, `users/${uid}`);
+    const snapshot = await getDoc(userRef);
+    const data = snapshot.exists() ? snapshot.data() : {};
+    const auth = (data['auth'] ?? {}) as Partial<UserAuthProfile>;
+    const providerIds = Array.from(
+      new Set([
+        ...(auth.providerIds ?? []).filter(
+          (providerId) => providerId !== AUTH_CONFIG.providers.anonymous,
+        ),
+        AUTH_CONFIG.providers.playGames,
+      ]),
+    );
+
+    const profileUpdates: Record<string, string> = {};
+
+    if (profile?.displayName) {
+      profileUpdates['displayName'] = profile.displayName;
+    }
+
+    if (profile?.photoURL) {
+      profileUpdates['photoURL'] = profile.photoURL;
+    }
+
+    await setDoc(
+      userRef,
+      {
+        ...profileUpdates,
+        auth: {
+          providerIds,
+          createdFromProviderId:
+            auth.createdFromProviderId === AUTH_CONFIG.providers.anonymous ||
+            !auth.createdFromProviderId
+              ? AUTH_CONFIG.providers.playGames
+              : auth.createdFromProviderId,
+          loginRewardClaimed: auth.loginRewardClaimed ?? false,
+          lastMergeCheckedAt: serverTimestamp(),
+        },
+      },
+      { merge: true },
+    );
   }
 
   hasMeaningfulSavedProgress(
@@ -247,7 +316,7 @@ export class UserStatsService {
   ): Promise<UserProfileMigrationSnapshot> {
     /*
      * Prima di cambiare account salviamo in memoria tutto cio che appartiene
-     * all'ospite. Se Google/Facebook esiste solo in Auth ma non ha progressi,
+     * al profilo corrente. Se Google/Facebook esiste solo in Auth ma non ha progressi,
      * possiamo copiare questi dati sul nuovo UID senza perdere monete o reward.
      */
     const userRef = doc(this.firestore, `users/${uid}`);
@@ -278,14 +347,14 @@ export class UserStatsService {
     };
   }
 
-  async restoreGuestSnapshotIntoLinkedAccount(
+  async restoreProfileSnapshotIntoLinkedAccount(
     user: User,
     snapshot: UserProfileMigrationSnapshot,
   ): Promise<void> {
     /*
-     * Questo e il merge "cross UID": serve solo quando Firebase Auth aveva gia
-     * un account Google/Facebook, ma TurtleMind non aveva progressi salvati per
-     * quel profilo. In quel caso importiamo il profilo ospite sul nuovo UID.
+     * Questo e il merge "cross UID": serve quando il profilo corrente
+     * (ospite o Play Games) deve essere importato su un account Google/Facebook
+     * che esiste in Firebase Auth ma non ha progressi salvati in TurtleMind.
      */
     const userRef = doc(this.firestore, `users/${user.uid}`);
     const sourceProfile = snapshot.profile ?? {};
@@ -298,9 +367,15 @@ export class UserStatsService {
       {
         ...sourceProfile,
         uid: user.uid,
-        displayName: user.displayName,
+        displayName:
+          user.displayName ??
+          (sourceProfile['displayName'] as string | null | undefined) ??
+          null,
         email: user.email,
-        photoURL: user.photoURL,
+        photoURL:
+          user.photoURL ??
+          (sourceProfile['photoURL'] as string | null | undefined) ??
+          null,
         createdAt: sourceProfile['createdAt'] ?? serverTimestamp(),
         lastLoginAt: serverTimestamp(),
         stats: {
@@ -326,6 +401,7 @@ export class UserStatsService {
             sourceAuth.createdFromProviderId ?? AUTH_CONFIG.providers.anonymous,
           loginRewardClaimed: sourceAuth.loginRewardClaimed ?? false,
           lastMergeCheckedAt: serverTimestamp(),
+          migratedFromUid: snapshot.uid,
           migratedFromAnonymousUid: snapshot.uid,
           migratedAt: serverTimestamp(),
         },

@@ -1,36 +1,36 @@
 <ng-container>
-  @if (user$ | async; as user) {
+  @if (viewModel$ | async; as vm) { @if (vm.user; as user) {
     <button
       class="player-card logged"
       type="button"
       (click)="navigateToProfile()"
-      [disabled]="loading$ | async"
+      [disabled]="vm.loading"
     >
       <div class="card-glow"></div>
       <div class="card-shine"></div>
 
-      @if (!(loading$ | async)) {
+      @if (!vm.loading) {
         <div class="avatar-wrap">
           <div class="avatar-fallback">
-            {{ getSelectedAvatarIcon(user, selectedAvatar$ | async) }}
+            {{ getSelectedAvatarIcon(user, vm.selectedAvatar, vm.profile) }}
           </div>
 
           <div class="online-dot"></div>
         </div>
 
         <div class="player-info">
-          <span class="player-tag">{{ getPlayerTag(user) }}</span>
+          <span class="player-tag">{{ getPlayerTag(user, vm.profile) }}</span>
 
-          <strong>{{ getFirstName(user) }}</strong>
+          <strong>{{ getFirstName(user, vm.profile) }}</strong>
 
           <div class="player-level">
             <ion-icon name="flash"></ion-icon>
-            <span>Lv. {{ level$ | async }}</span>
+            <span>Lv. {{ vm.level }}</span>
           </div>
         </div>
       } @else {
         <ion-spinner name="dots"></ion-spinner>
       }
     </button>
-  }
+  } }
 </ng-container>

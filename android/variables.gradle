@@ -13,5 +13,7 @@ ext {
     androidxJunitVersion = '1.2.1'
     androidxEspressoCoreVersion = '3.6.1'
     cordovaAndroidVersion = '10.1.1'
+    playServicesAuthVersion = '21.4.0'
+    rgcfaIncludeGoogle = true
     rgcfaIncludeFacebook = true
 }

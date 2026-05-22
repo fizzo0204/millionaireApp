@@ -32,6 +32,7 @@ import {
   trashOutline,
   cloudDoneOutline,
   play,
+  gameControllerOutline,
 } from 'ionicons/icons';
 
 import { defineCustomElements as ionicElements } from '@ionic/core/loader';
@@ -80,4 +81,5 @@ addIcons({
   'trash-outline': trashOutline,
   'cloud-done-outline': cloudDoneOutline,
   play: play,
+  'game-controller-outline': gameControllerOutline,
 });

@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import {
+  combineLatest,
   Observable,
   firstValueFrom,
   map,
@@ -16,6 +17,7 @@ import { UserStatsService } from 'src/app/services/user-stats.service';
 import { AVATARS } from 'src/app/data/avatars.data';
 import { AppUserProfile } from 'src/app/models/user-stats.model';
 import { AuthPromptService } from 'src/app/services/auth-prompt.service';
+import { AUTH_CONFIG } from 'src/app/config/auth.config';
 
 @Component({
   selector: 'app-login-button',
@@ -49,6 +51,22 @@ export class LoginButtonComponent {
     map((profile) => profile?.avatar?.selectedAvatar ?? 'letter'),
   );
 
+  viewModel$ = combineLatest([
+    this.user$,
+    this.profile$,
+    this.selectedAvatar$,
+    this.level$,
+    this.loading$,
+  ]).pipe(
+    map(([user, profile, selectedAvatar, level, loading]) => ({
+      user,
+      profile,
+      selectedAvatar,
+      level,
+      loading,
+    })),
+  );
+
   constructor(
     private auth: AuthService,
     private userStatsService: UserStatsService,
@@ -56,42 +74,50 @@ export class LoginButtonComponent {
     private router: Router,
   ) {}
 
-  getFirstName(user: User): string {
+  getFirstName(user: User, profile?: AppUserProfile): string {
+    if (this.isPlayGamesProfile(user, profile)) {
+      return user.displayName || profile?.displayName || 'Play Games';
+    }
+
     if (user.isAnonymous) return 'Ospite';
 
     return (user.displayName || 'Utente').split(' ')[0];
   }
 
-  getPlayerTag(user: User): string {
-    return user.isAnonymous ? 'OSPITE' : 'PLAYER';
+  getPlayerTag(user: User, profile?: AppUserProfile): string {
+    if (this.isPlayGamesProfile(user, profile)) return 'PLAY GAMES';
+    if (user.isAnonymous) return 'OSPITE';
+
+    return 'PLAYER';
   }
 
-  getAvatarLetter(user: User | null): string {
+  getAvatarLetter(user: User | null, profile?: AppUserProfile): string {
     if (!user) return 'U';
 
-    return this.getFirstName(user).charAt(0).toUpperCase();
+    return this.getFirstName(user, profile).charAt(0).toUpperCase();
   }
 
   getSelectedAvatarIcon(
     user: User | null,
     selectedAvatar?: string | null,
+    profile?: AppUserProfile,
   ): string {
     const avatarId = selectedAvatar || 'letter';
 
     if (avatarId === 'letter') {
-      return this.getAvatarLetter(user);
+      return this.getAvatarLetter(user, profile);
     }
 
     const avatar = AVATARS.find((item) => item.id === avatarId);
 
-    return avatar?.icon || this.getAvatarLetter(user);
+    return avatar?.icon || this.getAvatarLetter(user, profile);
   }
 
   async navigateToProfile() {
     const user = await firstValueFrom(this.user$);
 
-    if (user?.isAnonymous) {
-      // Da ospite il bottone profilo diventa un invito gentile a collegare l'account.
+    if (this.auth.isBaseProfile(user)) {
+      // Da profilo base il bottone profilo diventa un invito gentile a collegare l'account.
       await this.authPromptService.openGuestLoginPrompt({
         force: true,
         source: 'navbar',
@@ -100,5 +126,22 @@ export class LoginButtonComponent {
     }
 
     await this.router.navigateByUrl('/profile');
+  }
+
+  private isPlayGamesProfile(
+    user: User | null,
+    profile?: AppUserProfile,
+  ): boolean {
+    /*
+     * Play Games puo essere marcato in Firestore prima che Firebase JS aggiorni
+     * providerData/isAnonymous. Per la navbar usiamo quindi anche il documento
+     * profilo, cosi il bottone passa subito da Ospite a Play Games.
+     */
+    if (this.auth.isPlayGamesBaseProfile(user)) return true;
+
+    return Boolean(
+      profile?.auth?.providerIds?.includes(AUTH_CONFIG.providers.playGames) ||
+        profile?.auth?.createdFromProviderId === AUTH_CONFIG.providers.playGames,
+    );
   }
 }
