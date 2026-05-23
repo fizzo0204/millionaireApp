@@ -39,6 +39,8 @@ export interface PlayGamesCredentialResult {
   providedIn: 'root',
 })
 export class PlayGamesAuthService {
+  private readonly nativeAuthTimeoutMs = 30000;
+
   constructor(private userStatsService: UserStatsService) {}
 
   get canUsePlayGames(): boolean {
@@ -92,9 +94,15 @@ export class PlayGamesAuthService {
      * layer Android. L'app usa Firebase JS/AngularFire per Firestore, quindi
      * dobbiamo creare la sessione anche nel Firebase JS SDK.
      */
-    const result = await FirebaseAuthentication.signInWithPlayGames({
-      skipNativeAuth: true,
-    });
+    const result = await this.waitForNativePlayGamesResult(
+      FirebaseAuthentication.signInWithPlayGames({
+        skipNativeAuth: true,
+      }),
+    );
+
+    if (!result) {
+      return null;
+    }
 
     console.info('Play Games credential ricevuta:', {
       hasIdToken: Boolean(result.credential?.idToken),
@@ -132,11 +140,40 @@ export class PlayGamesAuthService {
      * nickname: chiediamo al layer nativo l'account ricordato e usiamo solo i
      * dati profilo, senza cambiare sessione Firebase.
      */
-    const result = await FirebaseAuthentication.signInWithPlayGames({
-      skipNativeAuth: true,
-    });
+    const result = await this.waitForNativePlayGamesResult(
+      FirebaseAuthentication.signInWithPlayGames({
+        skipNativeAuth: true,
+      }),
+    );
+
+    if (!result) {
+      return null;
+    }
 
     return this.getNativePlayGamesProfileFromResult(result);
+  }
+
+  private async waitForNativePlayGamesResult<T>(
+    operation: Promise<T>,
+  ): Promise<T | null> {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<null>((resolve) => {
+      timeoutId = setTimeout(() => resolve(null), this.nativeAuthTimeoutMs);
+    });
+
+    try {
+      const result = await Promise.race([operation, timeout]);
+
+      if (result === null) {
+        console.warn('Play Games: login nativo annullato o senza risposta.');
+      }
+
+      return result;
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    }
   }
 
   private getNativePlayGamesProfileFromResult(result: {

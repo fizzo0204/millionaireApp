@@ -407,6 +407,16 @@
     chestHover 1.6s ease-in-out infinite;
 }
 
+.chest-opening-img {
+  width: min(64vw, 260px);
+  height: auto;
+  object-fit: contain;
+}
+
+.chest-opening-img.epic-chest-img {
+  width: min(68vw, 290px);
+}
+
 .opening-copy {
   position: absolute;
   left: 50%;
@@ -547,6 +557,10 @@
   object-fit: contain;
   filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.45))
     drop-shadow(0 0 36px rgba(255, 196, 0, 0.42));
+}
+
+.chest-img.epic-chest-img {
+  width: min(82vw, 360px);
 }
 
 .chest-light {

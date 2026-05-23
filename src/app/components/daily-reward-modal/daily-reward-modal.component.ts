@@ -31,6 +31,9 @@ interface PreparedDailyRewardClaim {
   styleUrls: ['./daily-reward-modal.component.scss'],
 })
 export class DailyRewardModalComponent {
+  readonly defaultChestImage = 'assets/ui/turtle-chest.webp';
+  readonly epicChestImage = 'assets/ui/epic-chest-reward.webp';
+
   claimedNow = false;
   claimLoading = false;
   doubleRewardLoading = false;
@@ -47,6 +50,7 @@ export class DailyRewardModalComponent {
   rewardRevealLabel = '';
   rewardRevealIcon = '';
 
+  private claimedRewardDay: number | null = null;
   private doubleRewardPayload: DailyRewardClaimPayload | null = null;
 
   constructor(
@@ -73,6 +77,25 @@ export class DailyRewardModalComponent {
 
   get hasClaimed() {
     return this.claimedNow || this.claimedToday;
+  }
+
+  get isEpicChestRewardDay() {
+    /*
+     * Dopo il claim il servizio puo gia preparare il giorno successivo.
+     * Per scegliere il forziere corretto usiamo quindi il giorno appena
+     * riscattato, non il currentDay aggiornato.
+     */
+    return this.claimedRewardDay === 7;
+  }
+
+  get cinematicChestImage() {
+    return this.isEpicChestRewardDay
+      ? this.epicChestImage
+      : this.defaultChestImage;
+  }
+
+  get cinematicChestAlt() {
+    return this.isEpicChestRewardDay ? 'Epic Chest' : 'Chest';
   }
 
   async claimReward() {
@@ -150,11 +173,16 @@ export class DailyRewardModalComponent {
 
     if (!preparedClaim) return false;
 
+    this.claimedRewardDay = preparedClaim.payload.rewardDay;
+
     const claimed = await this.dailyRewardService.claimTodayWithReward(
       preparedClaim.payload,
     );
 
-    if (!claimed) return false;
+    if (!claimed) {
+      this.claimedRewardDay = null;
+      return false;
+    }
 
     this.claimedNow = true;
     this.chestReward = preparedClaim.chestReward ?? null;
@@ -200,7 +228,7 @@ export class DailyRewardModalComponent {
 
   private updateRevealLabelAfterDouble(payload: DailyRewardClaimPayload) {
     if (payload.coins && payload.coins > 0) {
-      this.rewardRevealLabel = `+${payload.coins * 2} Coins`;
+      this.rewardRevealLabel = `+${payload.coins * 2} Monete`;
       return;
     }
 
@@ -222,7 +250,7 @@ export class DailyRewardModalComponent {
           coins: amount,
         },
         revealIcon: 'assets/ui/coin-turtle.webp',
-        revealLabel: `+${amount} Coins`,
+        revealLabel: `+${amount} Monete`,
         revealType: 'coins',
       };
     }

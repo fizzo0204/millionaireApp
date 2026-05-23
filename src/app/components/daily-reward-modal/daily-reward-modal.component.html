@@ -79,7 +79,12 @@
       @if (cinematicPhase === "opening") {
         <div class="premium-opening">
           <div class="chest-aura"></div>
-          <div class="premium-chest closed">🎁</div>
+          <img
+            class="premium-chest closed chest-opening-img"
+            [class.epic-chest-img]="isEpicChestRewardDay"
+            [src]="cinematicChestImage"
+            [alt]="cinematicChestAlt"
+          />
           <div class="opening-copy">Apertura scrigno...</div>
         </div>
       }
@@ -115,9 +120,10 @@
             <div class="chest-light"></div>
 
             <img
-              src="assets/ui/turtle-chest.webp"
-              alt="Chest"
+              [src]="cinematicChestImage"
+              [alt]="cinematicChestAlt"
               class="chest-img"
+              [class.epic-chest-img]="isEpicChestRewardDay"
             />
           </div>
 
