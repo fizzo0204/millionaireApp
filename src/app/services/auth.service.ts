@@ -244,12 +244,11 @@ export class AuthService {
         const result = await this.waitForNativeAuthResult(
           FirebaseAuthentication.signInWithGoogle({
             /*
-             * Su alcuni dispositivi Credential Manager mostra il prompt
-             * "accesso effettuato come..." e puo lasciare il flusso sospeso
-             * se l'utente sceglie Annulla/Esci. Usiamo quindi il flusso Google
-             * classico, piu prevedibile per il collegamento account.
+             * Usiamo Credential Manager per mostrare la scelta account Google.
+             * Il timeout esterno evita che il loader resti infinito se Android
+             * non restituisce risposta dopo Annulla/Esci.
              */
-            useCredentialManager: false,
+            useCredentialManager: true,
             /*
              * Il plugin recupera solo il token Google.
              * Il link vero resta nel Firebase JS SDK, cosi l'ospite mantiene UID,
