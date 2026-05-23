@@ -16,6 +16,7 @@ export interface UserAuthProfile {
   loginRewardClaimed: boolean;
   lastMergeCheckedAt?: unknown;
   migratedFromUid?: string;
+  migratedFromProviderId?: AppAuthProviderId;
   migratedFromAnonymousUid?: string;
   migratedAt?: unknown;
 }

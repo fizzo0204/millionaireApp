@@ -13,6 +13,7 @@ export const AUTH_CONFIG = {
     enabled: true,
     autoSignInOnAndroid: true,
     applicationId: '419647253271',
+    autoSignInSuppressedStorageKey: 'auth_play_games_auto_sign_in_suppressed',
   },
 
   linkReward: {

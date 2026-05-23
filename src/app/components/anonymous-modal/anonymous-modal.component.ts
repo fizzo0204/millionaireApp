@@ -8,16 +8,20 @@ import { AUTH_CONFIG } from 'src/app/config/auth.config';
 import { AppUserProfile } from 'src/app/models/user-stats.model';
 import { AuthService } from 'src/app/services/auth.service';
 import { UserStatsService } from 'src/app/services/user-stats.service';
+import { GameLoaderComponent } from 'src/app/components/game-loader/game-loader.component';
+
+type LoginProviderAction = 'google' | 'facebook' | 'playGames';
 
 @Component({
   selector: 'app-anonymous-modal',
   standalone: true,
-  imports: [IonicModule, CommonModule],
+  imports: [IonicModule, CommonModule, GameLoaderComponent],
   templateUrl: './anonymous-modal.component.html',
   styleUrls: ['./anonymous-modal.component.scss'],
 })
 export class AnonymousModalComponent {
-  loading = false;
+  activeLoginProvider: LoginProviderAction | null = null;
+  private readonly minLoaderMs = 700;
 
   profile$ = this.auth.user$.pipe(
     switchMap((user) => {
@@ -50,66 +54,106 @@ export class AnonymousModalComponent {
     private userStatsService: UserStatsService,
   ) {}
 
+  get isLoading(): boolean {
+    return this.activeLoginProvider !== null;
+  }
+
+  isProviderLoading(provider: LoginProviderAction): boolean {
+    return this.activeLoginProvider === provider;
+  }
+
+  get loaderTitle(): string {
+    if (this.activeLoginProvider === 'google') return 'Accesso Google...';
+    if (this.activeLoginProvider === 'facebook') return 'Accesso Facebook...';
+    if (this.activeLoginProvider === 'playGames') return 'Accesso Play Games...';
+
+    return 'Accesso in corso...';
+  }
+
+  get loaderSubtitle(): string {
+    if (this.activeLoginProvider === 'google') {
+      return 'Colleghiamo il tuo profilo Google ai progressi';
+    }
+
+    if (this.activeLoginProvider === 'facebook') {
+      return 'Colleghiamo il tuo profilo Facebook ai progressi';
+    }
+
+    if (this.activeLoginProvider === 'playGames') {
+      return 'Recuperiamo il tuo profilo Play Games';
+    }
+
+    return 'Stiamo proteggendo i tuoi progressi';
+  }
+
   // Collega il profilo ospite a Google; se riesce, la modale si chiude.
   async googleLogin() {
-    if (this.loading) return;
-
-    this.loading = true;
-
-    try {
-      const success = await this.auth.googleSignIn();
-
-      if (success) {
-        await this.close();
-      }
-    } catch {
-      alert('Login non completato o annullato.');
-    } finally {
-      this.loading = false;
-    }
+    await this.runLoginAction(
+      'google',
+      () => this.auth.googleSignIn(),
+      'Login non completato o annullato.',
+    );
   }
 
   // Collega il profilo ospite a Facebook; se riesce, la modale si chiude.
   async facebookLogin() {
-    if (this.loading) return;
-
-    this.loading = true;
-    try {
-      const success = await this.auth.facebookSignIn();
-
-      if (success) {
-        await this.close();
-      }
-    } catch {
-      alert('Login Facebook non completato o annullato.');
-    } finally {
-      this.loading = false;
-    }
+    await this.runLoginAction(
+      'facebook',
+      () => this.auth.facebookSignIn(),
+      'Login Facebook non completato o annullato.',
+    );
   }
 
   // Collega l'ospite a Play Games su Android mantenendo i progressi attuali.
   async playGamesLogin() {
-    if (this.loading) return;
+    await this.runLoginAction(
+      'playGames',
+      () => this.auth.playGamesSignIn(),
+      'Accesso Play Games non completato o annullato.',
+    );
+  }
 
-    this.loading = true;
+  // Non cambia account: l'utente resta ospite e continua a giocare.
+  async continueAsGuest() {
+    if (this.isLoading) return;
+
+    this.auth.rememberGuestChoice();
+    await this.close();
+  }
+
+  private async runLoginAction(
+    provider: LoginProviderAction,
+    action: () => Promise<boolean>,
+    errorMessage: string,
+  ): Promise<void> {
+    if (this.isLoading) return;
+
+    this.activeLoginProvider = provider;
+    const startedAt = Date.now();
+
     try {
-      const success = await this.auth.playGamesSignIn();
+      const success = await action();
+
+      await this.waitRemainingLoaderTime(startedAt);
 
       if (success) {
         await this.close();
       }
     } catch {
-      alert('Accesso Play Games non completato o annullato.');
+      await this.waitRemainingLoaderTime(startedAt);
+      alert(errorMessage);
     } finally {
-      this.loading = false;
+      this.activeLoginProvider = null;
     }
   }
 
-  // Non cambia account: l'utente resta ospite e continua a giocare.
-  async continueAsGuest() {
-    if (this.loading) return;
+  private async waitRemainingLoaderTime(startedAt: number): Promise<void> {
+    const elapsedMs = Date.now() - startedAt;
+    const remainingMs = Math.max(0, this.minLoaderMs - elapsedMs);
 
-    await this.close();
+    if (remainingMs <= 0) return;
+
+    await new Promise((resolve) => setTimeout(resolve, remainingMs));
   }
 
   // Chiude la modale Ionic corrente.

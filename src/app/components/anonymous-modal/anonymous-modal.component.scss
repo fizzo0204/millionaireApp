@@ -28,6 +28,34 @@
     linear-gradient(180deg, #020617 0%, #031a3f 52%, #020617 100%);
 }
 
+.login-loader-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: max(1rem, env(safe-area-inset-top))
+    1rem
+    max(1rem, env(safe-area-inset-bottom));
+  background:
+    radial-gradient(
+      circle at 50% 28%,
+      rgba(37, 99, 235, 0.34),
+      transparent 34%
+    ),
+    linear-gradient(180deg, rgba(2, 6, 23, 0.96), rgba(3, 26, 63, 0.98));
+  animation: sceneIn 180ms ease-out both;
+}
+
+.login-loader-overlay app-game-loader {
+  width: min(100%, 24rem);
+}
+
+.login-loader-overlay ::ng-deep .game-loader {
+  min-height: 100%;
+  padding: 0;
+}
+
 .scene-bg-glow,
 .scene-stars,
 .scene-rays,

@@ -1,4 +1,13 @@
 <div class="login-scene">
+  @if (isLoading) {
+    <div class="login-loader-overlay">
+      <app-game-loader
+        [title]="loaderTitle"
+        [subtitle]="loaderSubtitle"
+      ></app-game-loader>
+    </div>
+  }
+
   <div class="scene-bg-glow"></div>
   <div class="scene-stars"></div>
   <div class="scene-rays"></div>
@@ -44,14 +53,18 @@
         class="provider-btn google-btn"
         type="button"
         (click)="googleLogin()"
-        [disabled]="loading"
+        [disabled]="isLoading"
       >
         <span class="provider-icon">
           <ion-icon name="logo-google"></ion-icon>
         </span>
 
         <span>
-          {{ loading ? "Accesso in corso..." : "Continua con Google" }}
+          {{
+            isProviderLoading("google")
+              ? "Accesso Google..."
+              : "Continua con Google"
+          }}
         </span>
       </button>
 
@@ -59,14 +72,18 @@
         class="provider-btn facebook-btn"
         type="button"
         (click)="facebookLogin()"
-        [disabled]="loading"
+        [disabled]="isLoading"
       >
         <span class="provider-icon">
           <ion-icon name="logo-facebook"></ion-icon>
         </span>
 
         <span>
-          {{ loading ? "Accesso in corso..." : "Continua con Facebook" }}
+          {{
+            isProviderLoading("facebook")
+              ? "Accesso Facebook..."
+              : "Continua con Facebook"
+          }}
         </span>
       </button>
 
@@ -75,14 +92,18 @@
         class="provider-btn play-games-btn"
         type="button"
         (click)="playGamesLogin()"
-        [disabled]="loading"
+        [disabled]="isLoading"
       >
         <span class="provider-icon">
           <ion-icon name="game-controller-outline"></ion-icon>
         </span>
 
         <span>
-          {{ loading ? "Accesso in corso..." : "Continua con Play Games" }}
+          {{
+            isProviderLoading("playGames")
+              ? "Accesso Play Games..."
+              : "Continua con Play Games"
+          }}
         </span>
       </button>
       }
@@ -91,7 +112,7 @@
         class="provider-btn guest-btn"
         type="button"
         (click)="continueAsGuest()"
-        [disabled]="loading"
+        [disabled]="isLoading"
       >
         <span class="provider-icon">
           <ion-icon name="person-outline"></ion-icon>

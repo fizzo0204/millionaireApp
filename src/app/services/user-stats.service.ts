@@ -361,6 +361,8 @@ export class UserStatsService {
     const sourceAuth = (sourceProfile['auth'] ??
       {}) as Partial<UserAuthProfile>;
     const authProfile = this.getDefaultAuthProfile(user);
+    const sourceCreatedFromProviderId =
+      sourceAuth.createdFromProviderId ?? AUTH_CONFIG.providers.anonymous;
 
     await setDoc(
       userRef,
@@ -397,12 +399,14 @@ export class UserStatsService {
         auth: {
           ...sourceAuth,
           providerIds: authProfile.providerIds,
-          createdFromProviderId:
-            sourceAuth.createdFromProviderId ?? AUTH_CONFIG.providers.anonymous,
+          createdFromProviderId: sourceCreatedFromProviderId,
           loginRewardClaimed: sourceAuth.loginRewardClaimed ?? false,
           lastMergeCheckedAt: serverTimestamp(),
           migratedFromUid: snapshot.uid,
-          migratedFromAnonymousUid: snapshot.uid,
+          migratedFromProviderId: sourceCreatedFromProviderId,
+          ...(sourceCreatedFromProviderId === AUTH_CONFIG.providers.anonymous
+            ? { migratedFromAnonymousUid: snapshot.uid }
+            : {}),
           migratedAt: serverTimestamp(),
         },
       },
@@ -441,6 +445,18 @@ export class UserStatsService {
     const userRef = doc(this.firestore, `users/${uid}`);
 
     return docData(userRef) as Observable<AppUserProfile | undefined>;
+  }
+
+  async userProfileExists(uid: string): Promise<boolean> {
+    /*
+     * Serve al bootstrap auth: su Android puo restare un utente anonimo locale
+     * anche quando Firestore non ha piu il suo profilo. In quel caso lo
+     * trattiamo come primo avvio e proviamo Play Games prima di ricrearlo.
+     */
+    const userRef = doc(this.firestore, `users/${uid}`);
+    const snapshot = await getDoc(userRef);
+
+    return snapshot.exists();
   }
 
   async getDailyRewardData(uid: string): Promise<UserDailyRewardData> {

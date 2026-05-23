@@ -18,6 +18,7 @@ import { AVATARS } from 'src/app/data/avatars.data';
 import { AppUserProfile } from 'src/app/models/user-stats.model';
 import { AuthPromptService } from 'src/app/services/auth-prompt.service';
 import { AUTH_CONFIG } from 'src/app/config/auth.config';
+import { AppAuthProviderId } from 'src/app/models/auth.model';
 
 @Component({
   selector: 'app-login-button',
@@ -76,17 +77,28 @@ export class LoginButtonComponent {
 
   getFirstName(user: User, profile?: AppUserProfile): string {
     if (this.isPlayGamesProfile(user, profile)) {
-      return user.displayName || profile?.displayName || 'Play Games';
+      const displayName = user.displayName || profile?.displayName;
+
+      return displayName ? this.extractFirstName(displayName) : 'Play Games';
     }
 
     if (user.isAnonymous) return 'Ospite';
 
-    return (user.displayName || 'Utente').split(' ')[0];
+    return (
+      this.extractFirstName(user.displayName || profile?.displayName) ||
+      'Utente'
+    );
   }
 
   getPlayerTag(user: User, profile?: AppUserProfile): string {
+    if (user.isAnonymous) return 'GUEST';
+    if (this.hasProvider(user, profile, AUTH_CONFIG.providers.google)) {
+      return 'GOOGLE';
+    }
+    if (this.hasProvider(user, profile, AUTH_CONFIG.providers.facebook)) {
+      return 'FACEBOOK';
+    }
     if (this.isPlayGamesProfile(user, profile)) return 'PLAY GAMES';
-    if (user.isAnonymous) return 'OSPITE';
 
     return 'PLAYER';
   }
@@ -141,7 +153,31 @@ export class LoginButtonComponent {
 
     return Boolean(
       profile?.auth?.providerIds?.includes(AUTH_CONFIG.providers.playGames) ||
-        profile?.auth?.createdFromProviderId === AUTH_CONFIG.providers.playGames,
+      profile?.auth?.createdFromProviderId === AUTH_CONFIG.providers.playGames,
     );
+  }
+
+  private hasProvider(
+    user: User | null,
+    profile: AppUserProfile | undefined,
+    providerId: AppAuthProviderId,
+  ): boolean {
+    /*
+     * Per il tag della navbar diamo priorita al provider "forte" collegato
+     * adesso. Un profilo puo nascere Play Games ma poi essere collegato a
+     * Google/Facebook, quindi controlliamo sia Firebase sia Firestore.
+     */
+    return Boolean(
+      user?.providerData?.some(
+        (provider) => provider.providerId === providerId,
+      ) || profile?.auth?.providerIds?.includes(providerId),
+    );
+  }
+
+  private extractFirstName(displayName?: string | null): string {
+    /*
+     * Nel bottone profilo mostriamo solo il nome breve.
+     */
+    return displayName?.trim().split(/\s+/)[0] ?? '';
   }
 }

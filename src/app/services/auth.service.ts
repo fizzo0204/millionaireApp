@@ -31,6 +31,7 @@ import { AUTH_CONFIG } from 'src/app/config/auth.config';
 import {
   AppAuthProviderId,
   ProviderProfileMetadata,
+  UserAuthProfile,
 } from 'src/app/models/auth.model';
 import { AccountLinkService } from './account-link.service';
 import { PlayGamesAuthService } from './play-games-auth.service';
@@ -39,6 +40,7 @@ import { UserProfileMigrationSnapshot } from 'src/app/models/user-stats.model';
 
 interface ExistingProviderProfileState {
   uid: string;
+  profileExists: boolean;
   hasSavedProgress: boolean;
 }
 
@@ -48,6 +50,7 @@ interface ExistingProviderProfileState {
 export class AuthService {
   private userSubject = new BehaviorSubject<User | null>(null);
   private loadingSubject = new BehaviorSubject<boolean>(false);
+  private readonly nativeAuthTimeoutMs = 30000;
 
   user$ = this.userSubject.asObservable();
   isLoading$ = this.loadingSubject.asObservable();
@@ -64,6 +67,14 @@ export class AuthService {
         '👤 Stato auth cambiato →',
         user?.displayName || (user?.isAnonymous ? 'Anonimo' : 'null'),
       );
+
+      if (!this.initialAuthResolved) {
+        this.initialAuthResolved = true;
+
+        if (await this.resolveInitialAuthState(user)) {
+          return;
+        }
+      }
 
       if (user) {
         /*
@@ -96,6 +107,101 @@ export class AuthService {
         }
       }
     });
+  }
+
+  private async resolveInitialAuthState(user: User | null): Promise<boolean> {
+    /*
+     * Primo avvio Android:
+     * 1. Se non esiste una sessione Firebase, proviamo subito Play Games.
+     * 2. Se Android ci restituisce un anonimo locale ma Firestore non ha il
+     *    profilo, lo trattiamo come un primo avvio e proviamo comunque
+     *    Play Games prima di ricreare l'ospite.
+     * 3. Se l'anonimo ha gia un profilo Firestore, rispettiamo quella scelta.
+     */
+    const shouldTryPlayGames = await this.shouldTryInitialPlayGames(user);
+
+    if (shouldTryPlayGames) {
+      const playGamesUser = await this.playGamesAuthService.tryAutoSignIn();
+
+      if (playGamesUser) {
+        this.clearInitialPlayGamesAutoSignInSuppression();
+        this.userSubject.next(playGamesUser);
+        return true;
+      }
+    }
+
+    if (!user) {
+      console.log('Nessun utente: creo accesso anonimo...');
+      const anon = await signInAnonymously(firebaseAuth);
+      await this.userStatsService.ensureUserProfile(anon.user);
+      this.userSubject.next(anon.user);
+      console.log('Accesso anonimo creato');
+      return true;
+    }
+
+    if (!shouldTryPlayGames) {
+      return false;
+    }
+
+    await this.userStatsService.ensureUserProfile(user);
+    this.userSubject.next(user);
+
+    return true;
+  }
+
+  private async shouldTryInitialPlayGames(user: User | null): Promise<boolean> {
+    if (!this.playGamesAuthService.canAttemptAutoSignIn) return false;
+    if (this.isInitialPlayGamesAutoSignInSuppressed()) return false;
+    if (!user) return true;
+    if (!user.isAnonymous) return false;
+
+    /*
+     * Se Firebase ci restituisce un anonimo locale al bootstrap, proviamo
+     * comunque Play Games. L'unica eccezione e il logout/guest scelto
+     * esplicitamente, gestito dal flag locale sopra.
+     */
+    return true;
+  }
+
+  rememberGuestChoice(): void {
+    /*
+     * Quando l'utente sceglie davvero di restare ospite, evitiamo che il
+     * prossimo avvio lo riporti automaticamente su Play Games.
+     */
+    this.suppressInitialPlayGamesAutoSignIn();
+  }
+
+  private suppressInitialPlayGamesAutoSignIn(): void {
+    try {
+      localStorage.setItem(
+        AUTH_CONFIG.playGames.autoSignInSuppressedStorageKey,
+        'true',
+      );
+    } catch {
+      // Se lo storage non e disponibile, l'app resta comunque funzionante.
+    }
+  }
+
+  private clearInitialPlayGamesAutoSignInSuppression(): void {
+    try {
+      localStorage.removeItem(
+        AUTH_CONFIG.playGames.autoSignInSuppressedStorageKey,
+      );
+    } catch {
+      // Se lo storage non e disponibile, non blocchiamo login o link account.
+    }
+  }
+
+  private isInitialPlayGamesAutoSignInSuppressed(): boolean {
+    try {
+      return (
+        localStorage.getItem(
+          AUTH_CONFIG.playGames.autoSignInSuppressedStorageKey,
+        ) === 'true'
+      );
+    } catch {
+      return false;
+    }
   }
 
   async googleSignIn(): Promise<boolean> {
@@ -135,14 +241,28 @@ export class AuthService {
         console.log(
           '📱 Login Google tramite Capacitor FirebaseAuthentication...',
         );
-        const result = await FirebaseAuthentication.signInWithGoogle({
-          /*
-           * Il plugin recupera solo il token Google.
-           * Il link vero resta nel Firebase JS SDK, cosi l'ospite mantiene UID,
-           * coins, daily reward e progressi quando l'account Google e nuovo.
-           */
-          skipNativeAuth: true,
-        });
+        const result = await this.waitForNativeAuthResult(
+          FirebaseAuthentication.signInWithGoogle({
+            /*
+             * Su alcuni dispositivi Credential Manager mostra il prompt
+             * "accesso effettuato come..." e puo lasciare il flusso sospeso
+             * se l'utente sceglie Annulla/Esci. Usiamo quindi il flusso Google
+             * classico, piu prevedibile per il collegamento account.
+             */
+            useCredentialManager: false,
+            /*
+             * Il plugin recupera solo il token Google.
+             * Il link vero resta nel Firebase JS SDK, cosi l'ospite mantiene UID,
+             * coins, daily reward e progressi quando l'account Google e nuovo.
+             */
+            skipNativeAuth: true,
+          }),
+          'Google',
+        );
+
+        if (!result) {
+          return false;
+        }
 
         if (!result.credential?.idToken) {
           throw new Error('❌ Nessun token Google ricevuto dal plugin');
@@ -240,13 +360,20 @@ export class AuthService {
         console.log(
           '📱 Login Facebook tramite Capacitor FirebaseAuthentication...',
         );
-        const result = await FirebaseAuthentication.signInWithFacebook({
-          /*
-           * Come per Google: otteniamo solo il token e poi decidiamo noi
-           * se collegarlo all'ospite o caricare un account Facebook esistente.
-           */
-          skipNativeAuth: true,
-        });
+        const result = await this.waitForNativeAuthResult(
+          FirebaseAuthentication.signInWithFacebook({
+            /*
+             * Come per Google: otteniamo solo il token e poi decidiamo noi
+             * se collegarlo all'ospite o caricare un account Facebook esistente.
+             */
+            skipNativeAuth: true,
+          }),
+          'Facebook',
+        );
+
+        if (!result) {
+          return false;
+        }
 
         if (!result.credential?.accessToken) {
           throw new Error('❌ Nessun accessToken Facebook ricevuto dal plugin');
@@ -308,6 +435,32 @@ export class AuthService {
     }
   }
 
+  private async waitForNativeAuthResult<T>(
+    operation: Promise<T>,
+    providerLabel: string,
+  ): Promise<T | null> {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<null>((resolve) => {
+      timeoutId = setTimeout(() => resolve(null), this.nativeAuthTimeoutMs);
+    });
+
+    try {
+      const result = await Promise.race([operation, timeout]);
+
+      if (result === null) {
+        console.warn(
+          `${providerLabel}: login nativo annullato o rimasto senza risposta.`,
+        );
+      }
+
+      return result;
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    }
+  }
+
   async playGamesSignIn(): Promise<boolean> {
     this.loadingSubject.next(true);
 
@@ -328,31 +481,73 @@ export class AuthService {
           AUTH_CONFIG.providers.playGames,
         )
       ) {
-        console.log('Provo a collegare profilo corrente a Play Games...');
+        console.log('Controllo se Play Games ha gia un profilo TurtleMind...');
+        const profileSnapshot = await this.createCurrentProfileSnapshot();
+        const existingProfileState =
+          await this.getExistingProviderProfileState(playGamesResult.credential);
 
-        try {
+        if (existingProfileState?.profileExists) {
           /*
-           * Quando l'ospite sceglie Play Games, proviamo a promuovere lo stesso
-           * UID Firebase. In questo modo coins, daily reward e livelli restano
-           * nello stesso documento Firestore.
+           * Play Games ha gia un profilo TurtleMind: mostriamo la stessa
+           * modale di conflitto usata per Google/Facebook.
            */
-          const linkedUser = await linkWithCredential(
-            currentUser!,
-            playGamesResult.credential,
-          );
-          await this.completeCurrentProfileAccountLink(
-            linkedUser.user,
+          const shouldSwitch = await this.confirmExistingProviderSwitch(
             AUTH_CONFIG.providers.playGames,
-            playGamesResult.profile,
           );
-          console.log('Profilo corrente collegato a Play Games');
-        } catch (err: any) {
-          if (this.isCredentialAlreadyInUseError(err)) {
-            const signedIn = await this.handleExistingPlayGamesProfile();
 
-            if (!signedIn) return false;
-          } else {
-            throw err;
+          if (!shouldSwitch) {
+            console.warn('Play Games gia esistente: resto sul profilo attuale');
+            return false;
+          }
+
+          const signedIn = await this.signInWithFreshPlayGamesCredential(
+            profileSnapshot,
+            false,
+          );
+
+          if (!signedIn) return false;
+        } else if (existingProfileState) {
+          /*
+           * Play Games esiste solo in Firebase Auth, oppure e stato appena
+           * creato dal controllo temporaneo, ma non ha ancora un profilo
+           * TurtleMind: importiamo direttamente i progressi dell'ospite.
+           */
+          const signedIn = await this.signInWithFreshPlayGamesCredential(
+            profileSnapshot,
+            true,
+          );
+
+          if (!signedIn) return false;
+        } else {
+          console.warn(
+            'Controllo Play Games non riuscito: provo il link diretto con credenziale fresca',
+          );
+          const freshPlayGamesResult =
+            await this.playGamesAuthService.createFirebaseCredentialFromNativeSignIn();
+
+          if (!freshPlayGamesResult) {
+            return false;
+          }
+
+          try {
+            const linkedUser = await linkWithCredential(
+              currentUser!,
+              freshPlayGamesResult.credential,
+            );
+            await this.completeCurrentProfileAccountLink(
+              linkedUser.user,
+              AUTH_CONFIG.providers.playGames,
+              freshPlayGamesResult.profile,
+            );
+            console.log('Profilo corrente collegato a Play Games');
+          } catch (err: any) {
+            if (this.isCredentialAlreadyInUseError(err)) {
+              const signedIn = await this.handleExistingPlayGamesProfile();
+
+              if (!signedIn) return false;
+            } else {
+              throw err;
+            }
           }
         }
       } else {
@@ -373,6 +568,7 @@ export class AuthService {
       }
 
       console.log('Accesso Play Games completato.');
+      this.clearInitialPlayGamesAutoSignInSuppression();
       return true;
     } catch (error) {
       console.error('Errore login Play Games:', error);
@@ -390,6 +586,7 @@ export class AuthService {
 
       await FirebaseAuthentication.signOut();
       await firebaseAuth.signOut();
+      this.suppressInitialPlayGamesAutoSignIn();
 
       console.log('⚪ Creo nuovo utente anonimo dopo logout...');
       const anon = await signInAnonymously(firebaseAuth);
@@ -522,14 +719,14 @@ export class AuthService {
       const existingProfileState =
         await this.getExistingProviderProfileState(credential);
 
-      if (existingProfileState && !existingProfileState.hasSavedProgress) {
+      if (existingProfileState && !existingProfileState.profileExists) {
         /*
-         * Caso importante: Google/Facebook esiste gia in Firebase Auth, ma
-         * TurtleMind non ha progressi salvati per quel profilo. Non mostriamo
-         * la modale di conflitto: importiamo direttamente il profilo corrente.
+         * Caso importante: Google/Facebook esiste gia in Firebase Auth, ma non
+         * ha mai creato un profilo TurtleMind. Non mostriamo la modale di
+         * conflitto: importiamo direttamente il profilo corrente.
          */
         console.warn(
-          'Account Auth esistente senza progressi TurtleMind: importo profilo corrente',
+          'Account Auth esistente senza profilo TurtleMind: importo profilo corrente',
         );
 
         const signedInUser = await signInWithCredential(
@@ -547,7 +744,10 @@ export class AuthService {
           providerId,
         );
 
-        await this.userStatsService.deleteUserProfileData(profileSnapshot.uid);
+        await this.deleteProfileSnapshotIfAnonymous(
+          profileSnapshot,
+          signedInUser.user.uid,
+        );
 
         return true;
       }
@@ -567,9 +767,10 @@ export class AuthService {
 
       await this.syncSignedInProviderProfile(signedInUser.user, providerId);
 
-      if (profileSnapshot && profileSnapshot.uid !== signedInUser.user.uid) {
-        await this.userStatsService.deleteUserProfileData(profileSnapshot.uid);
-      }
+      await this.deleteProfileSnapshotIfAnonymous(
+        profileSnapshot,
+        signedInUser.user.uid,
+      );
 
       return true;
     }
@@ -577,9 +778,7 @@ export class AuthService {
     if (signInFallback) {
       await signInFallback();
 
-      if (profileSnapshot) {
-        await this.userStatsService.deleteUserProfileData(profileSnapshot.uid);
-      }
+      await this.deleteProfileSnapshotIfAnonymous(profileSnapshot);
 
       return true;
     }
@@ -587,13 +786,58 @@ export class AuthService {
     return false;
   }
 
-  private async handleExistingPlayGamesProfile(): Promise<boolean> {
+  private async handleExistingPlayGamesProfile(
+    consumedCredential?: AuthCredential,
+  ): Promise<boolean> {
     /*
      * Il serverAuthCode di Play Games puo essere monouso. Se il link fallisce
      * perche quel Play Games esiste gia, non riusiamo la credenziale appena
      * consumata: chiediamo conferma e poi otteniamo un token fresco.
      */
     const profileSnapshot = await this.createCurrentProfileSnapshot();
+    const existingProfileState =
+      consumedCredential && profileSnapshot
+        ? await this.getExistingProviderProfileState(consumedCredential)
+        : null;
+
+    if (existingProfileState && !existingProfileState.profileExists) {
+      console.warn(
+        'Play Games esiste in Auth ma non ha profilo TurtleMind: importo il profilo corrente',
+      );
+
+      const freshPlayGamesResult =
+        await this.playGamesAuthService.createFirebaseCredentialFromNativeSignIn();
+
+      if (!freshPlayGamesResult) {
+        return false;
+      }
+
+      const signedInUser = await signInWithCredential(
+        firebaseAuth,
+        freshPlayGamesResult.credential,
+      );
+
+      if (profileSnapshot) {
+        await this.userStatsService.restoreProfileSnapshotIntoLinkedAccount(
+          signedInUser.user,
+          profileSnapshot,
+        );
+      }
+
+      await this.syncSignedInProviderProfile(
+        signedInUser.user,
+        AUTH_CONFIG.providers.playGames,
+        freshPlayGamesResult.profile,
+      );
+
+      await this.deleteProfileSnapshotIfAnonymous(
+        profileSnapshot,
+        signedInUser.user.uid,
+      );
+
+      return true;
+    }
+
     const shouldSwitch = await this.confirmExistingProviderSwitch(
       AUTH_CONFIG.providers.playGames,
     );
@@ -621,9 +865,53 @@ export class AuthService {
       freshPlayGamesResult.profile,
     );
 
-    if (profileSnapshot && profileSnapshot.uid !== signedInUser.user.uid) {
-      await this.userStatsService.deleteUserProfileData(profileSnapshot.uid);
+    await this.deleteProfileSnapshotIfAnonymous(
+      profileSnapshot,
+      signedInUser.user.uid,
+    );
+
+    return true;
+  }
+
+  private async signInWithFreshPlayGamesCredential(
+    profileSnapshot: UserProfileMigrationSnapshot | null,
+    importCurrentProfile: boolean,
+  ): Promise<boolean> {
+    /*
+     * Dopo un controllo temporaneo la credenziale Play Games potrebbe essere
+     * stata consumata. Per entrare davvero nell'app chiediamo sempre un token
+     * fresco, poi decidiamo se importare i progressi correnti o caricare quelli
+     * gia salvati su Play Games.
+     */
+    const freshPlayGamesResult =
+      await this.playGamesAuthService.createFirebaseCredentialFromNativeSignIn();
+
+    if (!freshPlayGamesResult) {
+      return false;
     }
+
+    const signedInUser = await signInWithCredential(
+      firebaseAuth,
+      freshPlayGamesResult.credential,
+    );
+
+    if (importCurrentProfile && profileSnapshot) {
+      await this.userStatsService.restoreProfileSnapshotIntoLinkedAccount(
+        signedInUser.user,
+        profileSnapshot,
+      );
+    }
+
+    await this.syncSignedInProviderProfile(
+      signedInUser.user,
+      AUTH_CONFIG.providers.playGames,
+      freshPlayGamesResult.profile,
+    );
+
+    await this.deleteProfileSnapshotIfAnonymous(
+      profileSnapshot,
+      signedInUser.user.uid,
+    );
 
     return true;
   }
@@ -782,10 +1070,13 @@ export class AuthService {
 
       return {
         uid: existingUser.user.uid,
-        hasSavedProgress: this.userStatsService.hasMeaningfulSavedProgress(
-          profileSnapshot.exists() ? profileSnapshot.data() : null,
-          hasSubcollectionData,
-        ),
+        profileExists: profileSnapshot.exists(),
+        hasSavedProgress:
+          profileSnapshot.exists() &&
+          this.userStatsService.hasMeaningfulSavedProgress(
+            profileSnapshot.data(),
+            hasSubcollectionData,
+          ),
       };
     } catch (error) {
       /*
@@ -823,5 +1114,56 @@ export class AuthService {
       await this.accountLinkService.confirmExistingAccountSwitch(providerId);
 
     return decision === 'use-existing-profile';
+  }
+
+  private async deleteProfileSnapshotIfAnonymous(
+    profileSnapshot: UserProfileMigrationSnapshot | null,
+    targetUid?: string,
+  ): Promise<void> {
+    /*
+     * Dopo un cambio account cancelliamo solo il profilo ospite vero.
+     * Play Games e un profilo recuperabile: se lo eliminassimo, al logout
+     * l'utente tornerebbe su Play Games partendo da zero.
+     */
+    if (!profileSnapshot) return;
+    if (targetUid && profileSnapshot.uid === targetUid) return;
+    if (!this.isAnonymousOnlySnapshot(profileSnapshot)) return;
+
+    await this.userStatsService.deleteUserProfileData(profileSnapshot.uid);
+  }
+
+  private isAnonymousOnlySnapshot(
+    profileSnapshot: UserProfileMigrationSnapshot,
+  ): boolean {
+    const auth = (profileSnapshot.profile?.['auth'] ??
+      {}) as Partial<UserAuthProfile>;
+    const providerIds = auth.providerIds ?? [];
+    const createdFromProviderId = auth.createdFromProviderId;
+    const strongProviderIds = [
+      AUTH_CONFIG.providers.google,
+      AUTH_CONFIG.providers.facebook,
+      AUTH_CONFIG.providers.playGames,
+    ];
+
+    if (
+      createdFromProviderId &&
+      strongProviderIds.includes(createdFromProviderId)
+    ) {
+      return false;
+    }
+
+    if (
+      providerIds.some((providerId) => strongProviderIds.includes(providerId))
+    ) {
+      return false;
+    }
+
+    return (
+      createdFromProviderId === AUTH_CONFIG.providers.anonymous ||
+      providerIds.length === 0 ||
+      providerIds.every(
+        (providerId) => providerId === AUTH_CONFIG.providers.anonymous,
+      )
+    );
   }
 }
