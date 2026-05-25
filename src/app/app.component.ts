@@ -15,6 +15,7 @@ import { BottomNavComponent } from './components/bottom-nav/bottom-nav.component
 import { AudioService } from './services/audio';
 import { GameLoaderComponent } from './components/game-loader/game-loader.component';
 import { LevelUpModalComponent } from './components/level-up-modal/level-up-modal.component';
+import { TutorialOverlayComponent } from './components/tutorial-overlay/tutorial-overlay.component';
 import { LevelUpModalService } from './services/level-up-modal.service';
 import { NavigationTab } from './models/navigation.model';
 import { APP_CONFIG } from 'src/app/config/app.config';
@@ -30,6 +31,7 @@ import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
     BottomNavComponent,
     GameLoaderComponent,
     LevelUpModalComponent,
+    TutorialOverlayComponent,
   ],
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],

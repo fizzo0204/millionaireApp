@@ -15,6 +15,7 @@ import { CategoryModel } from 'src/app/models/category.model';
 import { ModalController } from '@ionic/angular/standalone';
 import { AuthPromptService } from 'src/app/services/auth-prompt.service';
 import { environment } from 'src/environments/environment';
+import { TutorialService } from 'src/app/services/tutorial.service';
 
 @Component({
   selector: 'app-home',
@@ -63,6 +64,7 @@ export class HomePage implements OnInit, OnDestroy {
     private ui: UiService,
     private modalCtrl: ModalController,
     private authPromptService: AuthPromptService,
+    private tutorialService: TutorialService,
   ) {
     this.coins$ = this.coinsService.coins$;
     this.lives$ = this.livesService.lives$;
@@ -81,11 +83,16 @@ export class HomePage implements OnInit, OnDestroy {
     });
   }
 
-  ionViewWillEnter() {
+  async ionViewWillEnter() {
     /*
      * Il login non blocca piu il gioco. Quando l'ospite torna in home,
      * ogni tanto proponiamo il salvataggio cloud con Google/Facebook.
      */
+    const tutorialOpened =
+      await this.tutorialService.openHomeTutorialIfNeeded();
+
+    if (tutorialOpened) return;
+
     this.authPromptService.scheduleHomeGuestLoginPrompt();
   }
 

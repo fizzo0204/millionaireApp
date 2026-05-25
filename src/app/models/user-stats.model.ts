@@ -21,6 +21,14 @@ export interface UserAvatarData {
   unlockedAvatarIds: string[];
 }
 
+export interface UserOnboardingData {
+  tutorialCompleted: boolean;
+  tutorialRewardClaimed: boolean;
+  tutorialSkipped?: boolean;
+  tutorialCompletedAt?: unknown;
+  tutorialSkippedAt?: unknown;
+}
+
 export interface AppUserProfile {
   uid: string;
   displayName: string | null;
@@ -31,6 +39,7 @@ export interface AppUserProfile {
   stats: UserStats;
   avatar: UserAvatarData;
   auth?: UserAuthProfile;
+  onboarding?: UserOnboardingData;
 }
 
 export interface QuizHistoryItem {

@@ -38,6 +38,19 @@
         ></ion-toggle>
       </div>
 
+      <button class="login-card" type="button" (click)="openTutorial()">
+        <div class="login-icon">
+          <ion-icon name="game-controller-outline"></ion-icon>
+        </div>
+
+        <div class="login-text">
+          <h3>Tutorial</h3>
+          <p>Completa la guida e ottieni 30 monete</p>
+        </div>
+
+        <ion-icon class="login-arrow" name="chevron-forward-outline"></ion-icon>
+      </button>
+
       @if (user$ | async; as user) { @if (shouldShowLinkAccount(user)) {
       <button class="login-card" type="button" (click)="openLoginPrompt()">
         <div class="login-icon">
@@ -68,7 +81,7 @@
         ></ion-icon>
       </button>
       } }
-      @if (isDebugMode) {
+      <!-- TODO release: riattivare @if (isDebugMode) per nascondere i tool debug in produzione. -->
       <button
         class="logout-card"
         type="button"
@@ -90,6 +103,22 @@
         } @else {
         <ion-spinner name="dots"></ion-spinner>
         }
+      </button>
+      <button
+        class="logout-card"
+        type="button"
+        (click)="openFreshTutorialDebug()"
+      >
+        <div class="logout-icon">
+          <ion-icon name="game-controller-outline"></ion-icon>
+        </div>
+
+        <div class="logout-text">
+          <h3>Debug tutorial</h3>
+          <p>Avvia la guida come primo accesso e riabilita il premio</p>
+        </div>
+
+        <ion-icon class="logout-arrow" name="chevron-forward-outline"></ion-icon>
       </button>
       <button class="logout-card" type="button" (click)="resetDailyReward()">
         <div class="logout-icon">🎁</div>
@@ -128,7 +157,6 @@
           <button type="button" (click)="setDailyDebugDay(7)">G7</button>
         </div>
       </div>
-      }
     </div>
   </div>
 </ion-content>

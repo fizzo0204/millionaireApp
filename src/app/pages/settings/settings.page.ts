@@ -13,6 +13,7 @@ import { UserStatsService } from 'src/app/services/user-stats.service';
 import { AuthPromptService } from 'src/app/services/auth-prompt.service';
 import { LogoutDecision } from 'src/app/models/logout.model';
 import { environment } from 'src/environments/environment';
+import { TutorialService } from 'src/app/services/tutorial.service';
 
 @Component({
   selector: 'app-settings',
@@ -37,6 +38,7 @@ export class SettingsPage {
     private dailyRewardService: DailyRewardService,
     private authPromptService: AuthPromptService,
     private modalCtrl: ModalController,
+    private tutorialService: TutorialService,
   ) {
     this.musicEnabled = this.audioService.isMusicEnabled();
     this.clickEnabled = this.audioService.isClickEnabled();
@@ -84,6 +86,14 @@ export class SettingsPage {
       force: true,
       source: 'settings',
     });
+  }
+
+  async openTutorial() {
+    await this.tutorialService.openManualTutorial();
+  }
+
+  async openFreshTutorialDebug() {
+    await this.tutorialService.openDebugFreshTutorial();
   }
 
   async resetDebugData() {

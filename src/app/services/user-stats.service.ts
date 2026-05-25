@@ -25,6 +25,7 @@ import {
   AppUserProfile,
   QuizHistoryItem,
   UserAvatarData,
+  UserOnboardingData,
   UserProfileMigrationSnapshot,
 } from 'src/app/models/user-stats.model';
 import { User } from 'firebase/auth';
@@ -80,6 +81,12 @@ export class UserStatsService {
     claimedToday: false,
   };
 
+  readonly defaultOnboarding: UserOnboardingData = {
+    tutorialCompleted: false,
+    tutorialRewardClaimed: false,
+    tutorialSkipped: false,
+  };
+
   private getProviderIds(user: User): AppAuthProviderId[] {
     const providerIds = user.providerData
       .map((provider) => provider.providerId as AppAuthProviderId)
@@ -127,6 +134,7 @@ export class UserStatsService {
         stats: this.defaultStats,
         dailyReward: this.defaultDailyReward,
         avatar: this.defaultAvatar,
+        onboarding: this.defaultOnboarding,
         auth: authProfile,
       });
 
@@ -175,6 +183,10 @@ export class UserStatsService {
           data['dailyReward']?.unlockedAvatarIds ??
           [],
       };
+    }
+
+    if (!data['onboarding']) {
+      updates['onboarding'] = this.defaultOnboarding;
     }
 
     updates['auth.providerIds'] = authProfile.providerIds;
@@ -931,6 +943,7 @@ export class UserStatsService {
       },
       dailyReward: this.defaultDailyReward,
       avatar: this.defaultAvatar,
+      onboarding: this.defaultOnboarding,
     });
   }
 }
