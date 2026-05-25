@@ -12,6 +12,7 @@ import { AudioService } from 'src/app/services/audio';
 import { UserStatsService } from 'src/app/services/user-stats.service';
 import { AuthPromptService } from 'src/app/services/auth-prompt.service';
 import { LogoutDecision } from 'src/app/models/logout.model';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-settings',
@@ -26,6 +27,7 @@ export class SettingsPage {
   musicEnabled = true;
   clickEnabled = true;
   resetLoading = false;
+  readonly isDebugMode = !environment.production;
 
   constructor(
     private audioService: AudioService,

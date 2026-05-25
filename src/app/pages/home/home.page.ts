@@ -14,6 +14,7 @@ import { CATEGORIES } from 'src/app/data/categories.data';
 import { CategoryModel } from 'src/app/models/category.model';
 import { ModalController } from '@ionic/angular/standalone';
 import { AuthPromptService } from 'src/app/services/auth-prompt.service';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-home',
@@ -33,6 +34,7 @@ export class HomePage implements OnInit, OnDestroy {
   showDailyReward = false;
   coinRewardPulse = false;
   lifeRecoveredPulse = false;
+  readonly isDebugMode = !environment.production;
 
   coins$: Observable<number>;
   lives$: Observable<number>;

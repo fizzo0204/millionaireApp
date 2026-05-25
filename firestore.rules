@@ -1,0 +1,52 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    /*
+     * Le domande sono contenuto del gioco:
+     * - il client puo leggere solo quelle attive;
+     * - nessun client puo crearle, modificarle o eliminarle.
+     *
+     * Nota: le query client devono includere active == true.
+     */
+    match /questions/{questionId} {
+      allow read: if resource.data.active == true;
+      allow write: if false;
+    }
+
+    /*
+     * Profilo giocatore: anonimo, Play Games, Google e Facebook salvano tutti
+     * sotto users/{uid}. Il client puo gestire solo il proprio documento.
+     */
+    match /users/{uid} {
+      allow read, create, update, delete: if isOwner(uid);
+
+      match /progress/{progressId} {
+        allow read, create, update, delete: if isOwner(uid);
+      }
+
+      match /completedLevels/{levelId} {
+        allow read, create, update, delete: if isOwner(uid);
+      }
+
+      match /quizHistory/{historyId} {
+        allow read, create, update, delete: if isOwner(uid);
+      }
+    }
+
+    /*
+     * Tutto cio che non e esplicitamente aperto sopra resta chiuso.
+     */
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
