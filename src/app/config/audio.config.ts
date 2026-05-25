@@ -4,5 +4,6 @@ export const AUDIO_CONFIG = {
   },
   sounds: {
     click: 'assets/audio/click.m4a',
+    countdownQuiz: 'assets/audio/countdown-quiz.m4a',
   },
 };

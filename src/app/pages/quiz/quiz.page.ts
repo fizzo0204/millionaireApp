@@ -18,6 +18,7 @@ import { HapticsService } from 'src/app/services/haptics.service';
 import { HelpModel, HelpId } from 'src/app/models/help.model';
 import { HELPS } from 'src/app/data/helps.data';
 import { DifficultyId } from 'src/app/models/difficulty.model';
+import { AudioService } from 'src/app/services/audio';
 
 @Component({
   selector: 'app-quiz',
@@ -37,6 +38,7 @@ export class QuizPage implements OnInit, OnDestroy {
   private userStatsService = inject(UserStatsService);
   private auth = inject(AuthService);
   private haptics = inject(HapticsService);
+  private audioService = inject(AudioService);
 
   private appStateListener?: PluginListenerHandle;
 
@@ -92,6 +94,8 @@ export class QuizPage implements OnInit, OnDestroy {
   helps: HelpModel[] = [...HELPS];
 
   async ngOnInit() {
+    this.audioService.suspendMusicForGame();
+
     this.categoryId = this.route.snapshot.paramMap.get('categoryId') || '';
     this.difficultyId =
       (this.route.snapshot.paramMap.get('difficultyId') as DifficultyId) ||
@@ -105,6 +109,10 @@ export class QuizPage implements OnInit, OnDestroy {
     this.setupLabels();
     await this.listenToAppState();
     await this.loadQuestions();
+  }
+
+  ionViewWillEnter() {
+    this.audioService.suspendMusicForGame();
   }
 
   private setupLevelProgress() {
@@ -131,6 +139,7 @@ export class QuizPage implements OnInit, OnDestroy {
 
   ionViewWillLeave() {
     this.stopTimer();
+    void this.audioService.resumeMusicAfterGame();
   }
 
   async loadQuestions() {
@@ -159,8 +168,7 @@ export class QuizPage implements OnInit, OnDestroy {
       return;
     }
 
-    this.resetQuestionState();
-    this.startTimer();
+    this.startCurrentQuestion();
   }
 
   private wait(ms: number): Promise<void> {
@@ -359,8 +367,7 @@ export class QuizPage implements OnInit, OnDestroy {
     }
 
     this.currentIndex++;
-    this.resetQuestionState();
-    this.startTimer();
+    this.startCurrentQuestion();
   }
 
   async finishQuiz() {
@@ -592,8 +599,14 @@ export class QuizPage implements OnInit, OnDestroy {
     this.goToLevelsPage();
   }
 
+  private startCurrentQuestion() {
+    this.resetQuestionState();
+    this.startTimer();
+  }
+
   startTimer() {
-    this.stopTimer();
+    this.stopTimer(false);
+    this.audioService.playCountdownQuiz();
 
     this.timer = setInterval(() => {
       this.timeLeft--;
@@ -607,10 +620,14 @@ export class QuizPage implements OnInit, OnDestroy {
     }, 1000);
   }
 
-  stopTimer() {
+  stopTimer(stopGameSound = true) {
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = undefined;
+    }
+
+    if (stopGameSound) {
+      this.audioService.stopGameSound();
     }
   }
 
@@ -638,8 +655,7 @@ export class QuizPage implements OnInit, OnDestroy {
       this.questions = newQuestions;
       this.currentIndex = 0;
 
-      this.resetQuestionState();
-      this.startTimer();
+      this.startCurrentQuestion();
     } finally {
       this.switchingQuestion = false;
     }

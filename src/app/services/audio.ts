@@ -7,16 +7,22 @@ import { STORAGE_KEYS } from 'src/app/config/storage-keys.config';
 })
 export class AudioService {
   private music?: HTMLAudioElement;
+  private activeGameSound?: HTMLAudioElement;
+  private countdownQuizSound?: HTMLAudioElement;
   private clickPool: HTMLAudioElement[] = [];
 
   private clickIndex = 0;
   private readonly CLICK_POOL_SIZE = 5;
+  private readonly BACKGROUND_VOLUME = 0.35;
+  private readonly FADE_IN_DURATION = 1200;
 
   private clickEnabled = true;
   private musicEnabled = true;
   private isStartingMusic = false;
+  private musicSuspendedByGame = false;
 
   private fadeInterval?: ReturnType<typeof setInterval>;
+  private gameSoundFadeInterval?: ReturnType<typeof setInterval>;
 
   constructor() {
     const clickSaved = localStorage.getItem(STORAGE_KEYS.clickEnabled);
@@ -56,8 +62,26 @@ export class AudioService {
     });
   }
 
+  private getCountdownQuizSound(): HTMLAudioElement {
+    if (!this.countdownQuizSound) {
+      this.countdownQuizSound = new Audio(AUDIO_CONFIG.sounds.countdownQuiz);
+      this.countdownQuizSound.setAttribute('playsinline', 'true');
+      this.countdownQuizSound.preload = 'auto';
+      this.countdownQuizSound.volume = this.BACKGROUND_VOLUME;
+      this.countdownQuizSound.onended = () => {
+        if (this.activeGameSound === this.countdownQuizSound) {
+          this.activeGameSound = undefined;
+        }
+      };
+      this.countdownQuizSound.load();
+    }
+
+    return this.countdownQuizSound;
+  }
+
   async playMusic(): Promise<boolean> {
     if (!this.musicEnabled) return false;
+    if (this.musicSuspendedByGame) return false;
 
     if (this.isStartingMusic) return false;
 
@@ -77,7 +101,7 @@ export class AudioService {
       if (this.music.volume === 0) {
         this.fadeIn();
       } else {
-        this.music.volume = 0.35;
+        this.music.volume = this.BACKGROUND_VOLUME;
       }
 
       return true;
@@ -103,6 +127,47 @@ export class AudioService {
     sound.play().catch(() => {});
   }
 
+  playCountdownQuiz() {
+    this.playGameSound(this.getCountdownQuizSound());
+  }
+
+  stopGameSound() {
+    this.clearGameSoundFade();
+
+    if (!this.activeGameSound) return;
+
+    this.activeGameSound.pause();
+    this.activeGameSound.currentTime = 0;
+    this.activeGameSound.volume = this.BACKGROUND_VOLUME;
+    this.activeGameSound = undefined;
+  }
+
+  private playGameSound(sound: HTMLAudioElement) {
+    if (!this.musicEnabled) return;
+
+    /*
+     * Gli effetti di gioco sono esclusivi: quando parte un nuovo effetto
+     * interrompiamo quello precedente per evitare sovrapposizioni.
+     */
+    this.stopGameSound();
+
+    this.activeGameSound = sound;
+    sound.currentTime = 0;
+    sound.volume = 0;
+    sound
+      .play()
+      .then(() => {
+        this.fadeInGameSound(sound);
+      })
+      .catch(() => {
+        if (this.activeGameSound === sound) {
+          this.activeGameSound = undefined;
+        }
+
+        this.clearGameSoundFade();
+      });
+  }
+
   setClickEnabled(enabled: boolean) {
     this.clickEnabled = enabled;
     localStorage.setItem(STORAGE_KEYS.clickEnabled, String(enabled));
@@ -119,12 +184,27 @@ export class AudioService {
     if (enabled) {
       this.playMusic();
     } else {
+      this.stopGameSound();
       this.stopMusic();
     }
   }
 
   isMusicEnabled(): boolean {
     return this.musicEnabled;
+  }
+
+  /*
+   * Durante una domanda del quiz la musica di sottofondo deve restare spenta:
+   * lasciamo attivi solo click e suoni di gioco, in base ai toggle utente.
+   */
+  suspendMusicForGame() {
+    this.musicSuspendedByGame = true;
+    this.pauseMusic();
+  }
+
+  resumeMusicAfterGame() {
+    this.musicSuspendedByGame = false;
+    return this.playMusic();
   }
 
   pauseMusic() {
@@ -148,14 +228,17 @@ export class AudioService {
 
     this.music.pause();
     this.music.currentTime = 0;
-    this.music.volume = 0.35;
+    this.music.volume = this.BACKGROUND_VOLUME;
   }
 
   isPlaying(): boolean {
     return !!this.music && !this.music.paused;
   }
 
-  private fadeIn(targetVolume = 0.35, duration = 1200) {
+  private fadeIn(
+    targetVolume = this.BACKGROUND_VOLUME,
+    duration = this.FADE_IN_DURATION,
+  ) {
     if (!this.music) return;
 
     if (this.fadeInterval) {
@@ -179,5 +262,51 @@ export class AudioService {
         this.fadeInterval = undefined;
       }
     }, stepTime);
+  }
+
+  private fadeInGameSound(
+    sound: HTMLAudioElement,
+    targetVolume = this.BACKGROUND_VOLUME,
+    duration = this.FADE_IN_DURATION,
+  ) {
+    this.clearGameSoundFade();
+
+    const steps = 20;
+    const stepTime = duration / steps;
+    const volumeStep = targetVolume / steps;
+
+    sound.volume = 0;
+
+    const interval = setInterval(() => {
+      if (this.activeGameSound !== sound) {
+        clearInterval(interval);
+
+        if (this.gameSoundFadeInterval === interval) {
+          this.gameSoundFadeInterval = undefined;
+        }
+
+        return;
+      }
+
+      const nextVolume = Math.min(targetVolume, sound.volume + volumeStep);
+      sound.volume = nextVolume;
+
+      if (nextVolume >= targetVolume) {
+        clearInterval(interval);
+
+        if (this.gameSoundFadeInterval === interval) {
+          this.gameSoundFadeInterval = undefined;
+        }
+      }
+    }, stepTime);
+
+    this.gameSoundFadeInterval = interval;
+  }
+
+  private clearGameSoundFade() {
+    if (!this.gameSoundFadeInterval) return;
+
+    clearInterval(this.gameSoundFadeInterval);
+    this.gameSoundFadeInterval = undefined;
   }
 }
