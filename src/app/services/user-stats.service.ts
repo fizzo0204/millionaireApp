@@ -28,8 +28,9 @@ import {
   UserProfileMigrationSnapshot,
 } from 'src/app/models/user-stats.model';
 import { User } from 'firebase/auth';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
+import { getLevelFromXp } from 'src/app/utils/level-progress.util';
 import { AUTH_CONFIG } from 'src/app/config/auth.config';
 import {
   AppAuthProviderId,
@@ -444,7 +445,19 @@ export class UserStatsService {
   getUserProfile(uid: string): Observable<AppUserProfile | undefined> {
     const userRef = doc(this.firestore, `users/${uid}`);
 
-    return docData(userRef) as Observable<AppUserProfile | undefined>;
+    return (docData(userRef) as Observable<AppUserProfile | undefined>).pipe(
+      map((profile) => {
+        if (!profile?.stats) return profile;
+
+        return {
+          ...profile,
+          stats: {
+            ...profile.stats,
+            level: getLevelFromXp(profile.stats.xp),
+          },
+        };
+      }),
+    );
   }
 
   async userProfileExists(uid: string): Promise<boolean> {
@@ -563,11 +576,7 @@ export class UserStatsService {
             : this.defaultStats.xp;
 
         const updatedXp = currentXp + rewardPayload.xp;
-        const updatedLevel = Math.max(
-          1,
-          Math.floor(updatedXp / USER_STATS_CONFIG.xpPerLevel) +
-            USER_STATS_CONFIG.defaultLevel,
-        );
+        const updatedLevel = getLevelFromXp(updatedXp);
 
         updates['stats.xp'] = updatedXp;
         updates['stats.level'] = updatedLevel;
@@ -621,11 +630,7 @@ export class UserStatsService {
             : this.defaultStats.xp;
 
         const updatedXp = currentXp + rewardPayload.xp;
-        const updatedLevel = Math.max(
-          1,
-          Math.floor(updatedXp / USER_STATS_CONFIG.xpPerLevel) +
-            USER_STATS_CONFIG.defaultLevel,
-        );
+        const updatedLevel = getLevelFromXp(updatedXp);
 
         updates['stats.xp'] = increment(rewardPayload.xp);
         updates['stats.level'] = updatedLevel;
@@ -759,11 +764,7 @@ export class UserStatsService {
       const xpEarned = correctAnswers * USER_STATS_CONFIG.xpPerCorrectAnswer;
       const updatedXp = currentXp + xpEarned;
 
-      const updatedLevel = Math.max(
-        1,
-        Math.floor(updatedXp / USER_STATS_CONFIG.xpPerLevel) +
-          USER_STATS_CONFIG.defaultLevel,
-      );
+      const updatedLevel = getLevelFromXp(updatedXp);
 
       transaction.update(userRef, {
         'stats.quizPlayed': increment(1),
@@ -828,11 +829,7 @@ export class UserStatsService {
           : this.defaultStats.xp;
 
       const updatedXp = currentXp + amount;
-      const updatedLevel = Math.max(
-        1,
-        Math.floor(updatedXp / USER_STATS_CONFIG.xpPerLevel) +
-          USER_STATS_CONFIG.defaultLevel,
-      );
+      const updatedLevel = getLevelFromXp(updatedXp);
 
       transaction.update(userRef, {
         'stats.xp': increment(amount),

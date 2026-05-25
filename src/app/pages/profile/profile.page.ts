@@ -14,7 +14,7 @@ import {
   AppUserProfile,
   QuizHistoryItem,
 } from 'src/app/models/user-stats.model';
-import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
+import { getLevelProgress } from 'src/app/utils/level-progress.util';
 
 @Component({
   selector: 'app-profile',
@@ -73,16 +73,20 @@ export class ProfilePage {
     return this.avatars.filter((avatar) => avatar.source === 'epic');
   }
 
-  get maxXp(): number {
-    return USER_STATS_CONFIG.xpPerLevel;
+  getCurrentLevelXp(xp: number): number {
+    return getLevelProgress(xp).currentLevelXp;
   }
 
-  getCurrentLevelXp(xp: number): number {
-    return Math.max(0, xp) % this.maxXp;
+  getNextLevelXp(xp: number): number {
+    return getLevelProgress(xp).nextLevelXp;
   }
 
   getXpPercent(xp: number): number {
-    return Math.round((this.getCurrentLevelXp(xp) / this.maxXp) * 100);
+    return getLevelProgress(xp).progressPercent;
+  }
+
+  isMaxLevel(xp: number): boolean {
+    return getLevelProgress(xp).isMaxLevel;
   }
 
   getTitle(level: number): string {

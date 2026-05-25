@@ -19,6 +19,7 @@ import { HelpModel, HelpId } from 'src/app/models/help.model';
 import { HELPS } from 'src/app/data/helps.data';
 import { DifficultyId } from 'src/app/models/difficulty.model';
 import { AudioService } from 'src/app/services/audio';
+import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
 
 @Component({
   selector: 'app-quiz',
@@ -62,11 +63,13 @@ export class QuizPage implements OnInit, OnDestroy {
   audiencePercentages = [15, 20, 50, 15];
   levelNumber = 1;
   displayLevelNumber = 1;
-  totalLevels = 30;
+  totalLevels = 0;
+  difficultyLevelNumbers: number[] = [];
   currentIndex = 0;
   correctAnswers = 0;
   wrongAnswers = 0;
   rewardXp = 0;
+  readonly xpPerQuestion = USER_STATS_CONFIG.xpPerCorrectAnswer;
   neededCoins = 0;
   selectedAnswerIndex: number | null = null;
   hiddenAnswers: number[] = [];
@@ -104,9 +107,8 @@ export class QuizPage implements OnInit, OnDestroy {
       this.route.snapshot.paramMap.get('levelNumber') || 1,
     );
 
-    this.setupLevelProgress();
-
     this.setupLabels();
+    await this.setupLevelProgress();
     await this.listenToAppState();
     await this.loadQuestions();
   }
@@ -115,26 +117,20 @@ export class QuizPage implements OnInit, OnDestroy {
     this.audioService.suspendMusicForGame();
   }
 
-  private setupLevelProgress() {
-    if (this.difficultyId === 'easy') {
-      this.displayLevelNumber = this.levelNumber;
-      this.totalLevels = 30;
-    }
+  private async setupLevelProgress() {
+    this.difficultyLevelNumbers =
+      await this.questionsService.getDifficultyLevelNumbers(
+        this.categoryId,
+        this.difficultyId,
+      );
 
-    if (this.difficultyId === 'medium') {
-      this.displayLevelNumber = this.levelNumber - 30;
-      this.totalLevels = 30;
-    }
+    const currentLevelIndex = this.difficultyLevelNumbers.indexOf(
+      this.levelNumber,
+    );
 
-    if (this.difficultyId === 'hard') {
-      this.displayLevelNumber = this.levelNumber - 60;
-      this.totalLevels = 40;
-    }
-
-    if (this.difficultyId === 'extreme') {
-      this.displayLevelNumber = this.levelNumber - 100;
-      this.totalLevels = 50;
-    }
+    this.totalLevels = this.difficultyLevelNumbers.length;
+    this.displayLevelNumber =
+      currentLevelIndex >= 0 ? currentLevelIndex + 1 : this.levelNumber;
   }
 
   ionViewWillLeave() {
@@ -422,11 +418,12 @@ export class QuizPage implements OnInit, OnDestroy {
           );
         }
 
-        this.rewardXp = this.correctAnswers * 10;
+        this.rewardXp =
+          this.correctAnswers * USER_STATS_CONFIG.xpPerCorrectAnswer;
         this.rewardDoubled = false;
         this.rewardDoubleLoading = false;
-        this.rewardMessage = `Hai completato il livello ${this.levelNumber}!`;
-        this.rewardUnlockedMessage = `Livello ${this.levelNumber + 1} sbloccato`;
+        this.rewardMessage = `Hai completato il livello ${this.displayLevelNumber}!`;
+        this.rewardUnlockedMessage = this.getRewardUnlockedMessage();
         this.showRewardModal = true;
 
         return;
@@ -635,6 +632,22 @@ export class QuizPage implements OnInit, OnDestroy {
     this.router.navigateByUrl(
       `/levels/${this.categoryId}/${this.difficultyId}`,
     );
+  }
+
+  private getRewardUnlockedMessage(): string {
+    const currentLevelIndex = this.difficultyLevelNumbers.indexOf(
+      this.levelNumber,
+    );
+    const nextDisplayLevel = currentLevelIndex + 2;
+
+    if (
+      currentLevelIndex >= 0 &&
+      nextDisplayLevel <= this.difficultyLevelNumbers.length
+    ) {
+      return `Livello ${nextDisplayLevel} sbloccato`;
+    }
+
+    return 'Difficolta completata';
   }
 
   private async switchQuestion() {

@@ -15,6 +15,11 @@ import { QuestionModel } from 'src/app/models/question.model';
 import { DifficultyId } from '../models/difficulty.model';
 import { QUESTIONS_CONFIG } from '../config/questions.config';
 
+export interface DifficultyQuestionStats {
+  questionCount: number;
+  levelNumbers: number[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -63,6 +68,46 @@ export class QuestionsService {
       key,
       JSON.stringify(updated.slice(0, QUESTIONS_CONFIG.maxSeenQuestions)),
     );
+  }
+
+  getDifficultyQuestionStats(
+    category: string,
+    difficulty: DifficultyId,
+  ): Promise<DifficultyQuestionStats> {
+    return runInInjectionContext(this.injector, async () => {
+      const questionsRef = collection(this.firestore, 'questions');
+
+      const questionsQuery = query(
+        questionsRef,
+        where('category', '==', category),
+        where('difficulty', '==', difficulty),
+        where('active', '==', true),
+      );
+
+      const snapshot = await getDocs(questionsQuery);
+
+      const levelNumbers = Array.from(
+        new Set(
+          snapshot.docs
+            .map((docSnap) => Number(docSnap.data()['levelNumber']))
+            .filter((levelNumber) => Number.isFinite(levelNumber)),
+        ),
+      ).sort((a, b) => a - b);
+
+      return {
+        questionCount: snapshot.size,
+        levelNumbers,
+      };
+    });
+  }
+
+  async getDifficultyLevelNumbers(
+    category: string,
+    difficulty: DifficultyId,
+  ): Promise<number[]> {
+    const stats = await this.getDifficultyQuestionStats(category, difficulty);
+
+    return stats.levelNumbers;
   }
 
   getQuestions(

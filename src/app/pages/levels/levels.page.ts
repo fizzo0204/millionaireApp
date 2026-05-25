@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { LivesService } from 'src/app/services/lives';
 import { AuthService } from 'src/app/services/auth.service';
 import { ProgressService } from 'src/app/services/progress.service';
+import { QuestionsService } from 'src/app/services/questions.service';
 import { AdsService } from 'src/app/services/ads.service';
 import { LevelModel } from 'src/app/models/level.model';
 import { DifficultyId } from 'src/app/models/difficulty.model';
@@ -22,6 +23,7 @@ export class LevelsPage {
   private router = inject(Router);
   private auth = inject(AuthService);
   private progressService = inject(ProgressService);
+  private questionsService = inject(QuestionsService);
   private livesService = inject(LivesService);
   private ads = inject(AdsService);
 
@@ -48,34 +50,20 @@ export class LevelsPage {
       'easy';
 
     this.setupLabels();
-
-    this.generateLevels();
   }
 
   async ionViewWillEnter() {
     this.pageAnim?.nativeElement.classList.remove('page-fade-out');
 
+    await this.generateLevels();
     await this.loadLevelProgress();
   }
 
-  generateLevels() {
-    let numbers: number[] = [];
-
-    if (this.difficultyId === 'easy') {
-      numbers = Array.from({ length: 30 }, (_, i) => i + 1);
-    }
-
-    if (this.difficultyId === 'medium') {
-      numbers = Array.from({ length: 30 }, (_, i) => i + 31);
-    }
-
-    if (this.difficultyId === 'hard') {
-      numbers = Array.from({ length: 40 }, (_, i) => i + 61);
-    }
-
-    if (this.difficultyId === 'extreme') {
-      numbers = Array.from({ length: 50 }, (_, i) => i + 101);
-    }
+  async generateLevels() {
+    const numbers = await this.questionsService.getDifficultyLevelNumbers(
+      this.categoryId,
+      this.difficultyId,
+    );
 
     this.levels = numbers.map((number, index) => ({
       number,

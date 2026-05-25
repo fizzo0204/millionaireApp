@@ -13,12 +13,20 @@ import {
   UserCategoryProgress,
   CompletedLevelProgress,
 } from 'src/app/models/progress.model';
+import { QuestionsService } from './questions.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ProgressService {
   private firestore = inject(Firestore);
+  private questionsService = inject(QuestionsService);
+  private readonly difficultyOrder: DifficultyId[] = [
+    'easy',
+    'medium',
+    'hard',
+    'extreme',
+  ];
 
   private getUserCategoryProgressRef(uid: string, categoryId: string) {
     return doc(this.firestore, `users/${uid}/progress/${categoryId}`);
@@ -86,28 +94,17 @@ export class ProgressService {
     );
   }
 
-  getDifficultyLevels(difficultyId: DifficultyId): number[] {
-    if (difficultyId === 'easy') {
-      return Array.from({ length: 30 }, (_, i) => i + 1);
-    }
-
-    if (difficultyId === 'medium') {
-      return Array.from({ length: 30 }, (_, i) => i + 31);
-    }
-
-    if (difficultyId === 'hard') {
-      return Array.from({ length: 40 }, (_, i) => i + 61);
-    }
-
-    return Array.from({ length: 50 }, (_, i) => i + 101);
-  }
-
   async isDifficultyFullyCompleted(
     uid: string,
     categoryId: string,
     difficultyId: DifficultyId,
   ): Promise<boolean> {
-    const levels = this.getDifficultyLevels(difficultyId);
+    const levels = await this.questionsService.getDifficultyLevelNumbers(
+      categoryId,
+      difficultyId,
+    );
+
+    if (levels.length === 0) return false;
 
     for (const levelNumber of levels) {
       const completed = await this.isLevelCompleted(
@@ -121,6 +118,25 @@ export class ProgressService {
     }
 
     return true;
+  }
+
+  async isDifficultyUnlocked(
+    uid: string,
+    categoryId: string,
+    difficultyId: DifficultyId,
+  ): Promise<boolean> {
+    if (difficultyId === 'easy') return true;
+
+    const currentIndex = this.difficultyOrder.indexOf(difficultyId);
+    const previousDifficulty = this.difficultyOrder[currentIndex - 1];
+
+    if (!previousDifficulty) return true;
+
+    return this.isDifficultyFullyCompleted(
+      uid,
+      categoryId,
+      previousDifficulty,
+    );
   }
 
   async getUserCategoryProgress(
@@ -167,9 +183,8 @@ export class ProgressService {
   ): boolean {
     if (difficultyId === 'easy') return true;
 
-    const order: DifficultyId[] = ['easy', 'medium', 'hard', 'extreme'];
-    const currentIndex = order.indexOf(difficultyId);
-    const previousDifficulty = order[currentIndex - 1];
+    const currentIndex = this.difficultyOrder.indexOf(difficultyId);
+    const previousDifficulty = this.difficultyOrder[currentIndex - 1];
 
     if (!previousDifficulty) return true;
 
@@ -194,5 +209,37 @@ export class ProgressService {
           data.categoryId === categoryId && data.difficultyId === difficultyId,
       )
       .map((data) => data.levelNumber as number);
+  }
+
+  async getCompletedLevelNumbersByDifficulty(
+    uid: string,
+    categoryId: string,
+  ): Promise<Record<DifficultyId, number[]>> {
+    const completedByDifficulty: Record<DifficultyId, number[]> = {
+      easy: [],
+      medium: [],
+      hard: [],
+      extreme: [],
+    };
+
+    const levelsRef = collection(
+      this.firestore,
+      `users/${uid}/completedLevels`,
+    );
+    const snapshot = await getDocs(levelsRef);
+
+    for (const docSnap of snapshot.docs) {
+      const data = docSnap.data() as CompletedLevelProgress;
+
+      if (data.categoryId !== categoryId) continue;
+
+      const difficultyId = data.difficultyId;
+
+      if (!completedByDifficulty[difficultyId]) continue;
+
+      completedByDifficulty[difficultyId].push(data.levelNumber);
+    }
+
+    return completedByDifficulty;
   }
 }

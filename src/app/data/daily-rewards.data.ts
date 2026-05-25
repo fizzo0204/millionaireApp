@@ -18,8 +18,8 @@ export const DAILY_REWARDS: DailyReward[] = [
   {
     day: 3,
     type: 'xp',
-    amount: 10,
-    label: '+10 XP',
+    amount: 50,
+    label: '+50 XP',
     icon: '⚡',
   },
   {
@@ -39,8 +39,8 @@ export const DAILY_REWARDS: DailyReward[] = [
   {
     day: 6,
     type: 'xp',
-    amount: 15,
-    label: '+15 XP',
+    amount: 75,
+    label: '+75 XP',
     icon: '⚡',
   },
   {
@@ -61,8 +61,8 @@ export const EPIC_CHEST_REWARDS: DailyChestReward[] = [
   },
   {
     type: 'xp',
-    amount: 30,
-    label: '+30 XP',
+    amount: 150,
+    label: '+150 XP',
     icon: '⚡',
     rarity: 'rare',
   },

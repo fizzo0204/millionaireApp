@@ -91,7 +91,7 @@
 
     <div class="question-card" [class.question-success]="answered && isCorrect">
       @if (answered && isCorrect) {
-      <div class="xp-float">+10 XP</div>
+      <div class="xp-float">+{{ xpPerQuestion }} XP</div>
       }
 
       <h1>{{ currentQuestion.question }}</h1>
