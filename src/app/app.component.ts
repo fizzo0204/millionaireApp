@@ -88,8 +88,7 @@ export class AppComponent implements OnDestroy {
     await this.listenToAppState();
 
     if (this.isMobile) {
-      this.musicStarted = true;
-      await this.audioService.playMusic();
+      await this.tryStartMusic();
     }
   }
 
@@ -99,7 +98,7 @@ export class AppComponent implements OnDestroy {
       ({ isActive }) => {
         if (isActive) {
           if (this.musicStarted) {
-            this.audioService.playMusic();
+            void this.tryStartMusic();
           }
 
           return;
@@ -113,9 +112,21 @@ export class AppComponent implements OnDestroy {
   handleGlobalPointerDown() {
     this.audioService.playClick();
 
-    if (!this.isMobile && !this.musicStarted) {
+    /*
+     * Su mobile l'autoplay puo essere bloccato finche l'utente non tocca
+     * lo schermo. Per questo ritentiamo al primo gesto utile se la musica
+     * non è ancora partita davvero.
+     */
+    if (this.audioService.isMusicEnabled() && !this.audioService.isPlaying()) {
+      void this.tryStartMusic();
+    }
+  }
+
+  private async tryStartMusic() {
+    const started = await this.audioService.playMusic();
+
+    if (started) {
       this.musicStarted = true;
-      this.audioService.playMusic();
     }
   }
 
