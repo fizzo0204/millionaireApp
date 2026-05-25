@@ -9,6 +9,9 @@ export class AudioService {
   private music?: HTMLAudioElement;
   private activeGameSound?: HTMLAudioElement;
   private countdownQuizSound?: HTMLAudioElement;
+  private finishTimeSound?: HTMLAudioElement;
+  private errorQuizSound?: HTMLAudioElement;
+  private correctQuizSound?: HTMLAudioElement;
   private clickPool: HTMLAudioElement[] = [];
 
   private clickIndex = 0;
@@ -79,6 +82,57 @@ export class AudioService {
     return this.countdownQuizSound;
   }
 
+  private getFinishTimeSound(): HTMLAudioElement {
+    if (!this.finishTimeSound) {
+      this.finishTimeSound = new Audio(AUDIO_CONFIG.sounds.finishTime);
+      this.finishTimeSound.setAttribute('playsinline', 'true');
+      this.finishTimeSound.preload = 'auto';
+      this.finishTimeSound.volume = this.BACKGROUND_VOLUME;
+      this.finishTimeSound.onended = () => {
+        if (this.activeGameSound === this.finishTimeSound) {
+          this.activeGameSound = undefined;
+        }
+      };
+      this.finishTimeSound.load();
+    }
+
+    return this.finishTimeSound;
+  }
+
+  private getErrorQuizSound(): HTMLAudioElement {
+    if (!this.errorQuizSound) {
+      this.errorQuizSound = new Audio(AUDIO_CONFIG.sounds.errorQuiz);
+      this.errorQuizSound.setAttribute('playsinline', 'true');
+      this.errorQuizSound.preload = 'auto';
+      this.errorQuizSound.volume = this.BACKGROUND_VOLUME;
+      this.errorQuizSound.onended = () => {
+        if (this.activeGameSound === this.errorQuizSound) {
+          this.activeGameSound = undefined;
+        }
+      };
+      this.errorQuizSound.load();
+    }
+
+    return this.errorQuizSound;
+  }
+
+  private getCorrectQuizSound(): HTMLAudioElement {
+    if (!this.correctQuizSound) {
+      this.correctQuizSound = new Audio(AUDIO_CONFIG.sounds.correctQuiz);
+      this.correctQuizSound.setAttribute('playsinline', 'true');
+      this.correctQuizSound.preload = 'auto';
+      this.correctQuizSound.volume = this.BACKGROUND_VOLUME;
+      this.correctQuizSound.onended = () => {
+        if (this.activeGameSound === this.correctQuizSound) {
+          this.activeGameSound = undefined;
+        }
+      };
+      this.correctQuizSound.load();
+    }
+
+    return this.correctQuizSound;
+  }
+
   async playMusic(): Promise<boolean> {
     if (!this.musicEnabled) return false;
     if (this.musicSuspendedByGame) return false;
@@ -129,6 +183,18 @@ export class AudioService {
 
   playCountdownQuiz() {
     this.playGameSound(this.getCountdownQuizSound());
+  }
+
+  playFinishTime() {
+    this.playGameSound(this.getFinishTimeSound());
+  }
+
+  playErrorQuiz() {
+    this.playGameSound(this.getErrorQuizSound());
+  }
+
+  playCorrectQuiz() {
+    this.playGameSound(this.getCorrectQuizSound());
   }
 
   stopGameSound() {

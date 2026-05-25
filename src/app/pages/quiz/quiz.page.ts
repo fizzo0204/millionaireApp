@@ -265,6 +265,7 @@ export class QuizPage implements OnInit, OnDestroy {
     if (this.isCorrect) {
       this.correctAnswers++;
       this.haptics.success();
+      this.audioService.playCorrectQuiz();
 
       setTimeout(() => {
         this.nextQuestion();
@@ -275,6 +276,7 @@ export class QuizPage implements OnInit, OnDestroy {
 
     this.wrongAnswers++;
     this.haptics.error();
+    this.audioService.playErrorQuiz();
 
     setTimeout(() => {
       this.showWrongModal = true;
@@ -610,6 +612,7 @@ export class QuizPage implements OnInit, OnDestroy {
 
       if (this.timeLeft <= 0) {
         this.stopTimer();
+        this.audioService.playFinishTime();
         this.timeLeft = 0;
         this.showExitModal = false;
         this.showTimeModal = true;
