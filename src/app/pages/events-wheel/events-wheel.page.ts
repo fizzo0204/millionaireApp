@@ -45,6 +45,12 @@ export class EventsWheelPage implements OnInit {
     return this.dailyEventsData?.wheel.freeSpinDate !== this.todayKey;
   }
 
+  getWheelLabelAngle(index: number): number {
+    const segmentAngle = 360 / this.wheelRewards.length;
+
+    return index * segmentAngle + segmentAngle / 2;
+  }
+
   async refresh(): Promise<void> {
     this.loading = true;
 
@@ -80,7 +86,8 @@ export class EventsWheelPage implements OnInit {
       );
       const safeSegmentIndex = Math.max(segmentIndex, 0);
       const segmentAngle = 360 / this.wheelRewards.length;
-      const targetAngle = 360 - safeSegmentIndex * segmentAngle;
+      const targetAngle =
+        360 - (safeSegmentIndex * segmentAngle + segmentAngle / 2);
 
       this.wheelRotation += 1440 + targetAngle;
 

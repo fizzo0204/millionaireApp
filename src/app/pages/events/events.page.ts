@@ -87,11 +87,17 @@ export class EventsPage implements OnInit {
   }
 
   get completedMissions(): number {
-    return this.missions.filter((mission) => mission.claimed).length;
+    return this.missions.filter((mission) => mission.completed).length;
   }
 
   get totalMissions(): number {
     return this.missions.length;
+  }
+
+  get claimableMissions(): number {
+    return this.missions.filter(
+      (mission) => mission.completed && !mission.claimed,
+    ).length;
   }
 
   get dailyRewardClaimedToday(): boolean {
@@ -131,6 +137,7 @@ export class EventsPage implements OnInit {
   getCardStatus(card: EventHubCard): string {
     switch (card.id) {
       case 'missions':
+        if (this.claimableMissions > 0) return `${this.claimableMissions} pronte`;
         if (this.totalMissions === 0) return 'Apri';
         return `${this.completedMissions}/${this.totalMissions}`;
       case 'dailyReward':

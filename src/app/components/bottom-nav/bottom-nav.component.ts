@@ -17,7 +17,11 @@ export class BottomNavComponent {
   constructor(private router: Router) {}
 
   setActiveTab(tab: NavigationTab) {
-    if (tab === this.activeTab) return;
+    if (tab === this.activeTab) {
+      const cleanUrl = this.router.url.split('?')[0];
+
+      if (tab !== 'eventi' || cleanUrl === '/events') return;
+    }
 
     const page = document.querySelector('.page-fade');
     page?.classList.add('page-fade-out');

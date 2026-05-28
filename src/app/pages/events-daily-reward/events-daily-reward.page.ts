@@ -38,6 +38,12 @@ export class EventsDailyRewardPage implements OnInit {
     return this.dailyRewardService.getState().currentDay;
   }
 
+  get dailyRewardDisplayDay(): number {
+    if (!this.dailyRewardClaimedToday) return this.dailyRewardDay;
+
+    return this.dailyRewardDay <= 1 ? 7 : this.dailyRewardDay - 1;
+  }
+
   async refresh(): Promise<void> {
     this.loading = true;
 

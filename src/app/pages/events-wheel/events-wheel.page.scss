@@ -138,15 +138,20 @@ ion-content.event-detail-content {
 
 .fortune-wheel span {
   position: absolute;
-  left: 50%;
-  top: 12px;
-  width: 50px;
-  margin-left: -25px;
+  inset: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  transform-origin: 50% 50%;
+}
+
+.fortune-wheel span b {
+  width: 54px;
+  margin-top: 9px;
   color: #fff;
   font-size: 0.62rem;
   font-weight: 1000;
   text-align: center;
-  transform-origin: 50% 100px;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.55);
 }
 
@@ -179,10 +184,17 @@ ion-content.event-detail-content {
   width: 112px;
   min-height: 54px;
   padding: 0 12px;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   font-size: 0.76rem;
   line-height: 1.05;
+}
+
+.wheel-button ion-icon {
+  flex: 0 0 auto;
+  font-size: 1rem;
 }
 
 .wheel-button:disabled,
@@ -328,7 +340,7 @@ ion-content.event-detail-content {
     inset: 62px;
   }
 
-  .fortune-wheel span {
-    transform-origin: 50% 91px;
+  .fortune-wheel span b {
+    margin-top: 8px;
   }
 }

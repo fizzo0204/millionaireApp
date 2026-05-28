@@ -250,7 +250,7 @@ export class QuizPage implements OnInit, OnDestroy {
   setupDailyChallengeLabels() {
     this.categoryId = 'daily';
     this.categoryTitle = 'Sfida Daily';
-    this.categoryIcon = 'âœ¨';
+    this.categoryIcon = '';
     this.difficultyTitle = 'Random';
     this.levelNumber = 1;
     this.displayLevelNumber = 1;
@@ -457,6 +457,7 @@ export class QuizPage implements OnInit, OnDestroy {
           this.difficultyId,
           this.levelNumber,
         );
+        await this.dailyEventsService.trackNormalLevelCompleted();
 
         const difficultyCompleted =
           await this.progressService.isDifficultyFullyCompleted(

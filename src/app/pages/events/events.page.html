@@ -24,8 +24,15 @@
         type="button"
         class="event-link-card"
         [class]="card.tone"
+        [class.has-notification]="card.id === 'missions' && claimableMissions > 0"
         (click)="openEvent(card.route)"
       >
+        @if (card.id === 'missions' && claimableMissions > 0) {
+        <div class="event-notification">
+          <span>{{ claimableMissions }}</span>
+        </div>
+        }
+
         <div class="card-icon">
           <ion-icon [name]="card.icon"></ion-icon>
         </div>

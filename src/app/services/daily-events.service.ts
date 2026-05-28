@@ -14,6 +14,7 @@ import { firstValueFrom } from 'rxjs';
 import {
   DAILY_EVENTS_CONFIG,
   DAILY_MISSION_PLANS,
+  DAILY_MISSION_SWITCH_POOL,
   DAILY_WHEEL_REWARDS,
 } from 'src/app/config/daily-events.config';
 import { STORAGE_KEYS } from 'src/app/config/storage-keys.config';
@@ -66,14 +67,31 @@ export class DailyEventsService {
       ? await this.getTodayData(user.uid)
       : this.getDefaultDailyEventsData();
 
-    return this.getTodayPlan().map((mission) => {
-      const progress = data.metrics[mission.metric] ?? 0;
+    const resolvedPlan = this.getTodayResolvedPlan(data);
+    const basePlan = this.getTodayPlan();
+
+    return resolvedPlan.map((mission, index) => {
+      const originalMission = basePlan[index] ?? mission;
+      const progress = Math.min(
+        this.getMissionProgress(data, mission),
+        mission.target,
+      );
+      const claimed = data.missionClaims[mission.id] === true;
+      const completed = progress >= mission.target;
+      const switched = originalMission.id !== mission.id;
 
       return {
         ...mission,
+        originalMissionId: originalMission.id,
         progress,
-        claimed: data.missionClaims[mission.id] === true,
-        completed: progress >= mission.target,
+        claimed,
+        completed,
+        switched,
+        canSwitch:
+          originalMission.metric !== 'adsWatched' &&
+          !data.missionSwitches[originalMission.id] &&
+          !claimed &&
+          !completed,
       };
     });
   }
@@ -151,6 +169,82 @@ export class DailyEventsService {
     await this.trackMissionProgress('dailyChallengeHelps');
   }
 
+  async trackNormalLevelCompleted(): Promise<void> {
+    await this.trackMissionProgress('normalLevelsCompleted');
+  }
+
+  async switchDailyMission(
+    originalMissionId: string,
+  ): Promise<DailyMissionConfig | null> {
+    const user = await firstValueFrom(this.auth.user$);
+
+    if (!user) return null;
+
+    const userRef = doc(this.firestore, `users/${user.uid}`);
+
+    return runTransaction(this.firestore, async (transaction) => {
+      const snapshot = await transaction.get(userRef);
+      const data = snapshot.exists() ? snapshot.data() : {};
+      const dailyEvents = this.normalizeDailyEventsData(data['dailyEvents']);
+      const basePlan = this.getTodayPlan();
+      const originalMission = basePlan.find(
+        (mission) => mission.id === originalMissionId,
+      );
+
+      if (!originalMission || originalMission.metric === 'adsWatched') {
+        return null;
+      }
+
+      if (dailyEvents.missionSwitches[originalMission.id]) {
+        return null;
+      }
+
+      const currentMission = this.getTodayResolvedPlan(dailyEvents).find(
+        (mission, index) => basePlan[index]?.id === originalMission.id,
+      );
+
+      if (!currentMission) return null;
+
+      const currentProgress = this.getMissionProgress(
+        dailyEvents,
+        currentMission,
+      );
+
+      if (
+        dailyEvents.missionClaims[currentMission.id] ||
+        currentProgress >= currentMission.target
+      ) {
+        return null;
+      }
+
+      const replacement = this.getSwitchReplacement(
+        dailyEvents,
+        currentMission,
+      );
+
+      if (!replacement) return null;
+
+      dailyEvents.missionSwitches[originalMission.id] = replacement.id;
+      /*
+       * La missione sostituita deve contare da questo momento in poi.
+       * Se l'utente oggi ha gia completato 5 livelli e pesca "completa 5
+       * livelli", vedra 0/5 e dovra farne altri 5.
+       */
+      dailyEvents.missionProgressBaselines[replacement.id] =
+        dailyEvents.metrics[replacement.metric] ?? 0;
+
+      transaction.set(
+        userRef,
+        {
+          dailyEvents,
+        },
+        { merge: true },
+      );
+
+      return replacement;
+    });
+  }
+
   async trackMissionProgress(
     metric: DailyMissionMetric,
     amount = 1,
@@ -168,10 +262,16 @@ export class DailyEventsService {
       const dailyEvents = this.normalizeDailyEventsData(data['dailyEvents']);
       const currentValue = dailyEvents.metrics[metric] ?? 0;
 
-      dailyEvents.metrics[metric] =
+      const nextValue =
         mode === 'max'
           ? Math.max(currentValue, amount)
           : currentValue + amount;
+
+      dailyEvents.metrics[metric] = this.capMetricProgress(
+        metric,
+        nextValue,
+        dailyEvents,
+      );
 
       transaction.set(
         userRef,
@@ -185,9 +285,8 @@ export class DailyEventsService {
 
   async claimMissionReward(missionId: string): Promise<number> {
     const user = await firstValueFrom(this.auth.user$);
-    const mission = this.getTodayPlan().find((item) => item.id === missionId);
 
-    if (!user || !mission) return 0;
+    if (!user) return 0;
 
     const userRef = doc(this.firestore, `users/${user.uid}`);
 
@@ -198,7 +297,13 @@ export class DailyEventsService {
 
       const data = snapshot.data();
       const dailyEvents = this.normalizeDailyEventsData(data['dailyEvents']);
-      const progress = dailyEvents.metrics[mission.metric] ?? 0;
+      const mission = this.getTodayResolvedPlan(dailyEvents).find(
+        (item) => item.id === missionId,
+      );
+
+      if (!mission) return 0;
+
+      const progress = this.getMissionProgress(dailyEvents, mission);
 
       if (dailyEvents.missionClaims[mission.id] || progress < mission.target) {
         return 0;
@@ -270,8 +375,11 @@ export class DailyEventsService {
         ? this.todayKey
         : dailyEvents.wheel.freeSpinDate;
       dailyEvents.wheel.spinsToday += 1;
-      dailyEvents.metrics.wheelSpins =
-        (dailyEvents.metrics.wheelSpins ?? 0) + 1;
+      dailyEvents.metrics.wheelSpins = this.capMetricProgress(
+        'wheelSpins',
+        (dailyEvents.metrics.wheelSpins ?? 0) + 1,
+        dailyEvents,
+      );
 
       const updates: UpdateData<DocumentData> = {
         dailyEvents,
@@ -481,6 +589,8 @@ export class DailyEventsService {
         ...(data.metrics ?? {}),
       },
       missionClaims: data.missionClaims ?? {},
+      missionSwitches: data.missionSwitches ?? {},
+      missionProgressBaselines: data.missionProgressBaselines ?? {},
       wheel: {
         ...fallback.wheel,
         ...(data.wheel ?? {}),
@@ -497,6 +607,8 @@ export class DailyEventsService {
       dateKey: this.todayKey,
       metrics: {},
       missionClaims: {},
+      missionSwitches: {},
+      missionProgressBaselines: {},
       wheel: {
         freeSpinDate: null,
         spinsToday: 0,
@@ -524,6 +636,108 @@ export class DailyEventsService {
     }
 
     return DAILY_WHEEL_REWARDS[0];
+  }
+
+  private getTodayResolvedPlan(
+    dailyEvents: DailyEventsData,
+  ): DailyMissionConfig[] {
+    return this.getTodayPlan().map((mission) => {
+      const replacementId = dailyEvents.missionSwitches[mission.id];
+
+      if (!replacementId) return mission;
+
+      return (
+        DAILY_MISSION_SWITCH_POOL.find(
+          (replacement) => replacement.id === replacementId,
+        ) ?? mission
+      );
+    });
+  }
+
+  private getSwitchReplacement(
+    dailyEvents: DailyEventsData,
+    currentMission: DailyMissionConfig,
+  ): DailyMissionConfig | null {
+    const resolvedPlan = this.getTodayResolvedPlan(dailyEvents);
+    const currentPlanIds = new Set(
+      resolvedPlan.map((mission) => mission.id),
+    );
+    const currentGoal = `${currentMission.metric}:${currentMission.target}`;
+    const currentPlanGoals = new Set(
+      resolvedPlan
+        .filter((mission) => mission.id !== currentMission.id)
+        .map((mission) => `${mission.metric}:${mission.target}`),
+    );
+    const switchedIds = new Set(Object.values(dailyEvents.missionSwitches));
+    const baseCandidates = DAILY_MISSION_SWITCH_POOL.filter((mission) => {
+      return (
+        mission.id !== currentMission.id &&
+        `${mission.metric}:${mission.target}` !== currentGoal &&
+        !currentPlanIds.has(mission.id) &&
+        !switchedIds.has(mission.id)
+      );
+    });
+    const differentGoalCandidates = baseCandidates.filter(
+      (mission) => !currentPlanGoals.has(`${mission.metric}:${mission.target}`),
+    );
+    const candidates =
+      differentGoalCandidates.length > 0
+        ? differentGoalCandidates
+        : baseCandidates;
+
+    if (candidates.length === 0) return null;
+
+    const incompleteCandidates = candidates.filter((mission) => {
+      const progress = this.getMissionProgress(dailyEvents, mission);
+
+      return progress < mission.target;
+    });
+    const pool =
+      incompleteCandidates.length > 0 ? incompleteCandidates : candidates;
+
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  private capMetricProgress(
+    metric: DailyMissionMetric,
+    value: number,
+    dailyEvents?: DailyEventsData,
+  ): number {
+    const target = this.getTodayMetricTarget(metric, dailyEvents);
+
+    if (target === null) return value;
+
+    return Math.min(value, target);
+  }
+
+  private getTodayMetricTarget(
+    metric: DailyMissionMetric,
+    dailyEvents?: DailyEventsData,
+  ): number | null {
+    const plan = dailyEvents
+      ? this.getTodayResolvedPlan(dailyEvents)
+      : this.getTodayPlan();
+    const targets = plan
+      .filter((mission) => mission.metric === metric)
+      .map((mission) => {
+        const baseline = dailyEvents?.missionProgressBaselines[mission.id] ?? 0;
+
+        return baseline + mission.target;
+      });
+
+    if (targets.length === 0) return null;
+
+    return Math.max(...targets);
+  }
+
+  private getMissionProgress(
+    dailyEvents: DailyEventsData,
+    mission: DailyMissionConfig,
+  ): number {
+    const rawProgress = dailyEvents.metrics[mission.metric] ?? 0;
+    const baseline = dailyEvents.missionProgressBaselines[mission.id] ?? 0;
+
+    return Math.max(0, rawProgress - baseline);
   }
 
   private getRandomLockedBaseAvatar(unlockedAvatarIds: string[]) {

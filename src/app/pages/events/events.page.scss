@@ -110,19 +110,20 @@ ion-content.events-content {
 
 .events-hub-grid {
   display: grid;
-  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .event-link-card {
   position: relative;
   overflow: hidden;
   width: 100%;
-  min-height: 126px;
-  border-radius: 22px;
-  padding: 14px;
+  min-height: 188px;
+  border-radius: 20px;
+  padding: 12px;
   display: grid;
-  grid-template-columns: 62px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 10px;
   text-align: left;
   color: inherit;
 }
@@ -130,8 +131,8 @@ ion-content.events-content {
 .event-link-card::after {
   content: "";
   position: absolute;
-  inset: auto -36px -44px 40%;
-  height: 72px;
+  inset: auto -34px -42px 18%;
+  height: 68px;
   border-radius: 999px;
   background: rgba(255, 234, 0, 0.2);
   transform: rotate(-8deg);
@@ -161,16 +162,52 @@ ion-content.events-content {
     rgba(3, 31, 61, 0.78);
 }
 
+.event-link-card.has-notification {
+  border-color: rgba(255, 234, 0, 0.62);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 2px rgba(255, 234, 0, 0.12),
+    0 12px 26px rgba(0, 0, 0, 0.24),
+    0 0 22px rgba(255, 234, 0, 0.22);
+}
+
+.event-link-card.has-notification .card-status {
+  animation: missionStatusPulse 1.6s ease-in-out infinite;
+}
+
 .card-icon,
 .card-copy,
-.card-status {
+.card-status,
+.event-notification {
   position: relative;
   z-index: 2;
 }
 
+.event-notification {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #04111f;
+  background: linear-gradient(180deg, #ffea00, #ffc400);
+  box-shadow:
+    0 5px 0 rgba(129, 90, 0, 0.78),
+    0 0 18px rgba(255, 234, 0, 0.5);
+  animation: notificationPop 1.7s ease-in-out infinite;
+}
+
+.event-notification span {
+  font-size: 0.78rem;
+  font-weight: 1000;
+}
+
 .card-icon {
-  width: 62px;
-  height: 62px;
+  width: 56px;
+  height: 56px;
   display: grid;
   place-items: center;
   border-radius: 18px;
@@ -180,31 +217,30 @@ ion-content.events-content {
 }
 
 .card-icon ion-icon {
-  font-size: 1.85rem;
+  font-size: 1.72rem;
 }
 
 .card-copy {
   min-width: 0;
-  padding-right: 6px;
 }
 
 .card-copy h2 {
   margin: 4px 0 5px;
   color: #fff;
-  font-size: 1.2rem;
+  font-size: 1rem;
   line-height: 1.02;
   font-weight: 1000;
 }
 
 .card-copy p {
-  font-size: 0.75rem;
+  font-size: 0.66rem;
+  line-height: 1.25;
 }
 
 .card-status {
-  grid-column: 1 / -1;
-  min-height: 38px;
-  border-radius: 15px;
-  padding: 0 12px;
+  min-height: 34px;
+  border-radius: 14px;
+  padding: 0 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -214,7 +250,7 @@ ion-content.events-content {
 }
 
 .card-status strong {
-  font-size: 0.78rem;
+  font-size: 0.68rem;
   font-weight: 1000;
 }
 
@@ -225,6 +261,28 @@ ion-content.events-content {
 @keyframes chestFloat {
   50% {
     transform: translateY(-7px);
+  }
+}
+
+@keyframes notificationPop {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  45% {
+    transform: scale(1.14);
+  }
+}
+
+@keyframes missionStatusPulse {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-2px);
   }
 }
 
@@ -240,11 +298,21 @@ ion-content.events-content {
   }
 
   .event-link-card {
-    grid-template-columns: 56px minmax(0, 1fr);
+    min-height: 196px;
+    padding: 11px;
   }
 
   .card-icon {
-    width: 56px;
-    height: 56px;
+    width: 50px;
+    height: 50px;
+    border-radius: 16px;
+  }
+
+  .card-copy h2 {
+    font-size: 0.9rem;
+  }
+
+  .card-copy p {
+    font-size: 0.62rem;
   }
 }

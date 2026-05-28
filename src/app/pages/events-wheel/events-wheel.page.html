@@ -37,8 +37,10 @@
             [style.transform]="'rotate(' + wheelRotation + 'deg)'"
           >
             @for (reward of wheelRewards; track reward.id; let i = $index) {
-              <span [style.transform]="'rotate(' + i * (360 / wheelRewards.length) + 'deg)'">
-                {{ reward.shortLabel }}
+              <span [style.transform]="'rotate(' + getWheelLabelAngle(i) + 'deg)'">
+                <b [style.transform]="'rotate(' + -getWheelLabelAngle(i) + 'deg)'">
+                  {{ reward.shortLabel }}
+                </b>
               </span>
             }
           </div>
@@ -55,7 +57,8 @@
             } @else if (wheelFreeSpinAvailable) {
               Gira gratis
             } @else {
-              Guarda e gira
+              <ion-icon name="play"></ion-icon>
+              <span>Guarda e gira</span>
             }
           </button>
         </div>

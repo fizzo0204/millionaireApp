@@ -2,6 +2,7 @@ export type DailyMissionMetric =
   | 'adsWatched'
   | 'dailyRewardChecks'
   | 'wheelSpins'
+  | 'normalLevelsCompleted'
   | 'dailyChallengeStarted'
   | 'dailyChallengeQuestions'
   | 'dailyChallengeCorrect'
@@ -20,9 +21,12 @@ export interface DailyMissionConfig {
 }
 
 export interface DailyMissionView extends DailyMissionConfig {
+  originalMissionId: string;
   progress: number;
   claimed: boolean;
   completed: boolean;
+  switched: boolean;
+  canSwitch: boolean;
 }
 
 export type DailyWheelRewardType = 'coins' | 'xp' | 'baseAvatar';
@@ -48,6 +52,8 @@ export interface DailyEventsData {
   dateKey: string;
   metrics: Partial<Record<DailyMissionMetric, number>>;
   missionClaims: Record<string, boolean>;
+  missionSwitches: Record<string, string>;
+  missionProgressBaselines: Record<string, number>;
   wheel: {
     freeSpinDate: string | null;
     spinsToday: number;
