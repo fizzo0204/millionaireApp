@@ -224,16 +224,18 @@ export class TutorialService {
 
     const onboarding = profile?.onboarding;
 
+    if (onboarding) {
+      return {
+        completed: onboarding.tutorialCompleted === true,
+        skipped: onboarding.tutorialSkipped === true,
+        rewardClaimed: onboarding.tutorialRewardClaimed === true,
+      };
+    }
+
     return {
-      completed:
-        onboarding?.tutorialCompleted === true ||
-        this.getLocalFlag(uid, 'completed'),
-      skipped:
-        onboarding?.tutorialSkipped === true ||
-        this.getLocalFlag(uid, 'skipped'),
-      rewardClaimed:
-        onboarding?.tutorialRewardClaimed === true ||
-        this.getLocalFlag(uid, 'reward_claimed'),
+      completed: this.getLocalFlag(uid, 'completed'),
+      skipped: this.getLocalFlag(uid, 'skipped'),
+      rewardClaimed: this.getLocalFlag(uid, 'reward_claimed'),
     };
   }
 
