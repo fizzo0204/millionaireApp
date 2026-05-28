@@ -2,6 +2,7 @@ export type TutorialMode = 'auto' | 'manual';
 
 export type TutorialStepKind =
   | 'intro'
+  | 'coach'
   | 'focus'
   | 'demo-question'
   | 'helps'
@@ -24,8 +25,18 @@ export interface TutorialStep {
   eyebrow: string;
   title: string;
   body: string;
+  route?: string;
+  targetId?: string;
   demoQuestion?: TutorialDemoQuestion;
   highlights?: TutorialHighlight[];
+}
+
+export interface TutorialSpotlightRect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+  radius: number;
 }
 
 export interface TutorialState {

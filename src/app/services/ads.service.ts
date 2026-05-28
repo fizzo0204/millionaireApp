@@ -17,6 +17,8 @@ import { PluginListenerHandle } from '@capacitor/core';
 })
 export class AdsService {
   private bannerVisible = false;
+  private bannerWanted = false;
+  private bannerOperationId = 0;
   private adMobInitialized = false;
   private initializePromise?: Promise<boolean>;
 
@@ -46,11 +48,15 @@ export class AdsService {
   }
 
   async showBanner() {
+    this.bannerWanted = true;
+    const operationId = ++this.bannerOperationId;
+
     if (this.bannerVisible) return;
 
     const initialized = await this.initialize();
 
     if (!initialized) return;
+    if (!this.bannerWanted || operationId !== this.bannerOperationId) return;
 
     const options: BannerAdOptions = {
       adId: ADS_CONFIG.banner.adId,
@@ -60,20 +66,45 @@ export class AdsService {
 
     try {
       await AdMob.showBanner(options);
+
+      if (!this.bannerWanted || operationId !== this.bannerOperationId) {
+        this.bannerVisible = true;
+        await this.hideBanner();
+        return;
+      }
+
       this.bannerVisible = true;
     } catch (error) {
-      this.bannerVisible = false;
+      if (operationId === this.bannerOperationId) {
+        this.bannerVisible = false;
+      }
+
       console.warn('Errore banner AdMob:', error);
     }
   }
 
   async hideBanner() {
+    this.bannerWanted = false;
+    const operationId = ++this.bannerOperationId;
+
     try {
       await AdMob.hideBanner();
     } catch (error) {
       console.warn('Errore hide banner AdMob:', error);
     } finally {
-      this.bannerVisible = false;
+      if (operationId === this.bannerOperationId && !this.bannerWanted) {
+        this.bannerVisible = false;
+        return;
+      }
+
+      /*
+       * Se un vecchio hide termina dopo una nuova richiesta show,
+       * rimostriamo il banner per rispettare lo stato desiderato.
+       */
+      if (this.bannerWanted) {
+        this.bannerVisible = false;
+        void this.showBanner();
+      }
     }
   }
 

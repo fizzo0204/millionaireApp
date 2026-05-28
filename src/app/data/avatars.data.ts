@@ -89,4 +89,15 @@ export const AVATARS: AvatarModel[] = [
     unlockType: 'epicChest',
     dailyRewardDay: 7,
   },
+  // =========================
+  // TUTORIAL
+  // =========================
+  {
+    id: 'tutorial_sage_turtle',
+    label: 'Tartaruga Saggia',
+    icon: 'assets/mascotte/mascotte.webp',
+    source: 'tutorial',
+    rarity: 'epic',
+    unlockType: 'tutorial',
+  },
 ];

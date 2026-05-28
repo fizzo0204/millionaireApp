@@ -21,7 +21,7 @@
     <h2>Entra in TurtleMind!</h2>
 
     <p>
-      Salva progressi, monete e ricompense. Continua la tua avventura da
+      Salva progressi, TurtleCoins e ricompense. Continua la tua avventura da
       qualsiasi dispositivo.
     </p>
 
@@ -39,7 +39,7 @@
             class="feature-coin"
           />
         </span>
-        <span>Monete protette</span>
+        <span>TurtleCoins protetti</span>
       </div>
 
       <div class="benefit-row">
@@ -88,24 +88,24 @@
       </button>
 
       @if (showPlayGamesButton$ | async) {
-      <button
-        class="provider-btn play-games-btn"
-        type="button"
-        (click)="playGamesLogin()"
-        [disabled]="isLoading"
-      >
-        <span class="provider-icon">
-          <ion-icon name="game-controller-outline"></ion-icon>
-        </span>
+        <button
+          class="provider-btn play-games-btn"
+          type="button"
+          (click)="playGamesLogin()"
+          [disabled]="isLoading"
+        >
+          <span class="provider-icon">
+            <ion-icon name="game-controller-outline"></ion-icon>
+          </span>
 
-        <span>
-          {{
-            isProviderLoading("playGames")
-              ? "Accesso Play Games..."
-              : "Continua con Play Games"
-          }}
-        </span>
-      </button>
+          <span>
+            {{
+              isProviderLoading("playGames")
+                ? "Accesso Play Games..."
+                : "Continua con Play Games"
+            }}
+          </span>
+        </button>
       }
 
       <button

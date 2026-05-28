@@ -133,8 +133,12 @@
 
 .day-card small {
   color: #dbeafe;
-  font-size: 0.62rem;
+  font-size: 0.58rem;
+  line-height: 1.08;
   font-weight: 900;
+  overflow-wrap: normal;
+  white-space: nowrap;
+  text-align: center;
 }
 
 .day-card.claimed {
@@ -174,9 +178,10 @@
 
 .claim-btn {
   margin-top: 14px;
-  padding: 13px;
+  padding: 13px 16px;
   color: #04111f;
   font-size: 0.96rem;
+  line-height: 1.12;
   background: linear-gradient(180deg, #ffea00, #ffc400);
   box-shadow:
     0 7px 0 rgba(129, 90, 0, 0.75),
@@ -535,6 +540,15 @@
   animation: rewardAmountPop 640ms cubic-bezier(0.22, 1.48, 0.36, 1) 140ms both;
 }
 
+.premium-reward-scene.coins .reward-label-premium {
+  max-width: min(90vw, 360px);
+  font-size: clamp(1.45rem, 7vw, 2.3rem);
+  line-height: 1.05;
+  letter-spacing: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .premium-reward-scene.avatar .reward-label-premium,
 .premium-reward-scene.chest .reward-label-premium {
   font-size: clamp(1.25rem, 5.8vw, 1.85rem);
@@ -636,6 +650,8 @@
   border: 0;
   border-radius: 999px;
   font-weight: 1000;
+  padding: 10px 16px;
+  line-height: 1.12;
   white-space: normal;
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.18),

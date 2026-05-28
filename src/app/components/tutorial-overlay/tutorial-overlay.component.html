@@ -2,153 +2,193 @@
   @if (state.visible) {
     @let step = getStep(state);
 
-    <div class="tutorial-backdrop" role="dialog" aria-modal="true">
-      <div class="tutorial-glow"></div>
-      <div class="tutorial-shell">
-        <div class="tutorial-topbar">
-          <div class="tutorial-progress">
-            <span>Step {{ state.stepIndex + 1 }}/{{ steps.length }}</span>
-            <div class="tutorial-progress-track">
-              <div
-                class="tutorial-progress-fill"
-                [style.width.%]="getProgressPercent(state)"
-              ></div>
-            </div>
-          </div>
+    <div
+      class="tutorial-backdrop"
+      [ngClass]="step.kind"
+      [class.coach-active]="isCoachStep(step)"
+      [class.coach-top]="coachPlacement === 'top'"
+      [class.coach-bottom]="coachPlacement === 'bottom'"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Tutorial TurtleMind"
+    >
+      @if (isCoachStep(step) && spotlightRect) {
+        <div class="spotlight-hole" [ngStyle]="getSpotlightStyle()"></div>
+      }
 
-          @if (!state.completed) {
-            <button class="tutorial-skip" type="button" (click)="skip()">
-              Salta
-            </button>
-          }
+      <div class="tutorial-stars"></div>
+      <div class="tutorial-rays"></div>
+      <div class="tutorial-sparkles"></div>
+
+      <div class="tutorial-topbar">
+        <div class="tutorial-progress">
+          <span>Guida {{ state.stepIndex + 1 }} di {{ steps.length }}</span>
+
+          <div class="tutorial-progress-track">
+            <div
+              class="tutorial-progress-fill"
+              [style.width.%]="getProgressPercent(state)"
+            ></div>
+          </div>
         </div>
 
-        <div class="tutorial-scene">
-          <div class="mascot-wrap">
-            <div class="mascot-ring"></div>
-            <img [src]="mascotSrc" alt="Mascotte TurtleMind" />
-          </div>
+        @if (!state.completed) {
+          <button class="tutorial-skip" type="button" (click)="skip()">
+            Salta
+          </button>
+        }
+      </div>
 
-          <div class="tutorial-card">
-            <span class="tutorial-eyebrow">{{ step.eyebrow }}</span>
-            <h2>{{ step.title }}</h2>
-            <p>{{ step.body }}</p>
+      <main class="tutorial-main">
+        <section class="mascot-stage" aria-label="La tartaruga saggia">
+          <div class="mascot-title">Tartaruga saggia</div>
+          <div class="mascot-halo"></div>
+          <img [src]="mascotSrc" alt="Mascotte TurtleMind" />
+          <div class="mascot-platform"></div>
+        </section>
 
-            @switch (step.kind) {
-              @case ('intro') {
-                <div class="intro-board">
+        <section class="speech-card" aria-live="polite">
+          <span class="tutorial-eyebrow">{{ step.eyebrow }}</span>
+          <h2>{{ step.title }}</h2>
+          <p>{{ step.body }}</p>
+        </section>
+
+        <section class="tutorial-content-panel">
+          @switch (step.kind) {
+            @case ("intro") {
+              <div class="intro-board">
+                <div>
+                  <strong>60 sec</strong>
+                  <span>per imparare le basi</span>
+                </div>
+
+                <div>
+                  <strong>+{{ rewardCoins }}</strong>
+                  <span>TurtleCoins se completi</span>
+                </div>
+
+                <div class="intro-avatar-reward">
+                  <img [src]="mascotSrc" alt="Avatar Tartaruga Saggia" />
                   <div>
-                    <strong>60 sec</strong>
-                    <span>per capire il gioco</span>
-                  </div>
-                  <div>
-                    <strong>+{{ rewardCoins }}</strong>
-                    <span>monete se completi</span>
+                    <strong>Avatar</strong>
+                    <span>Tartaruga Saggia in regalo</span>
                   </div>
                 </div>
-              }
+              </div>
+            }
 
-              @case ('focus') {
-                <div class="highlight-grid">
-                  @for (item of step.highlights ?? []; track item.title) {
-                    <div class="highlight-tile">
-                      <strong>{{ item.title }}</strong>
-                      <span>{{ item.description }}</span>
-                    </div>
-                  }
-                </div>
-              }
-
-              @case ('demo-question') {
-                @if (step.demoQuestion; as demo) {
-                  <div class="demo-question">
-                    <div class="demo-timer">15</div>
-                    <strong>{{ demo.question }}</strong>
-
-                    <div class="demo-answers">
-                      @for (answer of demo.answers; track answer; let i = $index) {
-                        <button
-                          type="button"
-                          [class]="getAnswerClass(i, step)"
-                          (click)="selectDemoAnswer(i, step)"
-                        >
-                          <span>{{ answerLetters[i] }}</span>
-                          {{ answer }}
-                        </button>
-                      }
-                    </div>
-
-                    @if (selectedAnswerIndex !== null) {
-                      @if (selectedAnswerIndex === demo.correctIndex) {
-                        <div class="demo-feedback good">
-                          Perfetto. Nel gioco vero questa risposta ti porta avanti.
-                        </div>
-                      } @else {
-                        <div class="demo-feedback bad">
-                          Quasi. Qui sei al sicuro: prova la risposta giusta.
-                        </div>
-                      }
-                    }
+            @case ("focus") {
+              <div class="highlight-grid">
+                @for (item of step.highlights ?? []; track item.title) {
+                  <div class="highlight-tile">
+                    <strong>{{ item.title }}</strong>
+                    <span>{{ item.description }}</span>
                   </div>
                 }
-              }
+              </div>
+            }
 
-              @case ('helps') {
-                <div class="helps-row">
-                  @for (item of step.highlights ?? []; track item.title) {
-                    <div class="help-chip">
-                      <strong>{{ item.title }}</strong>
-                      <span>{{ item.description }}</span>
-                    </div>
+            @case ("demo-question") {
+              @if (step.demoQuestion; as demo) {
+                <div class="demo-question">
+                  <div class="demo-head">
+                    <strong>{{ demo.question }}</strong>
+                    <div class="demo-timer">15</div>
+                  </div>
+
+                  <div class="demo-answers">
+                    @for (
+                      answer of demo.answers;
+                      track answer;
+                      let i = $index
+                    ) {
+                      <button
+                        type="button"
+                        [class]="getAnswerClass(i, step)"
+                        (click)="selectDemoAnswer(i, step)"
+                      >
+                        <span>{{ answerLetters[i] }}</span>
+                        {{ answer }}
+                      </button>
+                    }
+                  </div>
+
+                  @if (selectedAnswerIndex !== null) {
+                    @if (selectedAnswerIndex === demo.correctIndex) {
+                      <div class="demo-feedback good">
+                        Esatto. Nel quiz vero questa risposta ti fa avanzare.
+                      </div>
+                    } @else {
+                      <div class="demo-feedback bad">
+                        Quasi. Qui sei al sicuro: prova la risposta giusta.
+                      </div>
+                    }
                   }
                 </div>
               }
+            }
 
-              @case ('reward') {
-                <div class="reward-preview" [class.claimed]="state.completed">
-                  <img src="assets/ui/coin-turtle.webp" alt="Monete" />
-                  <div>
-                    @if (!state.completed) {
-                      <span>Ricompensa tutorial</span>
-                      <strong>+{{ rewardCoins }} monete</strong>
-                    } @else if (state.rewardGranted) {
-                      <span>Ricompensa ottenuta</span>
-                      <strong>+{{ rewardCoins }} monete</strong>
-                    } @else {
-                      <span>Tutorial completato</span>
-                      <strong>Premio gia riscosso</strong>
-                    }
+            @case ("helps") {
+              <div class="helps-row">
+                @for (item of step.highlights ?? []; track item.title) {
+                  <div class="help-chip">
+                    <strong>{{ item.title }}</strong>
+                    <span>{{ item.description }}</span>
                   </div>
+                }
+              </div>
+            }
+
+            @case ("reward") {
+              <div class="reward-preview" [class.claimed]="state.completed">
+                <div class="reward-light"></div>
+                <div class="reward-icons">
+                  <img src="assets/ui/coin-turtle.webp" alt="Monete" />
+                  <img [src]="mascotSrc" alt="Avatar Tartaruga Saggia" />
                 </div>
-              }
-            }
-          </div>
-        </div>
 
-        <div class="tutorial-actions">
-          @if (state.stepIndex > 0 && !state.completed) {
-            <button class="secondary-action" type="button" (click)="back()">
-              Indietro
-            </button>
+                <div>
+                  @if (!state.completed) {
+                    <span>Ricompensa tutorial</span>
+                    <strong>+{{ rewardCoins }} TurtleCoins e avatar</strong>
+                  } @else if (state.rewardGranted) {
+                    <span>Ricompensa ottenuta</span>
+                    <strong>+{{ rewardCoins }} TurtleCoins e avatar</strong>
+                  } @else {
+                    <span>Tutorial completato</span>
+                    <strong>Premio riscosso</strong>
+                  }
+                </div>
+              </div>
+            }
           }
+        </section>
+      </main>
 
-          <button
-            class="primary-action"
-            type="button"
-            (click)="continue(state)"
-            [disabled]="!canContinue(state)"
-          >
-            @if (state.loading) {
-              Salvataggio...
-            } @else if (state.completed) {
-              Continua
-            } @else if (isLastStep(state)) {
-              Completa e incassa
-            } @else {
-              Avanti
-            }
+      <div class="tutorial-actions">
+        @if (state.stepIndex > 0 && !state.completed) {
+          <button class="secondary-action" type="button" (click)="back()">
+            Indietro
           </button>
-        </div>
+        }
+
+        <button
+          class="primary-action"
+          type="button"
+          (click)="continue(state)"
+          [disabled]="!canContinue(state)"
+        >
+          @if (state.loading) {
+            <ion-spinner name="dots"></ion-spinner>
+            <span>Salvataggio...</span>
+          } @else if (state.completed) {
+            Continua
+          } @else if (isLastStep(state)) {
+            Completa e incassa
+          } @else {
+            Avanti
+          }
+        </button>
       </div>
     </div>
   }

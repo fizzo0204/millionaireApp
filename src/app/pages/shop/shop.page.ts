@@ -39,8 +39,6 @@ export class ShopPage implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.ads.showBanner();
-
     this.livesSub = this.lives$.subscribe((lives) => {
       if (this.previousLives !== undefined && lives > this.previousLives) {
         this.triggerLifePulse();
@@ -109,6 +107,5 @@ export class ShopPage implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.livesSub?.unsubscribe();
-    this.ads.hideBanner();
   }
 }

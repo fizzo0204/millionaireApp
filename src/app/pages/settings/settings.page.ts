@@ -100,7 +100,7 @@ export class SettingsPage {
     if (this.resetLoading) return;
 
     const confirmed = confirm(
-      'Vuoi davvero resettare progressi, XP, livelli, monete, vite e cronologia?',
+      'Vuoi davvero resettare progressi, XP, livelli, TurtleCoins, vite e cronologia?',
     );
 
     if (!confirmed) return;

@@ -24,6 +24,7 @@ import { TUTORIAL_CONFIG, TUTORIAL_STEPS } from 'src/app/config/tutorial.config'
 import { STORAGE_KEYS } from 'src/app/config/storage-keys.config';
 import { TutorialMode, TutorialState } from 'src/app/models/tutorial.model';
 import { AuthService } from './auth.service';
+import { DailyRewardService } from './daily-reward.service';
 import { UserStatsService } from './user-stats.service';
 import { UiService } from './ui.service';
 
@@ -52,6 +53,7 @@ export class TutorialService {
     private auth: AuthService,
     private firestore: Firestore,
     private router: Router,
+    private dailyRewardService: DailyRewardService,
     private ui: UiService,
     private userStatsService: UserStatsService,
   ) {}
@@ -160,6 +162,8 @@ export class TutorialService {
         const result = await this.markCompletedAndClaimReward(user.uid);
         rewardGranted = result.rewardGranted;
         rewardClaimed = result.rewardClaimed;
+
+        await this.dailyRewardService.refreshAvatarCacheForCurrentUser();
       }
 
       this.stateSubject.next({
@@ -283,6 +287,15 @@ export class TutorialService {
       const onboarding = (data['onboarding'] ?? {}) as Record<string, unknown>;
       const rewardAlreadyClaimed =
         onboarding['tutorialRewardClaimed'] === true;
+      const avatar = data['avatar'] as
+        | { selectedAvatar?: string; unlockedAvatarIds?: string[] }
+        | undefined;
+      const unlockedAvatarIds = Array.isArray(avatar?.unlockedAvatarIds)
+        ? avatar.unlockedAvatarIds
+        : [];
+      const avatarAlreadyUnlocked = unlockedAvatarIds.includes(
+        TUTORIAL_CONFIG.rewardAvatarId,
+      );
 
       rewardGranted = !rewardAlreadyClaimed;
 
@@ -295,6 +308,18 @@ export class TutorialService {
       if (rewardGranted) {
         updates['onboarding.tutorialRewardClaimed'] = true;
         updates['stats.coins'] = increment(TUTORIAL_CONFIG.rewardCoins);
+      }
+
+      if (rewardGranted || !avatarAlreadyUnlocked) {
+        updates['avatar.unlockedAvatarIds'] = unlockedAvatarIds.includes(
+          TUTORIAL_CONFIG.rewardAvatarId,
+        )
+          ? unlockedAvatarIds
+          : [...unlockedAvatarIds, TUTORIAL_CONFIG.rewardAvatarId];
+
+        if (!avatar?.selectedAvatar || avatar.selectedAvatar === 'letter') {
+          updates['avatar.selectedAvatar'] = TUTORIAL_CONFIG.rewardAvatarId;
+        }
       }
 
       if (snapshot.exists()) {
@@ -314,6 +339,12 @@ export class TutorialService {
           stats: rewardGranted
             ? {
                 coins: increment(TUTORIAL_CONFIG.rewardCoins),
+              }
+            : {},
+          avatar: rewardGranted
+            ? {
+                selectedAvatar: TUTORIAL_CONFIG.rewardAvatarId,
+                unlockedAvatarIds: [TUTORIAL_CONFIG.rewardAvatarId],
               }
             : {},
         },

@@ -238,6 +238,17 @@ export class DailyRewardService {
     await this.userStatsService.unlockDailyAvatar(user.uid, avatar.id);
   }
 
+  async refreshAvatarCacheForCurrentUser(): Promise<void> {
+    const user = await firstValueFrom(this.auth.user$);
+
+    if (!user) {
+      this.loadLocalFallback();
+      return;
+    }
+
+    await this.refreshRemoteCache(user.uid);
+  }
+
   getUnlockedAvatarIds(): string[] {
     return this.cachedAvatar.unlockedAvatarIds;
   }

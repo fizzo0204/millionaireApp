@@ -67,7 +67,11 @@
 
 .wallet-card small {
   color: #dbeafe;
+  font-size: 0.72rem;
+  line-height: 1.08;
   font-weight: 800;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 
 .lives-wallet.life-pulse {
@@ -182,7 +186,9 @@
 .shop-text h3 {
   margin: 0 0 6px;
   font-size: 1.3rem;
+  line-height: 1.08;
   font-weight: 900;
+  overflow-wrap: anywhere;
 }
 
 .shop-text p {
@@ -190,7 +196,7 @@
   font-size: 0.85rem;
   color: #f8fafc;
   font-weight: 700;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .shop-button {
@@ -199,9 +205,13 @@
   --border-radius: 14px;
   --box-shadow: 0 5px 0 rgba(129, 90, 0, 0.7), 0 10px 16px rgba(0, 0, 0, 0.25);
   min-height: 48px;
+  --padding-start: 14px;
+  --padding-end: 14px;
   font-weight: 900;
   font-size: 0.78rem;
+  line-height: 1.12;
   text-transform: uppercase;
+  white-space: normal;
 }
 
 .shop-button ion-spinner {

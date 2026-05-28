@@ -13,6 +13,7 @@ import { UserStatsService } from './services/user-stats.service';
 import { HomeNavbarComponent } from './components/home-navbar/home-navbar.component';
 import { BottomNavComponent } from './components/bottom-nav/bottom-nav.component';
 import { AudioService } from './services/audio';
+import { AdsService } from './services/ads.service';
 import { GameLoaderComponent } from './components/game-loader/game-loader.component';
 import { LevelUpModalComponent } from './components/level-up-modal/level-up-modal.component';
 import { TutorialOverlayComponent } from './components/tutorial-overlay/tutorial-overlay.component';
@@ -64,6 +65,7 @@ export class AppComponent implements OnDestroy {
     private userStatsService: UserStatsService,
     private levelUpModal: LevelUpModalService,
     private audioService: AudioService,
+    private adsService: AdsService,
     private router: Router,
   ) {
     this.initializeApp();
@@ -78,6 +80,7 @@ export class AppComponent implements OnDestroy {
     ]);
 
     this.showAppLoader = false;
+    this.syncBannerVisibility();
   }
 
   private async prepareApp() {
@@ -103,6 +106,7 @@ export class AppComponent implements OnDestroy {
             void this.tryStartMusic();
           }
 
+          this.syncBannerVisibility();
           return;
         }
 
@@ -141,6 +145,7 @@ export class AppComponent implements OnDestroy {
       )
       .subscribe((event) => {
         this.updateActiveTabFromUrl(event.urlAfterRedirects);
+        this.syncBannerVisibility();
       });
   }
 
@@ -239,6 +244,16 @@ export class AppComponent implements OnDestroy {
     }
 
     this.activeTab = 'home';
+  }
+
+  private syncBannerVisibility() {
+    if (!this.isMobile) return;
+
+    /*
+     * Il banner AdMob è fisso in basso e deve restare visibile anche quando
+     * il tutorial naviga tra più pagine dell'app.
+     */
+    void this.adsService.showBanner();
   }
 
   setActiveTab(tab: NavigationTab) {

@@ -410,7 +410,7 @@
 .coins-modal {
   width: 100%;
   max-width: 360px;
-  padding: 20px;
+  padding: 22px 20px 20px;
   border-radius: 24px;
   text-align: center;
   background: radial-gradient(circle at top, #063f7d, #001a33);
@@ -427,18 +427,21 @@
 
 .wrong-modal h2,
 .coins-modal h2 {
-  margin: 0 0 8px;
+  max-width: 260px;
+  margin: 0 auto 10px;
   color: #ffea00;
-  font-size: 1.35rem;
+  font-size: clamp(1.18rem, 6vw, 1.38rem);
+  line-height: 1.08;
   font-weight: 900;
 }
 
 .wrong-modal p,
 .coins-modal p {
-  margin: 0 0 16px;
+  margin: 0 auto 18px;
+  max-width: 286px;
   color: #dbeafe;
   font-size: 0.85rem;
-  line-height: 1.35;
+  line-height: 1.42;
   font-weight: 700;
 }
 
@@ -452,8 +455,11 @@
   min-height: 46px;
   border: 0;
   border-radius: 14px;
+  padding: 10px 14px;
   font-size: 0.78rem;
   font-weight: 900;
+  line-height: 1.15;
+  white-space: normal;
 }
 
 .ad-btn {
@@ -482,6 +488,51 @@
 
 .coins-modal {
   position: relative;
+  max-width: 380px;
+}
+
+.coins-modal .coin-big {
+  margin-bottom: 12px;
+}
+
+.coins-ad-btn {
+  width: 100%;
+  min-height: 58px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 11px 16px;
+}
+
+.ad-btn-icon {
+  flex-shrink: 0;
+  font-size: 0.86rem;
+}
+
+.ad-btn-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+
+  strong,
+  small {
+    display: block;
+  }
+
+  strong {
+    color: #fff;
+    font-size: 0.82rem;
+    line-height: 1.05;
+  }
+
+  small {
+    color: #f5e8ff;
+    font-size: 0.76rem;
+    line-height: 1.08;
+    font-weight: 950;
+  }
 }
 
 .time-modal {

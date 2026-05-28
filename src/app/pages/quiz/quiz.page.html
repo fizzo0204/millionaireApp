@@ -266,15 +266,23 @@
         />
       </div>
 
-      <h2>Monete insufficienti</h2>
+      <h2>TurtleCoins insufficienti</h2>
 
       <p>
-        Questo aiuto costa {{ neededCoins }} monete. Guarda una pubblicità per
-        guadagnare 10 monete.
+        Questo aiuto costa {{ neededCoins }} TurtleCoins. Guarda una pubblicità
+        per guadagnare 10 TurtleCoins.
       </p>
 
-      <button class="ad-btn" type="button" (click)="watchAdForCoins()">
-        ▶ Guarda video e ottieni 10 monete
+      <button
+        class="ad-btn coins-ad-btn"
+        type="button"
+        (click)="watchAdForCoins()"
+      >
+        <span class="ad-btn-icon">▶</span>
+        <span class="ad-btn-copy">
+          <strong>Guarda video</strong>
+          <small>Ottieni 10 TurtleCoins</small>
+        </span>
       </button>
     </div>
   </div>

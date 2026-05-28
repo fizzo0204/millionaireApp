@@ -125,6 +125,13 @@ export class LoginButtonComponent {
     return avatar?.icon || this.getAvatarLetter(user, profile);
   }
 
+  getSelectedAvatarImageSrc(selectedAvatar?: string | null): string | null {
+    const avatar = AVATARS.find((item) => item.id === selectedAvatar);
+    const icon = avatar?.icon ?? '';
+
+    return icon.startsWith('assets/') ? icon : null;
+  }
+
   async navigateToProfile() {
     const user = await firstValueFrom(this.user$);
 

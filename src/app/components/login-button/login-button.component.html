@@ -11,9 +11,13 @@
 
       @if (!vm.loading) {
         <div class="avatar-wrap">
+          @if (getSelectedAvatarImageSrc(vm.selectedAvatar); as avatarImage) {
+            <img [src]="avatarImage" alt="Avatar" />
+          } @else {
           <div class="avatar-fallback">
             {{ getSelectedAvatarIcon(user, vm.selectedAvatar, vm.profile) }}
           </div>
+          }
 
           <div class="online-dot"></div>
         </div>

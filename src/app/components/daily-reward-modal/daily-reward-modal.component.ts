@@ -88,6 +88,18 @@ export class DailyRewardModalComponent {
     return this.claimedRewardDay === 7;
   }
 
+  getGridRewardLabel(reward: DailyReward): string {
+    /*
+     * Nella griglia del calendario lo spazio è molto stretto: per le
+     * TurtleCoins l'icona è già esplicita, quindi mostriamo solo il valore.
+     */
+    if (reward.type === 'coins' && reward.amount) {
+      return `+${reward.amount}`;
+    }
+
+    return reward.label;
+  }
+
   get cinematicChestImage() {
     return this.isEpicChestRewardDay
       ? this.epicChestImage
@@ -228,7 +240,7 @@ export class DailyRewardModalComponent {
 
   private updateRevealLabelAfterDouble(payload: DailyRewardClaimPayload) {
     if (payload.coins && payload.coins > 0) {
-      this.rewardRevealLabel = `+${payload.coins * 2} Monete`;
+      this.rewardRevealLabel = `+${payload.coins * 2} TurtleCoins`;
       return;
     }
 
@@ -250,7 +262,7 @@ export class DailyRewardModalComponent {
           coins: amount,
         },
         revealIcon: 'assets/ui/coin-turtle.webp',
-        revealLabel: `+${amount} Monete`,
+        revealLabel: `+${amount} TurtleCoins`,
         revealType: 'coins',
       };
     }

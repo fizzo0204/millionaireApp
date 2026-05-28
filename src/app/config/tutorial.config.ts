@@ -2,6 +2,7 @@ import { TutorialStep } from 'src/app/models/tutorial.model';
 
 export const TUTORIAL_CONFIG = {
   mascotSrc: 'assets/mascotte/mascotte.webp',
+  rewardAvatarId: 'tutorial_sage_turtle',
   rewardCoins: 30,
   homeOpenDelayMs: 650,
   authWaitTimeoutMs: 3500,
@@ -12,18 +13,18 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 'welcome',
     kind: 'intro',
-    eyebrow: 'Nuova avventura',
-    title: 'Benvenuto in TurtleMind',
-    body:
-      'Ti guido in un giro veloce: categorie, livelli, aiuti e ricompensa finale. Se completi tutto, ricevi 30 monete.',
+    eyebrow: 'La guida inizia',
+    title: 'Sono la tua tartaruga saggia',
+    body: 'Ti accompagno in un giro veloce tra categorie, livelli e aiuti. Arriva fino in fondo e ti regalo 30 TurtleCoins più il mio avatar speciale.',
   },
   {
     id: 'categories',
-    kind: 'focus',
-    eyebrow: 'Scegli la strada',
+    kind: 'coach',
+    eyebrow: 'Prima lezione',
     title: 'Parti da una categoria',
-    body:
-      'Ogni categoria e una piccola scalata. Scegli quella che ti ispira e prova a completare i livelli uno dopo l altro.',
+    body: 'Scegli la strada che ti ispira. Ogni categoria è una piccola scalata da conquistare, domanda dopo domanda.',
+    route: '/home',
+    targetId: 'home-category-card',
     highlights: [
       {
         title: 'Categorie',
@@ -37,11 +38,12 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: 'difficulty',
-    kind: 'focus',
-    eyebrow: 'La scalata',
-    title: 'Le difficolta si aprono con i tuoi risultati',
-    body:
-      'Completa Easy per aprire Medium, poi continua verso Hard ed Extreme. Se aggiungiamo nuove domande, la scalata resta viva.',
+    kind: 'coach',
+    eyebrow: 'Seconda lezione',
+    title: 'Le difficoltà si aprono con i risultati',
+    body: 'Completa Easy per aprire Medium, poi continua verso Hard ed Extreme. La strada cresce con le nuove domande.',
+    route: '/difficulty/sport',
+    targetId: 'difficulty-grid',
     highlights: [
       {
         title: 'Easy',
@@ -54,12 +56,29 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     ],
   },
   {
+    id: 'profile-xp',
+    kind: 'coach',
+    eyebrow: 'Crescita',
+    title: 'Qui controlli XP e livello',
+    body: 'Ogni risposta corretta ti avvicina al livello successivo. La barra ti dice quanto manca al prossimo traguardo.',
+    route: '/profile',
+    targetId: 'profile-level-card',
+  },
+  {
+    id: 'coins',
+    kind: 'coach',
+    eyebrow: 'Risorse',
+    title: 'Le TurtleCoins sono la tua scorta',
+    body: 'Usale con saggezza per comprare aiuti nei momenti difficili. A volte una moneta salva una partita.',
+    route: '/home',
+    targetId: 'home-coins-stat',
+  },
+  {
     id: 'demo-question',
     kind: 'demo-question',
-    eyebrow: 'Prova guidata',
+    eyebrow: 'Prova con me',
     title: 'Rispondi alla domanda demo',
-    body:
-      'Qui non perdi vite: serve solo a farti vedere il ritmo della domanda.',
+    body: 'Qui non perdi vite. Voglio solo mostrarti il ritmo della domanda prima della vera sfida.',
     demoQuestion: {
       question: 'Quanto fa 2 + 2?',
       answers: ['3', '4', '5', '22'],
@@ -69,10 +88,9 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 'helps',
     kind: 'helps',
-    eyebrow: 'Quando serve una mano',
+    eyebrow: 'Consiglio saggio',
     title: 'Gli aiuti sono risorse preziose',
-    body:
-      'Usali nei momenti difficili: consumano monete, ma possono salvare una partita importante.',
+    body: 'Usali nei momenti difficili: consumano TurtleCoins, ma possono salvare una partita importante.',
     highlights: [
       {
         title: '50/50',
@@ -80,20 +98,19 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
       },
       {
         title: 'Pubblico',
-        description: 'Ti suggerisce la risposta piu probabile.',
+        description: 'Ti suggerisce la risposta più probabile.',
       },
       {
         title: 'Cambio',
-        description: 'Passa a una nuova domanda.',
+        description: 'Passa ad una nuova domanda.',
       },
     ],
   },
   {
     id: 'reward',
     kind: 'reward',
-    eyebrow: 'Pronto',
-    title: 'Completa il tutorial e incassa il bonus',
-    body:
-      'Le monete ti serviranno per gli aiuti. Gli XP invece li guadagni giocando e completando i livelli veri.',
+    eyebrow: 'Ultimo passo',
+    title: 'Completa la guida e incassa il bonus',
+    body: "Ti regalo 30 TurtleCoins e l'avatar Tartaruga Saggia. Gli XP, invece, li guadagni giocando e completando i livelli veri.",
   },
 ];

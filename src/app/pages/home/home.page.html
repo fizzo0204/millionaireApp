@@ -22,7 +22,11 @@
         }
       </div>
 
-      <div class="stat-card coins-card" [class.coin-pulse]="coinRewardPulse">
+      <div
+        class="stat-card coins-card"
+        data-tutorial-id="home-coins-stat"
+        [class.coin-pulse]="coinRewardPulse"
+      >
         <div class="stat-icon">
           <img
             class="coin-icon big"
@@ -36,7 +40,7 @@
         }
 
         <div class="stat-value">{{ coins$ | async }}</div>
-        <div class="stat-label">Monete</div>
+        <div class="stat-label">TurtleCoins</div>
       </div>
     </div>
 
@@ -50,9 +54,10 @@
     </div>
 
     <div class="categories-grid">
-      @for (cat of categories; track cat) {
+      @for (cat of categories; track cat; let i = $index) {
       <div
         class="category-card"
+        [attr.data-tutorial-id]="i === 0 ? 'home-category-card' : null"
         [ngClass]="cat.className"
         (click)="selectCategory(cat.id)"
       >
@@ -78,8 +83,8 @@
           </div>
 
           <div class="reward-copy">
-            <strong>Più monete?</strong>
-            <p>Guarda un video e ottieni 10 monete.</p>
+            <strong>10 TurtleCoins</strong>
+            <p>Guarda un video e ricevi il bonus.</p>
           </div>
         </div>
 
@@ -118,8 +123,8 @@
           (click)="watchLifeAd()"
           [disabled]="lifeLoading || coinsLoading || lives >= maxLives"
         >
-          @if (lives >= maxLives) { +1 Vita } @else if (!lifeLoading) { ▶
-          Recupera } @else {
+          @if (lives >= maxLives) { +1 Vita } @else if (!lifeLoading) { Recupera
+          } @else {
           <ion-spinner name="dots"></ion-spinner>
           }
         </button>

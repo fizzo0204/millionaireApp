@@ -174,7 +174,7 @@
 }
 
 .level-up-reward {
-  width: min(250px, 72vw);
+  width: min(288px, 78vw);
   margin-top: 12px;
   padding: 12px 18px;
   border-radius: 20px;
@@ -197,12 +197,16 @@
 
 .level-up-reward strong {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: 8px;
   color: #ffea00;
-  font-size: 1.28rem;
+  font-size: clamp(1.02rem, 5.4vw, 1.28rem);
+  line-height: 1.08;
   font-weight: 1000;
+  white-space: normal;
+  overflow-wrap: anywhere;
   text-shadow:
     0 0 18px rgba(255, 234, 0, 0.35),
     0 3px 8px rgba(0, 0, 0, 0.28);
@@ -211,6 +215,7 @@
 .level-up-reward img {
   width: 32px;
   height: 32px;
+  flex-shrink: 0;
   object-fit: contain;
   filter: drop-shadow(0 0 12px rgba(255, 234, 0, 0.45));
 }
@@ -231,6 +236,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  padding: 10px 16px;
   color: #e0f2fe;
   font-size: 0.88rem;
   font-weight: 1000;
@@ -252,8 +258,10 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  padding: 10px 16px;
   color: #fff7cc;
   font-size: 0.94rem;
+  line-height: 1.12;
   font-weight: 1000;
   white-space: normal;
   background: linear-gradient(135deg, #a855f7, #7e22ce);

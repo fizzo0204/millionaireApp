@@ -50,8 +50,10 @@ ion-content.home-content {
 
 .stat-label {
   color: #dbeafe;
-  font-size: 0.7rem;
+  font-size: 0.66rem;
+  line-height: 1.08;
   text-align: center;
+  overflow-wrap: anywhere;
 }
 
 /* SECTION TITLE */
@@ -184,10 +186,9 @@ ion-content.home-content {
   position: relative;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 10px;
   margin-top: 20px;
-  padding: 14px;
-  padding-bottom: 14px;
+  padding: 16px 12px 12px;
   border-radius: 24px;
   background: rgba(3, 31, 61, 0.62);
   border: 2px dashed rgba(96, 165, 250, 0.34);
@@ -215,13 +216,13 @@ ion-content.home-content {
 .reward-card {
   position: relative;
   overflow: hidden;
-  min-height: 150px;
-  padding: 14px 10px;
+  min-height: 166px;
+  padding: 14px 10px 12px;
   border-radius: 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   text-align: center;
   border: 1px solid rgba(255, 255, 255, 0.16);
   box-shadow:
@@ -262,12 +263,12 @@ ion-content.home-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 
 .reward-icon {
-  width: 48px;
-  height: 48px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -278,34 +279,52 @@ ion-content.home-content {
     0 7px 14px rgba(0, 0, 0, 0.22);
 }
 
+.coins-reward .reward-icon .coin-icon {
+  width: 58px;
+  height: 58px;
+  display: block;
+  object-fit: contain;
+  transform: translateY(1px);
+}
+
 .reward-copy strong {
   display: block;
   color: #fff;
-  font-size: 1rem;
+  max-width: 118px;
+  margin: 0 auto;
+  font-size: 0.98rem;
+  line-height: 1.08;
   font-weight: 900;
+  overflow-wrap: anywhere;
 }
 
 .reward-copy p {
-  margin: 5px 0 0;
+  max-width: 122px;
+  margin: 6px auto 0;
   color: #f8fafc;
-  font-size: 0.68rem;
-  line-height: 1.18;
+  font-size: 0.67rem;
+  line-height: 1.28;
   font-weight: 800;
 }
 
 .reward-mini-btn {
+  width: 100%;
   min-height: 42px;
   border: 0;
   border-radius: 14px;
+  padding: 8px 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   color: #000;
   background: #ffcc00;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
+  line-height: 1.1;
   font-weight: 1000;
   text-transform: uppercase;
+  white-space: normal;
+  overflow-wrap: anywhere;
   box-shadow:
     0 5px 0 rgba(129, 90, 0, 0.75),
     0 10px 16px rgba(0, 0, 0, 0.25);

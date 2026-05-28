@@ -5,14 +5,14 @@ export const DAILY_REWARDS: DailyReward[] = [
     day: 1,
     type: 'coins',
     amount: 5,
-    label: '+5 Monete',
+    label: '+5 TurtleCoins',
     icon: 'assets/ui/coin-turtle.webp',
   },
   {
     day: 2,
     type: 'coins',
     amount: 5,
-    label: '+5 Monete',
+    label: '+5 TurtleCoins',
     icon: 'assets/ui/coin-turtle.webp',
   },
   {
@@ -26,7 +26,7 @@ export const DAILY_REWARDS: DailyReward[] = [
     day: 4,
     type: 'coins',
     amount: 5,
-    label: '+5 Monete',
+    label: '+5 TurtleCoins',
     icon: 'assets/ui/coin-turtle.webp',
   },
   {
@@ -55,7 +55,7 @@ export const EPIC_CHEST_REWARDS: DailyChestReward[] = [
   {
     type: 'coins',
     amount: 15,
-    label: '+15 Monete',
+    label: '+15 TurtleCoins',
     icon: 'assets/ui/coin-turtle.webp',
     rarity: 'rare',
   },

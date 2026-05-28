@@ -73,6 +73,10 @@ export class ProfilePage {
     return this.avatars.filter((avatar) => avatar.source === 'epic');
   }
 
+  get tutorialRewardAvatars(): AvatarModel[] {
+    return this.avatars.filter((avatar) => avatar.source === 'tutorial');
+  }
+
   getCurrentLevelXp(xp: number): number {
     return getLevelProgress(xp).currentLevelXp;
   }
@@ -276,6 +280,10 @@ export class ProfilePage {
     return this.getAvatarIcon(this.selectedAvatar, user);
   }
 
+  getSelectedAvatarImageSrc(): string | null {
+    return this.getAvatarImageSrc(this.selectedAvatar);
+  }
+
   getAvatarIcon(avatarId: string, user: User | null): string {
     const avatar = this.avatars.find((item) => item.id === avatarId);
 
@@ -284,6 +292,13 @@ export class ProfilePage {
     }
 
     return avatar.icon || this.getAvatarLetter(user);
+  }
+
+  getAvatarImageSrc(avatarId: string): string | null {
+    const avatar = this.avatars.find((item) => item.id === avatarId);
+    const icon = avatar?.icon ?? '';
+
+    return icon.startsWith('assets/') ? icon : null;
   }
 
   isRewardAvatarUnlocked(avatarId: string): boolean {
