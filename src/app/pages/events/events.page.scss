@@ -1,0 +1,250 @@
+ion-content.events-content {
+  color: #fff;
+}
+
+.page-fade {
+  padding-bottom: 18px;
+}
+
+.events-loader {
+  min-height: 58vh;
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  color: #dbeafe;
+  font-weight: 900;
+}
+
+.events-loader ion-spinner {
+  width: 42px;
+  height: 42px;
+}
+
+.events-hero,
+.event-link-card {
+  border: 1px solid rgba(96, 165, 250, 0.22);
+  background: rgba(3, 31, 61, 0.76);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 26px rgba(0, 0, 0, 0.24);
+}
+
+.events-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 168px;
+  margin: 26px 0 16px;
+  border-radius: 24px;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 128px;
+  gap: 12px;
+  align-items: center;
+  background:
+    linear-gradient(135deg, rgba(14, 165, 233, 0.34), transparent 42%),
+    linear-gradient(180deg, rgba(3, 31, 61, 0.92), rgba(2, 12, 30, 0.92));
+}
+
+.events-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto -18px -28px 28%;
+  height: 62px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 234, 0, 0.28),
+    transparent
+  );
+  transform: rotate(-7deg);
+}
+
+.hero-copy,
+.hero-orbit {
+  position: relative;
+  z-index: 2;
+}
+
+.hero-copy span,
+.card-copy span {
+  color: #ffea00;
+  font-size: 0.72rem;
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+
+.hero-copy h1 {
+  margin: 5px 0 8px;
+  font-size: clamp(2.15rem, 12vw, 3.35rem);
+  line-height: 0.92;
+  font-weight: 1000;
+}
+
+.hero-copy p,
+.card-copy p {
+  margin: 0;
+  color: #dbeafe;
+  line-height: 1.35;
+  font-weight: 750;
+}
+
+.hero-copy p {
+  font-size: 0.86rem;
+}
+
+.hero-orbit {
+  display: grid;
+  place-items: center;
+}
+
+.hero-orbit img {
+  width: 118px;
+  height: 118px;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 14px 18px rgba(0, 0, 0, 0.35))
+    drop-shadow(0 0 18px rgba(255, 234, 0, 0.25));
+  animation: chestFloat 2.8s ease-in-out infinite;
+}
+
+.events-hub-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.event-link-card {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  min-height: 126px;
+  border-radius: 22px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  gap: 12px;
+  text-align: left;
+  color: inherit;
+}
+
+.event-link-card::after {
+  content: "";
+  position: absolute;
+  inset: auto -36px -44px 40%;
+  height: 72px;
+  border-radius: 999px;
+  background: rgba(255, 234, 0, 0.2);
+  transform: rotate(-8deg);
+}
+
+.event-link-card.missions {
+  background:
+    linear-gradient(135deg, rgba(14, 165, 233, 0.28), transparent 48%),
+    rgba(3, 31, 61, 0.78);
+}
+
+.event-link-card.reward {
+  background:
+    linear-gradient(135deg, rgba(255, 234, 0, 0.22), transparent 48%),
+    rgba(3, 31, 61, 0.78);
+}
+
+.event-link-card.wheel {
+  background:
+    linear-gradient(135deg, rgba(168, 85, 247, 0.28), transparent 48%),
+    rgba(3, 31, 61, 0.78);
+}
+
+.event-link-card.challenge {
+  background:
+    linear-gradient(135deg, rgba(34, 197, 94, 0.24), transparent 48%),
+    rgba(3, 31, 61, 0.78);
+}
+
+.card-icon,
+.card-copy,
+.card-status {
+  position: relative;
+  z-index: 2;
+}
+
+.card-icon {
+  width: 62px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  color: #04111f;
+  background: #ffea00;
+  box-shadow: 0 7px 0 rgba(129, 90, 0, 0.78);
+}
+
+.card-icon ion-icon {
+  font-size: 1.85rem;
+}
+
+.card-copy {
+  min-width: 0;
+  padding-right: 6px;
+}
+
+.card-copy h2 {
+  margin: 4px 0 5px;
+  color: #fff;
+  font-size: 1.2rem;
+  line-height: 1.02;
+  font-weight: 1000;
+}
+
+.card-copy p {
+  font-size: 0.75rem;
+}
+
+.card-status {
+  grid-column: 1 / -1;
+  min-height: 38px;
+  border-radius: 15px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #04111f;
+  background: linear-gradient(180deg, #ffea00, #ffc400);
+  box-shadow: 0 5px 0 rgba(129, 90, 0, 0.78);
+}
+
+.card-status strong {
+  font-size: 0.78rem;
+  font-weight: 1000;
+}
+
+.card-status ion-icon {
+  font-size: 1.1rem;
+}
+
+@keyframes chestFloat {
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@media (max-width: 390px) {
+  .events-hero {
+    grid-template-columns: minmax(0, 1fr) 104px;
+    padding: 18px 15px;
+  }
+
+  .hero-orbit img {
+    width: 98px;
+    height: 98px;
+  }
+
+  .event-link-card {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  .card-icon {
+    width: 56px;
+    height: 56px;
+  }
+}

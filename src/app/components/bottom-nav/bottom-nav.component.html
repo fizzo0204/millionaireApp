@@ -12,6 +12,16 @@
   <button
     type="button"
     class="nav-item"
+    [class.active]="activeTab === 'eventi'"
+    (click)="setActiveTab('eventi')"
+  >
+    <ion-icon name="sparkles-outline"></ion-icon>
+    <span>Eventi</span>
+  </button>
+
+  <button
+    type="button"
+    class="nav-item"
     [class.active]="activeTab === 'negozio'"
     (click)="setActiveTab('negozio')"
   >

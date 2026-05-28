@@ -18,6 +18,7 @@ import { GameLoaderComponent } from './components/game-loader/game-loader.compon
 import { LevelUpModalComponent } from './components/level-up-modal/level-up-modal.component';
 import { TutorialOverlayComponent } from './components/tutorial-overlay/tutorial-overlay.component';
 import { LevelUpModalService } from './services/level-up-modal.service';
+import { DailyEventsService } from './services/daily-events.service';
 import { NavigationTab } from './models/navigation.model';
 import { APP_CONFIG } from 'src/app/config/app.config';
 import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
@@ -66,8 +67,10 @@ export class AppComponent implements OnDestroy {
     private levelUpModal: LevelUpModalService,
     private audioService: AudioService,
     private adsService: AdsService,
+    private dailyEventsService: DailyEventsService,
     private router: Router,
   ) {
+    void this.dailyEventsService;
     this.initializeApp();
     this.listenToRouteChanges();
     this.listenToLevelChanges();
@@ -230,6 +233,11 @@ export class AppComponent implements OnDestroy {
 
     if (cleanUrl.startsWith('/shop')) {
       this.activeTab = 'negozio';
+      return;
+    }
+
+    if (cleanUrl.startsWith('/events')) {
+      this.activeTab = 'eventi';
       return;
     }
 

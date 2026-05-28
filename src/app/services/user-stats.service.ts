@@ -17,6 +17,7 @@ import {
   limit,
   getDocs,
   deleteDoc,
+  deleteField,
   UpdateData,
   DocumentData,
 } from '@angular/fire/firestore';
@@ -944,6 +945,7 @@ export class UserStatsService {
       dailyReward: this.defaultDailyReward,
       avatar: this.defaultAvatar,
       onboarding: this.defaultOnboarding,
+      dailyEvents: deleteField(),
     });
   }
 }

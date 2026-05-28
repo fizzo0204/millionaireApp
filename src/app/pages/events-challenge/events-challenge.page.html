@@ -1,0 +1,72 @@
+<ion-content class="event-detail-content">
+  <div class="page-fade">
+    <button type="button" class="event-back-btn" (click)="goBack()">
+      <ion-icon name="arrow-back-outline"></ion-icon>
+      <span>Eventi</span>
+    </button>
+
+    @if (loading) {
+    <div class="events-loader">
+      <ion-spinner name="crescent"></ion-spinner>
+      <span>Preparo la sfida...</span>
+    </div>
+    } @else {
+    <section class="detail-hero">
+      <div>
+        <span>Minigioco daily</span>
+        <h1>10 domande casuali</h1>
+        <p>
+          Categorie e difficoltà miste. Se sbagli, riparti da capo o usi un
+          video per salvare la sfida.
+        </p>
+      </div>
+
+      <div class="hero-icon">
+        <ion-icon name="game-controller-outline"></ion-icon>
+      </div>
+    </section>
+
+    <section class="challenge-panel">
+      <div class="challenge-glow"></div>
+
+      <div class="challenge-stats">
+        <div>
+          <strong>{{ bestDailyCorrect }}</strong>
+          <span>best corrette</span>
+        </div>
+
+        <div>
+          <strong>{{ dailyChallengeQuestionCount }}</strong>
+          <span>domande</span>
+        </div>
+
+        <div>
+          <strong>{{ dailyChallengeCoinsReward }}</strong>
+          <span>TurtleCoins</span>
+        </div>
+      </div>
+
+      <div class="challenge-copy">
+        <h2>
+          @if (dailyChallengeCompleted) { Sfida completata } @else { Prova
+          perfetta }
+        </h2>
+        <p>
+          @if (dailyChallengeCompleted) { Premio di oggi già riscosso. Torna
+          domani per una nuova sfida. } @else { Completa tutte le domande e poi
+          scegli se raddoppiare il premio con video. }
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="challenge-button"
+        [disabled]="dailyChallengeCompleted"
+        (click)="startDailyChallenge()"
+      >
+        @if (dailyChallengeCompleted) { Completata oggi } @else { Avvia sfida }
+      </button>
+    </section>
+    }
+  </div>
+</ion-content>

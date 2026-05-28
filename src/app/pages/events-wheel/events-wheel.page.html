@@ -1,0 +1,109 @@
+<ion-content class="event-detail-content">
+  <div class="page-fade">
+    <button type="button" class="event-back-btn" (click)="goBack()">
+      <ion-icon name="arrow-back-outline"></ion-icon>
+      <span>Eventi</span>
+    </button>
+
+    @if (loading) {
+      <div class="events-loader">
+        <ion-spinner name="crescent"></ion-spinner>
+        <span>Preparo la ruota...</span>
+      </div>
+    } @else {
+      <section class="detail-hero">
+        <div>
+          <span>Ruota della fortuna</span>
+          <h1>
+            @if (wheelFreeSpinAvailable) {
+              Giro gratis pronto
+            } @else {
+              Altro giro con video
+            }
+          </h1>
+          <p>Ogni 24 ore hai un giro gratis. Dopo puoi girare guardando un video.</p>
+        </div>
+
+        <div class="hero-icon">
+          <ion-icon name="sparkles-outline"></ion-icon>
+        </div>
+      </section>
+
+      <section class="wheel-panel">
+        <div class="wheel-stage">
+          <div
+            class="fortune-wheel"
+            [class.spinning]="wheelSpinning"
+            [style.transform]="'rotate(' + wheelRotation + 'deg)'"
+          >
+            @for (reward of wheelRewards; track reward.id; let i = $index) {
+              <span [style.transform]="'rotate(' + i * (360 / wheelRewards.length) + 'deg)'">
+                {{ reward.shortLabel }}
+              </span>
+            }
+          </div>
+
+          <div class="wheel-pointer"></div>
+          <button
+            type="button"
+            class="wheel-button"
+            [disabled]="wheelSpinning"
+            (click)="spinWheel()"
+          >
+            @if (wheelSpinning) {
+              <ion-spinner name="dots"></ion-spinner>
+            } @else if (wheelFreeSpinAvailable) {
+              Gira gratis
+            } @else {
+              Guarda e gira
+            }
+          </button>
+        </div>
+      </section>
+    }
+  </div>
+
+  @if (wheelReward) {
+    <div class="wheel-result-backdrop">
+      <div class="wheel-result-modal">
+        <button class="modal-close" type="button" (click)="closeWheelReward()">
+          <ion-icon name="close-outline"></ion-icon>
+        </button>
+
+        <div class="result-shine"></div>
+
+        <div class="result-icon">
+          @if (wheelReward.reward.type === "coins") {
+            <img src="assets/ui/coin-turtle.webp" alt="TurtleCoins" />
+          } @else if (wheelReward.reward.type === "xp") {
+            <ion-icon name="flash"></ion-icon>
+          } @else {
+            <ion-icon name="person-outline"></ion-icon>
+          }
+        </div>
+
+        <span>Premio ruota</span>
+        <h2>{{ wheelReward.label }}</h2>
+
+        @if (wheelReward.reward.type !== "baseAvatar" && !wheelReward.doubled) {
+          <button
+            type="button"
+            class="double-button"
+            [disabled]="wheelDoubleLoading"
+            (click)="doubleWheelReward()"
+          >
+            @if (wheelDoubleLoading) {
+              Video in corso...
+            } @else {
+              Guarda video e raddoppia
+            }
+          </button>
+        }
+
+        <button type="button" class="continue-button" (click)="closeWheelReward()">
+          Continua
+        </button>
+      </div>
+    </div>
+  }
+</ion-content>

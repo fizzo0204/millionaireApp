@@ -1,0 +1,60 @@
+<ion-content class="event-detail-content">
+  <div class="page-fade">
+    <button type="button" class="event-back-btn" (click)="goBack()">
+      <ion-icon name="arrow-back-outline"></ion-icon>
+      <span>Eventi</span>
+    </button>
+
+    @if (loading) {
+    <div class="events-loader">
+      <ion-spinner name="crescent"></ion-spinner>
+      <span>Controllo reward...</span>
+    </div>
+    } @else {
+    <section class="detail-hero">
+      <div>
+        <span>Reward giornaliera</span>
+        <h1>Giorno {{ dailyRewardDay }}</h1>
+        <p>
+          @if (dailyRewardClaimedToday) { Premio di oggi già riscosso. Torna
+          domani per continuare la serie. } @else { Apri il calendario e prendi
+          il bonus prima di giocare. }
+        </p>
+      </div>
+
+      <div class="hero-icon">
+        <ion-icon name="gift"></ion-icon>
+      </div>
+    </section>
+
+    <section class="reward-panel">
+      <div class="reward-glow"></div>
+
+      <div class="reward-calendar">
+        @for (day of [1, 2, 3, 4, 5, 6, 7]; track day) {
+        <span
+          [class.active]="day === dailyRewardDay"
+          [class.claimed]="dailyRewardClaimedToday && day === dailyRewardDay"
+        >
+          {{ day }}
+        </span>
+        }
+      </div>
+
+      <h2>
+        @if (dailyRewardClaimedToday) { Tutto in ordine } @else { Premio pronto
+        }
+      </h2>
+
+      <p>
+        La reward giornaliera resta qui, separata dagli altri eventi, cosi puoi
+        controllarla quando vuoi.
+      </p>
+
+      <button type="button" class="primary-action" (click)="openDailyReward()">
+        Controlla reward
+      </button>
+    </section>
+    }
+  </div>
+</ion-content>

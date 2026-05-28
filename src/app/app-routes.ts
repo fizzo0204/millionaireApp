@@ -27,6 +27,39 @@ export const routes: Routes = [
       import('./pages/shop/shop.page').then((m) => m.ShopPage),
   },
   {
+    path: 'events/missions',
+    loadComponent: () =>
+      import('./pages/events-missions/events-missions.page').then(
+        (m) => m.EventsMissionsPage,
+      ),
+  },
+  {
+    path: 'events/daily-reward',
+    loadComponent: () =>
+      import('./pages/events-daily-reward/events-daily-reward.page').then(
+        (m) => m.EventsDailyRewardPage,
+      ),
+  },
+  {
+    path: 'events/wheel',
+    loadComponent: () =>
+      import('./pages/events-wheel/events-wheel.page').then(
+        (m) => m.EventsWheelPage,
+      ),
+  },
+  {
+    path: 'events/challenge',
+    loadComponent: () =>
+      import('./pages/events-challenge/events-challenge.page').then(
+        (m) => m.EventsChallengePage,
+      ),
+  },
+  {
+    path: 'events',
+    loadComponent: () =>
+      import('./pages/events/events.page').then((m) => m.EventsPage),
+  },
+  {
     path: 'profile',
     loadComponent: () =>
       import('./pages/profile/profile.page').then((m) => m.ProfilePage),
@@ -40,6 +73,11 @@ export const routes: Routes = [
   },
   {
     path: 'quiz/:categoryId/:difficultyId/:levelNumber',
+    loadComponent: () =>
+      import('./pages/quiz/quiz.page').then((m) => m.QuizPage),
+  },
+  {
+    path: 'daily-challenge',
     loadComponent: () =>
       import('./pages/quiz/quiz.page').then((m) => m.QuizPage),
   },

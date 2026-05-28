@@ -543,6 +543,33 @@
   color: #38bdf8;
 }
 
+.wrong-modal.daily-fail {
+  border-color: rgba(255, 234, 0, 0.42);
+  background:
+    radial-gradient(circle at top, rgba(255, 82, 96, 0.34), transparent 42%),
+    radial-gradient(circle at 50% 0, rgba(255, 234, 0, 0.22), transparent 34%),
+    linear-gradient(180deg, #08356f, #001a33);
+  box-shadow:
+    0 0 28px rgba(255, 82, 96, 0.28),
+    0 18px 38px rgba(0, 0, 0, 0.55);
+}
+
+.wrong-modal.daily-fail .wrong-icon {
+  width: 66px;
+  height: 66px;
+  margin: 0 auto 10px;
+  display: grid;
+  place-items: center;
+  border-radius: 22px;
+  color: #04111f;
+  background: #ffea00;
+  font-size: 2rem;
+  font-weight: 1000;
+  box-shadow:
+    0 7px 0 rgba(129, 90, 0, 0.78),
+    0 0 22px rgba(255, 234, 0, 0.34);
+}
+
 @keyframes modalPop {
   from {
     transform: translateY(24px) scale(0.94);
@@ -632,6 +659,25 @@
   text-shadow:
     0 0 16px rgba(74, 222, 128, 0.35),
     0 4px 10px rgba(0, 0, 0, 0.28);
+}
+
+.reward-xp.coin-reward {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #ffea00;
+  font-size: 1.22rem;
+  line-height: 1.08;
+  text-shadow:
+    0 0 16px rgba(255, 234, 0, 0.36),
+    0 4px 10px rgba(0, 0, 0, 0.28);
+}
+
+.reward-xp.coin-reward .coin-icon {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
 }
 
 .reward-streak {

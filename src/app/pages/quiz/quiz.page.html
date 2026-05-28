@@ -58,7 +58,7 @@
 
     <div class="progress-section">
       <div class="progress-copy">
-        <strong>Domanda {{ displayLevelNumber }}/{{ totalLevels }}</strong>
+        <strong>{{ questionProgressLabel }}</strong>
       </div>
 
       <div class="timer-circle" [class.timer-danger]="timeLeft <= 5">
@@ -90,7 +90,7 @@
     </div>
 
     <div class="question-card" [class.question-success]="answered && isCorrect">
-      @if (answered && isCorrect) {
+      @if (answered && isCorrect && !dailyChallengeMode) {
       <div class="xp-float">+{{ xpPerQuestion }} XP</div>
       }
 
@@ -183,14 +183,36 @@
 
   @if (showWrongModal) {
   <div class="quiz-modal-backdrop">
-    <div class="wrong-modal">
+    <div class="wrong-modal" [class.daily-fail]="dailyChallengeMode">
       <div class="wrong-icon">💔</div>
 
-      <h2>Risposta errata!</h2>
+      <h2>
+        @if (dailyChallengeMode) { Sfida interrotta! } @else { Risposta errata! }
+      </h2>
 
-      <p>Riprova o continua usando una vita</p>
+      <p>
+        @if (dailyChallengeMode) {
+          Nella sfida giornaliera basta un errore per ricominciare da capo.
+          Guarda un video per salvare la run e riprovare questa domanda.
+        } @else {
+          Riprova o continua usando una vita
+        }
+      </p>
 
       <div class="wrong-actions">
+        @if (dailyChallengeMode) {
+          <button class="ad-btn" type="button" (click)="watchAdAndContinue()">
+            Guarda video e riprova
+          </button>
+
+          <button
+            class="life-btn"
+            type="button"
+            (click)="restartDailyChallenge()"
+          >
+            Ricomincia da capo
+          </button>
+        } @else {
         <button class="ad-btn" type="button" (click)="watchAdAndContinue()">
           ▶ Guarda pubblicità e continua
         </button>
@@ -198,22 +220,45 @@
         <button class="life-btn" type="button" (click)="loseLifeAndContinue()">
           Perdi una vita
         </button>
+        }
       </div>
     </div>
   </div>
   } @if (showTimeModal) {
   <div class="quiz-modal-backdrop">
-    <div class="wrong-modal time-modal">
+    <div class="wrong-modal time-modal" [class.daily-fail]="dailyChallengeMode">
       <div class="wrong-icon">⏰</div>
 
       <h2>Tempo scaduto!</h2>
 
+      @if (dailyChallengeMode) {
+      <p>
+        Il tempo e finito: nella sfida giornaliera conta come errore e la run
+        riparte da capo. Puoi guardare un video per ottenere
+        <strong>+5 secondi</strong>.
+      </p>
+      } @else {
       <p>
         Il tempo per questa domanda è finito. Guarda un video per ottenere
         <strong>+5 secondi</strong> e continuare sulla stessa domanda.
       </p>
 
+      }
+
       <div class="wrong-actions">
+        @if (dailyChallengeMode) {
+          <button class="ad-btn" type="button" (click)="watchAdForMoreTime()">
+            Guarda video e ottieni +5s
+          </button>
+
+          <button
+            class="life-btn"
+            type="button"
+            (click)="restartDailyChallenge()"
+          >
+            Ricomincia da capo
+          </button>
+        } @else {
         <button class="ad-btn" type="button" (click)="watchAdForMoreTime()">
           ▶ Guarda pubblicità e ottieni +5s
         </button>
@@ -225,6 +270,7 @@
         >
           Perdi una vita
         </button>
+        }
       </div>
     </div>
   </div>
@@ -301,7 +347,10 @@
 
       <div class="reward-icon">🏆</div>
 
-      <h2>Livello completato!</h2>
+      <h2>
+        @if (dailyChallengeMode) { Sfida completata! } @else { Livello
+        completato! }
+      </h2>
 
       <p>{{ rewardMessage }}</p>
 
@@ -310,14 +359,21 @@
         {{ rewardUnlockedMessage }}
       </div>
 
+      @if (dailyChallengeMode) {
+      <div class="reward-xp coin-reward">
+        <img class="coin-icon small" src="assets/ui/coin-turtle.webp" alt="" />
+        +{{ dailyChallengeRewardCoins }} TurtleCoins
+      </div>
+      } @else {
       <div class="reward-xp">+{{ rewardXp }} XP</div>
+      }
 
       <div class="reward-streak">
         <span>🔥</span>
         Continua così!
       </div>
 
-      @if (!rewardDoubled) {
+      @if (!rewardDoubled && (!dailyChallengeMode || dailyChallengeRewardCoins > 0)) {
       <button
         class="reward-double-btn"
         type="button"

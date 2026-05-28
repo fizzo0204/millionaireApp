@@ -1,1 +1,6 @@
-export type NavigationTab = 'home' | 'negozio' | 'profilo' | 'impostazioni';
+export type NavigationTab =
+  | 'home'
+  | 'eventi'
+  | 'negozio'
+  | 'profilo'
+  | 'impostazioni';

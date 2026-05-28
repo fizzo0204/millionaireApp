@@ -33,6 +33,7 @@ import {
   cloudDoneOutline,
   play,
   gameControllerOutline,
+  sparklesOutline,
 } from 'ionicons/icons';
 
 import { defineCustomElements as ionicElements } from '@ionic/core/loader';
@@ -82,4 +83,5 @@ addIcons({
   'cloud-done-outline': cloudDoneOutline,
   play: play,
   'game-controller-outline': gameControllerOutline,
+  'sparkles-outline': sparklesOutline,
 });

@@ -11,16 +11,21 @@ import {
 import { AudioService } from './audio';
 import { ADS_CONFIG } from '../config/ads.config';
 import { PluginListenerHandle } from '@capacitor/core';
+import { Subject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AdsService {
+  private rewardedAdCompletedSubject = new Subject<void>();
   private bannerVisible = false;
   private bannerWanted = false;
   private bannerOperationId = 0;
   private adMobInitialized = false;
   private initializePromise?: Promise<boolean>;
+
+  readonly rewardedAdCompleted$ =
+    this.rewardedAdCompletedSubject.asObservable();
 
   constructor(private audioService: AudioService) {
     void this.initialize();
@@ -136,6 +141,10 @@ export class AdsService {
           }
 
           await this.audioService.playMusic();
+
+          if (result) {
+            this.rewardedAdCompletedSubject.next();
+          }
 
           showedListener?.remove();
           rewardedListener?.remove();

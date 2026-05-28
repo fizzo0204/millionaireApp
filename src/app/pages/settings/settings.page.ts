@@ -14,6 +14,7 @@ import { AuthPromptService } from 'src/app/services/auth-prompt.service';
 import { LogoutDecision } from 'src/app/models/logout.model';
 import { environment } from 'src/environments/environment';
 import { TutorialService } from 'src/app/services/tutorial.service';
+import { DailyEventsService } from 'src/app/services/daily-events.service';
 
 @Component({
   selector: 'app-settings',
@@ -28,7 +29,18 @@ export class SettingsPage {
   musicEnabled = true;
   clickEnabled = true;
   resetLoading = false;
+  eventsDebugLoading = false;
+  eventsDebugWeekday: number | null = null;
   readonly isDebugMode = !environment.production;
+  readonly eventDebugWeekdays = [
+    { value: 1, label: 'Lun' },
+    { value: 2, label: 'Mar' },
+    { value: 3, label: 'Mer' },
+    { value: 4, label: 'Gio' },
+    { value: 5, label: 'Ven' },
+    { value: 6, label: 'Sab' },
+    { value: 0, label: 'Dom' },
+  ];
 
   constructor(
     private audioService: AudioService,
@@ -39,9 +51,11 @@ export class SettingsPage {
     private authPromptService: AuthPromptService,
     private modalCtrl: ModalController,
     private tutorialService: TutorialService,
+    private dailyEventsService: DailyEventsService,
   ) {
     this.musicEnabled = this.audioService.isMusicEnabled();
     this.clickEnabled = this.audioService.isClickEnabled();
+    this.eventsDebugWeekday = this.dailyEventsService.getDebugWeekday();
   }
 
   toggleMusic() {
@@ -143,5 +157,43 @@ export class SettingsPage {
 
   resetDailyAvatars() {
     this.dailyRewardService.resetUnlockedAvatars();
+  }
+
+  async resetDailyEventsDebug() {
+    if (this.eventsDebugLoading) return;
+
+    const confirmed = confirm(
+      'Vuoi resettare missioni, ruota e sfida giornaliera di oggi?',
+    );
+
+    if (!confirmed) return;
+
+    this.eventsDebugLoading = true;
+
+    try {
+      await this.dailyEventsService.resetDailyEventsDebug();
+      alert('Eventi giornalieri resettati');
+    } catch (error) {
+      console.error('Errore reset eventi giornalieri:', error);
+      alert('Errore durante il reset eventi');
+    } finally {
+      this.eventsDebugLoading = false;
+    }
+  }
+
+  async setEventsDebugWeekday(weekday: number | null) {
+    if (this.eventsDebugLoading) return;
+
+    this.eventsDebugLoading = true;
+
+    try {
+      await this.dailyEventsService.setDebugWeekday(weekday);
+      this.eventsDebugWeekday = this.dailyEventsService.getDebugWeekday();
+    } catch (error) {
+      console.error('Errore cambio giorno eventi:', error);
+      alert('Errore durante il cambio giorno eventi');
+    } finally {
+      this.eventsDebugLoading = false;
+    }
   }
 }

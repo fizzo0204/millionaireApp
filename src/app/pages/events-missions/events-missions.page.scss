@@ -1,0 +1,200 @@
+ion-content.event-detail-content {
+  color: #fff;
+}
+
+.page-fade {
+  padding-bottom: 18px;
+}
+
+.event-back-btn {
+  min-height: 42px;
+  margin: 18px 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 15px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #e0f2fe;
+  background: rgba(3, 31, 61, 0.78);
+  font-size: 0.78rem;
+  font-weight: 1000;
+}
+
+.event-back-btn ion-icon {
+  font-size: 1rem;
+}
+
+.events-loader {
+  min-height: 52vh;
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  color: #dbeafe;
+  font-weight: 900;
+}
+
+.detail-hero,
+.mission-card {
+  border: 1px solid rgba(96, 165, 250, 0.22);
+  background: rgba(3, 31, 61, 0.76);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 26px rgba(0, 0, 0, 0.24);
+}
+
+.detail-hero {
+  overflow: hidden;
+  border-radius: 24px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background:
+    linear-gradient(135deg, rgba(14, 165, 233, 0.32), transparent 48%),
+    rgba(3, 31, 61, 0.86);
+}
+
+.detail-hero span {
+  color: #ffea00;
+  font-size: 0.72rem;
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+
+.detail-hero h1 {
+  margin: 5px 0 6px;
+  font-size: 1.75rem;
+  line-height: 0.98;
+  font-weight: 1000;
+}
+
+.detail-hero p {
+  margin: 0;
+  color: #dbeafe;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  font-weight: 750;
+}
+
+.detail-hero strong {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 8px 10px;
+  color: #04111f;
+  background: #ffea00;
+  font-size: 0.78rem;
+  font-weight: 1000;
+}
+
+.missions-progress,
+.mission-track {
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(2, 8, 23, 0.52);
+}
+
+.missions-progress {
+  height: 10px;
+  margin: 14px 0;
+}
+
+.missions-progress div,
+.mission-track div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ffea00, #38bdf8, #22c55e);
+  transition: width 0.28s ease;
+}
+
+.missions-list {
+  display: grid;
+  gap: 10px;
+}
+
+.mission-card {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 58px;
+  align-items: center;
+  gap: 10px;
+  min-height: 84px;
+  border-radius: 18px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mission-card.completed {
+  border-color: rgba(255, 234, 0, 0.35);
+}
+
+.mission-card.claimed {
+  opacity: 0.76;
+}
+
+.mission-status {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  color: #ffea00;
+  background: rgba(3, 31, 61, 0.72);
+  font-size: 0.68rem;
+  font-weight: 1000;
+}
+
+.mission-status ion-icon {
+  font-size: 1.45rem;
+}
+
+.mission-copy {
+  min-width: 0;
+}
+
+.mission-copy h2 {
+  margin: 0 0 4px;
+  color: #fff;
+  font-size: 0.92rem;
+  line-height: 1.08;
+  font-weight: 1000;
+}
+
+.mission-copy p {
+  margin: 0;
+  color: #dbeafe;
+  font-size: 0.68rem;
+  line-height: 1.25;
+  font-weight: 750;
+}
+
+.mission-track {
+  height: 6px;
+  margin-top: 8px;
+}
+
+.mission-claim {
+  min-height: 40px;
+  border: 0;
+  border-radius: 15px;
+  padding: 0 8px;
+  color: #04111f;
+  background: linear-gradient(180deg, #ffea00, #ffc400);
+  font-size: 0.72rem;
+  font-weight: 1000;
+  box-shadow:
+    0 5px 0 rgba(129, 90, 0, 0.78),
+    0 10px 16px rgba(0, 0, 0, 0.24);
+}
+
+.mission-claim:disabled {
+  color: #cbd5e1;
+  background: rgba(15, 23, 42, 0.56);
+  box-shadow: none;
+}
+
+@media (max-width: 390px) {
+  .mission-card {
+    grid-template-columns: 40px minmax(0, 1fr) 50px;
+  }
+}

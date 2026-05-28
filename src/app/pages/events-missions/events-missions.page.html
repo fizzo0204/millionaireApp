@@ -1,0 +1,75 @@
+<ion-content class="event-detail-content">
+  <div class="page-fade">
+    <button type="button" class="event-back-btn" (click)="goBack()">
+      <ion-icon name="arrow-back-outline"></ion-icon>
+      <span>Eventi</span>
+    </button>
+
+    @if (loading) {
+      <div class="events-loader">
+        <ion-spinner name="crescent"></ion-spinner>
+        <span>Carico missioni...</span>
+      </div>
+    } @else {
+      <section class="detail-hero">
+        <div>
+          <span>Missioni giornaliere</span>
+          <h1>Obiettivi di oggi</h1>
+          <p>Completa le attivita daily e riscatta TurtleCoins extra.</p>
+        </div>
+
+        <strong>{{ completedMissions }}/{{ missions.length }}</strong>
+      </section>
+
+      <div class="missions-progress">
+        <div [style.width.%]="missionProgressPercent"></div>
+      </div>
+
+      <section class="missions-list">
+        @for (mission of missions; track mission.id) {
+          <article
+            class="mission-card"
+            [class.completed]="mission.completed"
+            [class.claimed]="mission.claimed"
+          >
+            <div class="mission-status">
+              @if (mission.claimed) {
+                <ion-icon name="checkmark-circle"></ion-icon>
+              } @else {
+                <span>{{ mission.progress }}/{{ mission.target }}</span>
+              }
+            </div>
+
+            <div class="mission-copy">
+              <h2>{{ mission.title }}</h2>
+              <p>{{ mission.description }}</p>
+
+              <div class="mission-track">
+                <div [style.width.%]="getMissionPercent(mission)"></div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="mission-claim"
+              [disabled]="
+                !mission.completed ||
+                mission.claimed ||
+                missionClaimLoadingId !== null
+              "
+              (click)="claimMission(mission)"
+            >
+              @if (missionClaimLoadingId === mission.id) {
+                <ion-spinner name="dots"></ion-spinner>
+              } @else if (mission.claimed) {
+                Fatto
+              } @else {
+                +{{ mission.rewardCoins }}
+              }
+            </button>
+          </article>
+        }
+      </section>
+    }
+  </div>
+</ion-content>

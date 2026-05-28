@@ -160,6 +160,53 @@
           <button type="button" (click)="setDailyDebugDay(7)">G7</button>
         </div>
       </div>
+      <div class="settings-card daily-debug-card">
+        <div class="setting-info">
+          <div class="setting-icon">
+            <ion-icon name="sparkles-outline"></ion-icon>
+          </div>
+
+          <div>
+            <h3>Debug eventi giornalieri</h3>
+            <p>Resetta users/current.dailyEvents e prova i 7 giorni</p>
+          </div>
+        </div>
+
+        <button
+          class="debug-wide-btn"
+          type="button"
+          (click)="resetDailyEventsDebug()"
+          [disabled]="eventsDebugLoading"
+        >
+          @if (!eventsDebugLoading) {
+          Reset missioni, ruota e sfida
+          } @else {
+          Reset in corso...
+          }
+        </button>
+
+        <div class="daily-debug-buttons weekday-buttons">
+          @for (day of eventDebugWeekdays; track day.value) {
+          <button
+            type="button"
+            [class.active]="eventsDebugWeekday === day.value"
+            [disabled]="eventsDebugLoading"
+            (click)="setEventsDebugWeekday(day.value)"
+          >
+            {{ day.label }}
+          </button>
+          }
+        </div>
+
+        <button
+          class="debug-wide-btn secondary"
+          type="button"
+          [disabled]="eventsDebugLoading"
+          (click)="setEventsDebugWeekday(null)"
+        >
+          Usa giorno reale
+        </button>
+      </div>
     </div>
   </div>
 </ion-content>

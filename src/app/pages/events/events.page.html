@@ -1,0 +1,48 @@
+<ion-content class="events-content">
+  <div class="page-fade">
+    @if (loading) {
+    <div class="events-loader">
+      <ion-spinner name="crescent"></ion-spinner>
+      <span>Preparazione eventi...</span>
+    </div>
+    } @else {
+    <section class="events-hero">
+      <div class="hero-copy">
+        <span>Eventi a portata di mano!</span>
+        <h1>Eventi</h1>
+        <p>Missioni, ricompense e una sfida casuale ogni giorno.</p>
+      </div>
+
+      <div class="hero-orbit">
+        <img src="assets/ui/epic-chest-reward.webp" alt="Eventi" />
+      </div>
+    </section>
+
+    <section class="events-hub-grid" aria-label="Eventi disponibili">
+      @for (card of cards; track card.id) {
+      <button
+        type="button"
+        class="event-link-card"
+        [class]="card.tone"
+        (click)="openEvent(card.route)"
+      >
+        <div class="card-icon">
+          <ion-icon [name]="card.icon"></ion-icon>
+        </div>
+
+        <div class="card-copy">
+          <span>{{ card.eyebrow }}</span>
+          <h2>{{ card.title }}</h2>
+          <p>{{ card.description }}</p>
+        </div>
+
+        <div class="card-status">
+          <strong>{{ getCardStatus(card) }}</strong>
+          <ion-icon name="chevron-forward-outline"></ion-icon>
+        </div>
+      </button>
+      }
+    </section>
+    }
+  </div>
+</ion-content>

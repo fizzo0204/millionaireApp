@@ -20,6 +20,8 @@ import { HELPS } from 'src/app/data/helps.data';
 import { DifficultyId } from 'src/app/models/difficulty.model';
 import { AudioService } from 'src/app/services/audio';
 import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
+import { DailyEventsService } from 'src/app/services/daily-events.service';
+import { DAILY_EVENTS_CONFIG } from 'src/app/config/daily-events.config';
 
 @Component({
   selector: 'app-quiz',
@@ -40,6 +42,7 @@ export class QuizPage implements OnInit, OnDestroy {
   private auth = inject(AuthService);
   private haptics = inject(HapticsService);
   private audioService = inject(AudioService);
+  private dailyEventsService = inject(DailyEventsService);
 
   private appStateListener?: PluginListenerHandle;
 
@@ -49,6 +52,9 @@ export class QuizPage implements OnInit, OnDestroy {
   levelAlreadyCompleted = false;
   rewardDoubleLoading = false;
   rewardDoubled = false;
+  dailyChallengeMode = false;
+  dailyChallengeRewardCoins = 0;
+  dailyChallengeRewardAlreadyClaimed = false;
 
   difficultyId: DifficultyId = 'easy';
   categoryTitle = 'Quiz';
@@ -93,22 +99,33 @@ export class QuizPage implements OnInit, OnDestroy {
   lives$ = this.livesService.lives$;
 
   private timer?: ReturnType<typeof setInterval>;
+  private trackedDailyQuestionIndexes = new Set<number>();
 
   helps: HelpModel[] = [...HELPS];
 
   async ngOnInit() {
     this.audioService.suspendMusicForGame();
 
-    this.categoryId = this.route.snapshot.paramMap.get('categoryId') || '';
-    this.difficultyId =
-      (this.route.snapshot.paramMap.get('difficultyId') as DifficultyId) ||
-      'easy';
-    this.levelNumber = Number(
-      this.route.snapshot.paramMap.get('levelNumber') || 1,
-    );
+    this.dailyChallengeMode = this.router.url
+      .split('?')[0]
+      .startsWith('/daily-challenge');
 
-    this.setupLabels();
-    await this.setupLevelProgress();
+    if (this.dailyChallengeMode) {
+      this.setupDailyChallengeLabels();
+      await this.dailyEventsService.trackDailyChallengeStarted();
+    } else {
+      this.categoryId = this.route.snapshot.paramMap.get('categoryId') || '';
+      this.difficultyId =
+        (this.route.snapshot.paramMap.get('difficultyId') as DifficultyId) ||
+        'easy';
+      this.levelNumber = Number(
+        this.route.snapshot.paramMap.get('levelNumber') || 1,
+      );
+
+      this.setupLabels();
+      await this.setupLevelProgress();
+    }
+
     await this.listenToAppState();
     await this.loadQuestions();
   }
@@ -141,17 +158,21 @@ export class QuizPage implements OnInit, OnDestroy {
   async loadQuestions() {
     this.loading = true;
 
-    const [questions] = await Promise.all([
-      this.questionsService.getQuestions(
-        this.categoryId,
-        this.difficultyId,
-        this.levelNumber,
-        1,
-      ),
-      this.wait(1400),
-    ]);
+    const questionsPromise = this.dailyChallengeMode
+      ? this.questionsService.getRandomActiveQuestions(
+          DAILY_EVENTS_CONFIG.dailyChallengeQuestionCount,
+        )
+      : this.questionsService.getQuestions(
+          this.categoryId,
+          this.difficultyId,
+          this.levelNumber,
+          1,
+        );
+
+    const [questions] = await Promise.all([questionsPromise, this.wait(1400)]);
 
     this.questions = questions;
+    this.trackedDailyQuestionIndexes.clear();
 
     this.loading = false;
 
@@ -199,7 +220,7 @@ export class QuizPage implements OnInit, OnDestroy {
     await this.livesService.spendLife();
 
     this.stopTimer();
-    this.goToLevelsPage();
+    this.goToExitPage();
   }
 
   setupLabels() {
@@ -226,6 +247,16 @@ export class QuizPage implements OnInit, OnDestroy {
     this.difficultyTitle = difficulties[this.difficultyId] || 'Easy';
   }
 
+  setupDailyChallengeLabels() {
+    this.categoryId = 'daily';
+    this.categoryTitle = 'Sfida Daily';
+    this.categoryIcon = 'âœ¨';
+    this.difficultyTitle = 'Random';
+    this.levelNumber = 1;
+    this.displayLevelNumber = 1;
+    this.totalLevels = DAILY_EVENTS_CONFIG.dailyChallengeQuestionCount;
+  }
+
   get currentQuestion(): QuestionModel | null {
     return this.questions[this.currentIndex] || null;
   }
@@ -233,6 +264,14 @@ export class QuizPage implements OnInit, OnDestroy {
   get progressPercent(): number {
     if (!this.questions.length) return 0;
     return ((this.currentIndex + 1) / this.questions.length) * 100;
+  }
+
+  get questionProgressLabel(): string {
+    if (this.dailyChallengeMode) {
+      return `Domanda ${this.currentIndex + 1}/${this.questions.length}`;
+    }
+
+    return `Domanda ${this.displayLevelNumber}/${this.totalLevels}`;
   }
 
   get timerPercent(): number {
@@ -266,6 +305,10 @@ export class QuizPage implements OnInit, OnDestroy {
       this.correctAnswers++;
       this.haptics.success();
       this.audioService.playCorrectQuiz();
+
+      if (this.dailyChallengeMode) {
+        void this.dailyEventsService.trackDailyChallengeCorrect();
+      }
 
       setTimeout(() => {
         this.nextQuestion();
@@ -322,6 +365,11 @@ export class QuizPage implements OnInit, OnDestroy {
     if (!spent) return;
 
     this.usedHelps.push(helpId);
+
+    if (this.dailyChallengeMode) {
+      void this.dailyEventsService.trackDailyChallengeHelp();
+    }
+
     await this.playHelpAnimation(helpId);
 
     if (helpId === 'fifty') {
@@ -369,6 +417,11 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   async finishQuiz() {
+    if (this.dailyChallengeMode) {
+      await this.finishDailyChallenge();
+      return;
+    }
+
     const allQuestionsCorrect =
       this.questions.length > 0 &&
       this.correctAnswers === this.questions.length;
@@ -433,7 +486,7 @@ export class QuizPage implements OnInit, OnDestroy {
     }
 
     this.navigatingAway = true;
-    this.goToLevelsPage();
+    this.goToExitPage();
   }
 
   markCurrentQuestionAsWrong() {
@@ -473,6 +526,12 @@ export class QuizPage implements OnInit, OnDestroy {
 
       if (reward) {
         this.showWrongModal = false;
+
+        if (this.dailyChallengeMode) {
+          this.retryCurrentDailyChallengeQuestion();
+          return;
+        }
+
         await this.loadQuestions();
       }
     } finally {
@@ -500,6 +559,11 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   async loseLifeAfterTimeExpired() {
+    if (this.dailyChallengeMode) {
+      await this.restartDailyChallenge();
+      return;
+    }
+
     await this.livesService.spendLife();
 
     this.markCurrentQuestionAsWrong();
@@ -539,10 +603,15 @@ export class QuizPage implements OnInit, OnDestroy {
     this.showRewardModal = false;
     this.navigatingAway = true;
 
-    this.goToLevelsPage();
+    this.goToExitPage();
   }
 
   async watchAdAndDoubleReward() {
+    if (this.dailyChallengeMode) {
+      await this.watchAdAndDoubleDailyChallengeReward();
+      return;
+    }
+
     if (this.rewardDoubleLoading || this.rewardDoubled || this.rewardXp <= 0) {
       return;
     }
@@ -574,7 +643,7 @@ export class QuizPage implements OnInit, OnDestroy {
   goBack() {
     if (this.loading || !this.currentQuestion) {
       this.navigatingAway = true;
-      this.goToLevelsPage();
+      this.goToExitPage();
       return;
     }
 
@@ -595,11 +664,20 @@ export class QuizPage implements OnInit, OnDestroy {
     this.showExitModal = false;
     this.stopTimer();
     this.navigatingAway = true;
-    this.goToLevelsPage();
+    this.goToExitPage();
   }
 
   private startCurrentQuestion() {
     this.resetQuestionState();
+
+    if (
+      this.dailyChallengeMode &&
+      !this.trackedDailyQuestionIndexes.has(this.currentIndex)
+    ) {
+      this.trackedDailyQuestionIndexes.add(this.currentIndex);
+      void this.dailyEventsService.trackDailyChallengeQuestion();
+    }
+
     this.startTimer();
   }
 
@@ -631,7 +709,83 @@ export class QuizPage implements OnInit, OnDestroy {
     }
   }
 
-  private goToLevelsPage() {
+  private async finishDailyChallenge() {
+    const result = await this.dailyEventsService.completeDailyChallenge(
+      this.correctAnswers,
+      this.questions.length,
+      this.usedHelps.length,
+    );
+
+    this.dailyChallengeRewardCoins = result.rewardCoins;
+    this.dailyChallengeRewardAlreadyClaimed = result.alreadyClaimed;
+    this.rewardDoubled = false;
+    this.rewardDoubleLoading = false;
+    this.rewardMessage = result.alreadyClaimed
+      ? 'Sfida giornaliera completata. Il premio di oggi era già stato riscosso.'
+      : `Hai completato la sfida e ottenuto ${result.rewardCoins} TurtleCoins.`;
+    this.rewardUnlockedMessage =
+      this.correctAnswers === this.questions.length
+        ? 'Percorso perfetto'
+        : `${this.correctAnswers}/${this.questions.length} risposte corrette`;
+    this.showRewardModal = true;
+  }
+
+  async restartDailyChallenge() {
+    if (!this.dailyChallengeMode) return;
+
+    this.stopTimer();
+    this.showWrongModal = false;
+    this.showTimeModal = false;
+    this.showExitModal = false;
+    this.usedHelps = [];
+    this.selectedAnswerIndex = null;
+    this.hiddenAnswers = [];
+    this.showAudienceHint = false;
+    await this.loadQuestions();
+  }
+
+  private retryCurrentDailyChallengeQuestion() {
+    this.resetQuestionState();
+    this.startTimer();
+  }
+
+  private async watchAdAndDoubleDailyChallengeReward() {
+    if (
+      this.rewardDoubleLoading ||
+      this.rewardDoubled ||
+      this.dailyChallengeRewardCoins <= 0
+    ) {
+      return;
+    }
+
+    this.rewardDoubleLoading = true;
+    this.adInProgress = true;
+
+    try {
+      const reward = await this.ads.showRewardedAd();
+
+      if (!reward) return;
+
+      const bonusCoins =
+        await this.dailyEventsService.doubleDailyChallengeReward();
+
+      if (bonusCoins <= 0) return;
+
+      this.dailyChallengeRewardCoins += bonusCoins;
+      this.rewardDoubled = true;
+      this.rewardMessage = `Premio raddoppiato: ${this.dailyChallengeRewardCoins} TurtleCoins.`;
+    } finally {
+      this.adInProgress = false;
+      this.rewardDoubleLoading = false;
+    }
+  }
+
+  private goToExitPage() {
+    if (this.dailyChallengeMode) {
+      this.router.navigateByUrl('/events/challenge');
+      return;
+    }
+
     this.router.navigateByUrl(
       `/levels/${this.categoryId}/${this.difficultyId}`,
     );
@@ -659,6 +813,17 @@ export class QuizPage implements OnInit, OnDestroy {
     this.switchingQuestion = true;
 
     try {
+      if (this.dailyChallengeMode) {
+        const [newQuestion] =
+          await this.questionsService.getRandomActiveQuestions(1);
+
+        if (!newQuestion) return;
+
+        this.questions[this.currentIndex] = newQuestion;
+        this.startCurrentQuestion();
+        return;
+      }
+
       const newQuestions = await this.questionsService.getQuestions(
         this.categoryId,
         this.difficultyId,

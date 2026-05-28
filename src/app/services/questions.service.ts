@@ -166,4 +166,21 @@ export class QuestionsService {
       return selectedQuestions;
     });
   }
+
+  getRandomActiveQuestions(amount: number): Promise<QuestionModel[]> {
+    return runInInjectionContext(this.injector, async () => {
+      const questionsRef = collection(this.firestore, 'questions');
+      const questionsQuery = query(
+        questionsRef,
+        where('active', '==', true),
+      );
+      const snapshot = await getDocs(questionsQuery);
+      const questions = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...(doc.data() as Omit<QuestionModel, 'id'>),
+      }));
+
+      return questions.sort(() => Math.random() - 0.5).slice(0, amount);
+    });
+  }
 }
