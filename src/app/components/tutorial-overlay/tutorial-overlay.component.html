@@ -140,20 +140,44 @@
             }
 
             @case ("reward") {
-              <div class="reward-preview" [class.claimed]="state.completed">
-                <div class="reward-light"></div>
-                <div class="reward-icons">
-                  <img src="assets/ui/coin-turtle.webp" alt="Monete" />
-                  <img [src]="mascotSrc" alt="Avatar Tartaruga Saggia" />
+              <div
+                class="reward-preview"
+                [class.ready]="!state.completed && !state.rewardClaimed"
+                [class.opening]="rewardChestPhase === 'charging'"
+                [class.revealed]="
+                  state.rewardGranted && rewardChestPhase === 'revealed'
+                "
+                [class.claimed]="state.rewardClaimed && !state.rewardGranted"
+              >
+                <div class="chest-aura"></div>
+
+                <div class="chest-stage" aria-hidden="true">
+                  <div class="chest-flash"></div>
+                  <img class="chest-image" [src]="tutorialChestSrc" alt="" />
+
+                  @if (state.rewardGranted && rewardChestPhase === "revealed") {
+                    <div class="reward-burst-items">
+                      <div class="reward-prize coin-prize">
+                        <img src="assets/ui/coin-turtle.webp" alt="" />
+                        <span>+{{ rewardCoins }}</span>
+                      </div>
+
+                      <div class="reward-prize avatar-prize">
+                        <img [src]="mascotSrc" alt="" />
+                        <span>Avatar</span>
+                      </div>
+                    </div>
+                  }
                 </div>
 
-                <div>
-                  @if (!state.completed) {
-                    <span>Ricompensa tutorial</span>
-                    <strong>+{{ rewardCoins }} TurtleCoins e avatar</strong>
-                  } @else if (state.rewardGranted) {
+                <div class="chest-copy">
+                  @if (state.completed && state.rewardGranted) {
                     <span>Ricompensa ottenuta</span>
                     <strong>+{{ rewardCoins }} TurtleCoins e avatar</strong>
+                  } @else if (!state.completed && !state.rewardClaimed) {
+                    <span>Forziere finale</span>
+                    <strong>Completa la guida per aprirlo</strong>
+                    <small>Dentro trovi TurtleCoins e avatar</small>
                   } @else {
                     <span>Tutorial completato</span>
                     <strong>Premio riscosso</strong>
@@ -181,6 +205,9 @@
           @if (state.loading) {
             <ion-spinner name="dots"></ion-spinner>
             <span>Salvataggio...</span>
+          } @else if (isRewardRevealPending(state)) {
+            <ion-spinner name="dots"></ion-spinner>
+            <span>Apertura...</span>
           } @else if (state.completed) {
             Continua
           } @else if (isLastStep(state)) {

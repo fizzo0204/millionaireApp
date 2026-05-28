@@ -17,6 +17,8 @@ import {
 import { HapticsService } from 'src/app/services/haptics.service';
 import { TutorialService } from 'src/app/services/tutorial.service';
 
+type RewardChestPhase = 'idle' | 'charging' | 'revealed';
+
 @Component({
   selector: 'app-tutorial-overlay',
   standalone: true,
@@ -28,15 +30,18 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
   readonly state$ = this.tutorialService.state$;
   readonly steps = this.tutorialService.steps;
   readonly mascotSrc = TUTORIAL_CONFIG.mascotSrc;
+  readonly tutorialChestSrc = 'assets/ui/epic-chest-reward.webp';
   readonly rewardCoins = TUTORIAL_CONFIG.rewardCoins;
   readonly answerLetters = ['A', 'B', 'C', 'D'];
 
   selectedAnswerIndex: number | null = null;
   spotlightRect: TutorialSpotlightRect | null = null;
   coachPlacement: 'top' | 'bottom' = 'bottom';
+  rewardChestPhase: RewardChestPhase = 'idle';
 
   private stateSub?: Subscription;
   private routerSub?: Subscription;
+  private rewardRevealTimer?: ReturnType<typeof setTimeout>;
   private syncToken = 0;
 
   constructor(
@@ -60,6 +65,7 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.stateSub?.unsubscribe();
     this.routerSub?.unsubscribe();
+    this.clearRewardRevealTimer();
   }
 
   @HostListener('window:resize')
@@ -99,11 +105,23 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
     const step = this.getStep(state);
 
     if (state.loading) return false;
+    if (this.isRewardRevealPending(state)) return false;
     if (state.completed) return true;
 
     if (step.kind !== 'demo-question') return true;
 
     return this.selectedAnswerIndex === step.demoQuestion?.correctIndex;
+  }
+
+  isRewardRevealPending(state: TutorialState): boolean {
+    const step = this.getStep(state);
+
+    return (
+      step.kind === 'reward' &&
+      state.completed &&
+      state.rewardGranted &&
+      this.rewardChestPhase !== 'revealed'
+    );
   }
 
   selectDemoAnswer(index: number, step: TutorialStep): void {
@@ -166,6 +184,8 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
   private async syncStepExperience(state: TutorialState): Promise<void> {
     const token = ++this.syncToken;
     const step = this.getStep(state);
+
+    this.syncRewardChestExperience(state, step);
 
     if (!state.visible || !this.isCoachStep(step)) {
       this.spotlightRect = null;
@@ -265,6 +285,55 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
       height,
       radius: Math.min(28, Math.max(18, rect.height * 0.16)),
     };
+  }
+
+  private syncRewardChestExperience(
+    state: TutorialState,
+    step: TutorialStep,
+  ): void {
+    const isRewardStep = state.visible && step.kind === 'reward';
+
+    if (!isRewardStep) {
+      this.resetRewardChest();
+      return;
+    }
+
+    if (state.completed && state.rewardGranted) {
+      this.startRewardReveal();
+      return;
+    }
+
+    this.clearRewardRevealTimer();
+
+    if ((state.loading || !state.rewardClaimed) && !state.completed) {
+      this.rewardChestPhase = 'charging';
+      return;
+    }
+
+    this.rewardChestPhase = 'idle';
+  }
+
+  private startRewardReveal(): void {
+    if (this.rewardChestPhase === 'revealed' || this.rewardRevealTimer) return;
+
+    this.rewardChestPhase = 'charging';
+    this.rewardRevealTimer = setTimeout(() => {
+      this.rewardChestPhase = 'revealed';
+      this.rewardRevealTimer = undefined;
+      void this.haptics.success();
+    }, 820);
+  }
+
+  private resetRewardChest(): void {
+    this.clearRewardRevealTimer();
+    this.rewardChestPhase = 'idle';
+  }
+
+  private clearRewardRevealTimer(): void {
+    if (!this.rewardRevealTimer) return;
+
+    clearTimeout(this.rewardRevealTimer);
+    this.rewardRevealTimer = undefined;
   }
 
   private wait(ms: number): Promise<void> {
