@@ -1,6 +1,6 @@
 <ion-content
   class="profile-content"
-  [class.modal-open]="showAvatarModal || showAchievementsModal"
+  [class.modal-open]="showAvatarModal || showAchievementsModal || showSpecialIntroModal"
 >
   @if (profileStats$ | async; as realStats) {
   <div class="page-fade">
@@ -371,6 +371,14 @@
       </div>
     </div>
   </div>
+  } @if (showSpecialIntroModal) {
+  <app-special-avatar-intro-modal
+    [title]="specialIntroTitle"
+    [message]="specialIntroMessage"
+    [avatarLabel]="specialIntroAvatarLabel"
+    [avatarImageSrc]="specialIntroAvatarImageSrc"
+    (closed)="closeSpecialIntroModal()"
+  ></app-special-avatar-intro-modal>
   } @if (showAchievementsModal) {
   <div class="avatar-modal-backdrop">
     <div

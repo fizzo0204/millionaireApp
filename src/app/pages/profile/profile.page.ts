@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
+import { Keyboard } from '@capacitor/keyboard';
 import { User } from 'firebase/auth';
 import {
   firstValueFrom,
@@ -26,11 +27,18 @@ import {
   QuizHistoryItem,
 } from 'src/app/models/user-stats.model';
 import { getLevelProgress } from 'src/app/utils/level-progress.util';
+import { SpecialAvatarIntroModalComponent } from 'src/app/components/special-avatar-intro-modal/special-avatar-intro-modal.component';
+
+type SpecialIntroConfig = {
+  avatarId: string;
+  title: string;
+  text: string;
+};
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonicModule, SpecialAvatarIntroModalComponent],
   templateUrl: './profile.page.html',
   styleUrls: ['./profile.page.scss'],
 })
@@ -69,6 +77,12 @@ export class ProfilePage {
 
   showAvatarModal = false;
   showAchievementsModal = false;
+  showSpecialIntroModal = false;
+  specialIntroTitle = '';
+  specialIntroMessage = '';
+  specialIntroAvatarId = '';
+  specialIntroAvatarLabel = '';
+  specialIntroAvatarImageSrc: string | null = null;
 
   readonly avatars: AvatarModel[] = [...AVATARS];
 
@@ -76,6 +90,27 @@ export class ProfilePage {
     prof_tonino: ['special_1_turtle'],
     avv_chicchina: ['special_2_turtle'],
   };
+
+  private readonly specialIntroByNickname: Record<string, SpecialIntroConfig> = {
+    prof_tonino: {
+      avatarId: 'special_1_turtle',
+      title: 'Avatar speciale sbloccato',
+      text:
+        'Salve Prof. Tonino,\n\n' +
+        'innanzitutto la ringrazio per aver preso parte al gioco TurtleMind, anche se lei \u00e8 la padrona, si sa. Il team TurtleMind voleva regalarLe questo fantastico avatar, tutto per lei!\n\n' +
+        'Si diverta, mi raccomando!',
+    },
+    avv_chicchina: {
+      avatarId: 'special_2_turtle',
+      title: 'Avatar speciale sbloccato',
+      text:
+        'Salve Avv. Chicchina,\n\n' +
+        'innanzitutto la ringrazio per aver preso parte al gioco TurtleMind, anche se lei \u00e8 la padrona, si sa. Il team TurtleMind voleva regalarLe questo fantastico avatar, tutto per lei!\n\n' +
+        'Si diverta, mi raccomando!',
+    },
+  };
+
+  private lastSpecialIntroKey: string | null = null;
 
   constructor(
     private auth: AuthService,
@@ -520,6 +555,7 @@ export class ProfilePage {
 
   updateTempNickname(value: string) {
     this.tempNickname = value.slice(0, this.nicknameMaxLength);
+    this.checkSpecialNicknameIntro();
   }
 
   chooseTempAvatar(avatarId: string, currentLevel: number) {
@@ -576,6 +612,11 @@ export class ProfilePage {
 
   closeAchievementsModal() {
     this.showAchievementsModal = false;
+  }
+
+  closeSpecialIntroModal() {
+    this.showSpecialIntroModal = false;
+    this.specialIntroMessage = '';
   }
 
   private getJoinDate(createdAt: unknown): string {
@@ -637,5 +678,42 @@ export class ProfilePage {
     return (
       this.specialNicknameAvatarIds[nicknameKey]?.includes(avatarId) ?? false
     );
+  }
+
+  private checkSpecialNicknameIntro() {
+    const nicknameKey = this.normalizeNickname(this.tempNickname).toLowerCase();
+    const specialIntro = this.specialIntroByNickname[nicknameKey];
+
+    if (!specialIntro) {
+      this.lastSpecialIntroKey = null;
+      return;
+    }
+
+    if (this.lastSpecialIntroKey === nicknameKey) return;
+
+    this.lastSpecialIntroKey = nicknameKey;
+    this.openSpecialIntroModal(specialIntro);
+  }
+
+  private openSpecialIntroModal(config: SpecialIntroConfig) {
+    const avatar = this.avatars.find((item) => item.id === config.avatarId);
+
+    this.hideMobileKeyboard();
+    this.specialIntroTitle = config.title;
+    this.specialIntroMessage = config.text;
+    this.specialIntroAvatarId = config.avatarId;
+    this.specialIntroAvatarLabel = avatar?.label ?? 'Avatar speciale';
+    this.specialIntroAvatarImageSrc = this.getAvatarImageSrc(config.avatarId);
+    this.showSpecialIntroModal = true;
+  }
+
+  private hideMobileKeyboard() {
+    const activeElement = document.activeElement;
+
+    if (activeElement instanceof HTMLElement) {
+      activeElement.blur();
+    }
+
+    void Keyboard.hide().catch(() => undefined);
   }
 }

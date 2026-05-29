@@ -1,0 +1,42 @@
+<div class="special-intro-backdrop">
+  <div class="special-intro-scene">
+    <div class="special-intro-glow"></div>
+    <div class="special-intro-stars"></div>
+    <div class="special-intro-rays"></div>
+
+    <div class="special-intro-card">
+      <div class="special-intro-badge">SPECIAL</div>
+
+      <h2>{{ title }}</h2>
+
+      <p class="special-intro-text" [class.complete]="completed">
+        {{ visibleMessage }}
+      </p>
+
+      @if (showReward) {
+      <div class="special-intro-reward">
+        <div class="special-intro-aura"></div>
+
+        <div class="special-intro-avatar">
+          @if (avatarImageSrc) {
+          <img [src]="avatarImageSrc" [alt]="avatarLabel" />
+          } @else {
+          {{ avatarLabel.charAt(0) }}
+          }
+        </div>
+
+        <strong>{{ avatarLabel }}</strong>
+        <span>Ora lo trovi nella sezione SPECIAL</span>
+      </div>
+      }
+
+      <button
+        class="special-intro-btn"
+        type="button"
+        (click)="handlePrimaryAction()"
+      >
+        @if (!completed) { Mostra subito } @else if (!showReward) { Rivela avatar } @else { Torna agli avatar }
+      </button>
+    </div>
+  </div>
+</div>
