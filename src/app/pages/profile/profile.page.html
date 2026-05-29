@@ -83,8 +83,8 @@
     </div>
 
     <div class="achievement-grid">
-      @for (achievement of getAchievements(realStats).slice(0, 4); track
-      achievement.title) {
+      @for (achievement of getFeaturedAchievements(realStats, profile$ | async);
+      track achievement.id) {
       <div class="achievement-card" [class.locked]="!achievement.completed">
         <div class="achievement-icon">{{ achievement.icon }}</div>
 
@@ -97,6 +97,9 @@
         </div>
         } @else {
         <div class="achievement-progress">{{ achievement.progress }}</div>
+        <div class="achievement-progress-bar">
+          <span [style.width.%]="achievement.progressValue ?? 0"></span>
+        </div>
         }
       </div>
       }
@@ -105,7 +108,6 @@
     <!-- RISULTATI -->
     <div class="section-row">
       <h3>Ultimi risultati</h3>
-      <button type="button">Vedi tutto</button>
     </div>
 
     <div class="results-list">
@@ -340,8 +342,8 @@
       <h3>Tutti i trofei</h3>
 
       <div class="achievement-grid full">
-        @for (achievement of getAchievements(realStats); track
-        achievement.title) {
+        @for (achievement of getAlignedAchievements(realStats, profile$ | async);
+        track achievement.id) {
         <div class="achievement-card" [class.locked]="!achievement.completed">
           <div class="achievement-icon">{{ achievement.icon }}</div>
 
@@ -354,6 +356,9 @@
           </div>
           } @else {
           <div class="achievement-progress">{{ achievement.progress }}</div>
+          <div class="achievement-progress-bar">
+            <span [style.width.%]="achievement.progressValue ?? 0"></span>
+          </div>
           }
         </div>
         }

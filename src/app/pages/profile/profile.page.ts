@@ -16,6 +16,10 @@ import { AuthService } from 'src/app/services/auth.service';
 import { AchievementModel } from 'src/app/models/achievement.model';
 import { ProfileStatModel } from 'src/app/models/profile-stat.model';
 import { AVATARS } from 'src/app/data/avatars.data';
+import {
+  ACHIEVEMENTS,
+  AchievementDefinition,
+} from 'src/app/data/achievements.data';
 import { AvatarModel } from 'src/app/models/avatar.model';
 import {
   AppUserProfile,
@@ -276,6 +280,144 @@ export class ProfilePage {
         progress: `${realStats.level}/10`,
       },
     ];
+  }
+
+  getFeaturedAchievements(
+    realStats: AppUserProfile['stats'],
+    profile?: AppUserProfile | null,
+  ): AchievementModel[] {
+    return [...this.getAlignedAchievements(realStats, profile)]
+      .sort(
+        (first, second) =>
+          Number(first.completed) - Number(second.completed) ||
+          (second.progressValue ?? 0) - (first.progressValue ?? 0),
+      )
+      .slice(0, 4);
+  }
+
+  getAlignedAchievements(
+    realStats: AppUserProfile['stats'],
+    profile?: AppUserProfile | null,
+  ): AchievementModel[] {
+    const totalAnswers = realStats.correctAnswers + realStats.wrongAnswers;
+    const correctPercentage =
+      totalAnswers <= 0
+        ? 0
+        : Math.round((realStats.correctAnswers / totalAnswers) * 100);
+
+    return ACHIEVEMENTS.map((achievement) =>
+      this.buildAchievement(
+        achievement,
+        realStats,
+        profile,
+        totalAnswers,
+        correctPercentage,
+      ),
+    );
+  }
+
+  private buildAchievement(
+    achievement: AchievementDefinition,
+    realStats: AppUserProfile['stats'],
+    profile: AppUserProfile | null | undefined,
+    totalAnswers: number,
+    correctPercentage: number,
+  ): AchievementModel {
+    if (achievement.metric === 'accuracy') {
+      return this.buildAccuracyAchievement(
+        achievement,
+        totalAnswers,
+        correctPercentage,
+      );
+    }
+
+    const value = this.getAchievementValue(achievement, realStats, profile);
+    const completed = value >= achievement.target;
+
+    return {
+      id: achievement.id,
+      icon: completed ? achievement.icon : '🔒',
+      title: achievement.title,
+      description: achievement.description,
+      completed,
+      progress: this.formatAchievementProgress(achievement, value),
+      progressValue: this.getProgressValue(value, achievement.target),
+      reward: achievement.reward,
+    };
+  }
+
+  private buildAccuracyAchievement(
+    achievement: AchievementDefinition,
+    totalAnswers: number,
+    correctPercentage: number,
+  ): AchievementModel {
+    const minAnswers = achievement.minAnswers ?? 0;
+    const hasEnoughAnswers = totalAnswers >= minAnswers;
+    const completed = hasEnoughAnswers && correctPercentage >= achievement.target;
+    const progress = hasEnoughAnswers
+      ? `${correctPercentage}/${achievement.target}%`
+      : `${totalAnswers}/${minAnswers} risposte`;
+
+    return {
+      id: achievement.id,
+      icon: completed ? achievement.icon : '🔒',
+      title: achievement.title,
+      description: achievement.description,
+      completed,
+      progress,
+      progressValue: hasEnoughAnswers
+        ? this.getProgressValue(correctPercentage, achievement.target)
+        : this.getProgressValue(totalAnswers, minAnswers),
+      reward: achievement.reward,
+    };
+  }
+
+  private getAchievementValue(
+    achievement: AchievementDefinition,
+    realStats: AppUserProfile['stats'],
+    profile?: AppUserProfile | null,
+  ): number {
+    switch (achievement.metric) {
+      case 'quizPlayed':
+        return realStats.quizPlayed;
+      case 'correctAnswers':
+        return realStats.correctAnswers;
+      case 'level':
+        return realStats.level;
+      case 'xp':
+        return realStats.xp;
+      case 'streakDays':
+        return realStats.streakDays;
+      case 'avatarsUnlocked':
+        return profile?.avatar?.unlockedAvatarIds?.length ?? 0;
+      case 'tutorialCompleted':
+        return profile?.onboarding?.tutorialCompleted ? 1 : 0;
+      default:
+        return 0;
+    }
+  }
+
+  private formatAchievementProgress(
+    achievement: AchievementDefinition,
+    value: number,
+  ): string {
+    const cappedValue = Math.min(value, achievement.target);
+
+    if (achievement.metric === 'xp') {
+      return `${cappedValue}/${achievement.target} XP`;
+    }
+
+    if (achievement.metric === 'tutorialCompleted') {
+      return cappedValue >= 1 ? 'Completato' : '0/1';
+    }
+
+    return `${cappedValue}/${achievement.target}`;
+  }
+
+  private getProgressValue(value: number, target: number): number {
+    if (target <= 0) return 0;
+
+    return Math.min(100, Math.round((value / target) * 100));
   }
 
   getPlayerName(user: User | null, profile?: AppUserProfile | null): string {
