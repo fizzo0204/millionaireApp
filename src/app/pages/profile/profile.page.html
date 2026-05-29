@@ -12,7 +12,7 @@
           @if (getSelectedAvatarImageSrc(); as avatarImage) {
           <img class="avatar-image" [src]="avatarImage" alt="Avatar" />
           } @else {
-          {{ getSelectedAvatarIcon(user) }}
+          {{ getSelectedAvatarIcon(user, profile$ | async) }}
           }
         </div>
 
@@ -22,7 +22,7 @@
       </div>
 
       <div class="profile-info">
-        <h2>{{ getPlayerName(user) }}</h2>
+        <h2>{{ getPlayerName(user, profile$ | async) }}</h2>
         <p>{{ joinDate$ | async }}</p>
       </div>
     </div>
@@ -155,6 +155,25 @@
         <p>Personalizza il tuo profilo</p>
       </div>
 
+      <div class="nickname-card">
+        <label for="profileNickname">Nome giocatore</label>
+
+        <div class="nickname-input-wrap">
+          <ion-icon name="person-outline"></ion-icon>
+          <input
+            id="profileNickname"
+            type="text"
+            inputmode="text"
+            autocomplete="off"
+            [attr.maxlength]="nicknameMaxLength"
+            [value]="tempNickname"
+            (input)="updateTempNickname($any($event.target).value)"
+          />
+        </div>
+
+        <small>{{ tempNickname.length }}/{{ nicknameMaxLength }}</small>
+      </div>
+
       <!-- BASE -->
       <div class="avatar-section base">
         <div class="avatar-section-top">
@@ -173,7 +192,7 @@
             (click)="chooseTempAvatar(avatar.id, realStats.level)"
           >
             <div class="avatar-option-icon premium-icon">
-              {{ getAvatarIcon(avatar.id, user) }}
+              {{ getAvatarIcon(avatar.id, user, profile$ | async) }}
             </div>
 
             <strong>{{ avatar.label }}</strong>
@@ -294,7 +313,13 @@
       <div class="avatar-actions premium-actions">
         <button class="cancel-btn" (click)="closeAvatarModal()">Annulla</button>
 
-        <button class="save-btn" (click)="saveAvatar()">Salva</button>
+        <button
+          class="save-btn"
+          (click)="saveAvatar()"
+          [disabled]="nicknameSaving"
+        >
+          @if (nicknameSaving) { Salvataggio... } @else { Salva }
+        </button>
       </div>
     </div>
   </div>

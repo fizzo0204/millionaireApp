@@ -76,6 +76,10 @@ export class LoginButtonComponent {
   ) {}
 
   getFirstName(user: User, profile?: AppUserProfile): string {
+    if (profile?.nickname?.trim()) {
+      return profile.nickname.trim();
+    }
+
     if (this.isPlayGamesProfile(user, profile)) {
       const displayName = user.displayName || profile?.displayName;
 

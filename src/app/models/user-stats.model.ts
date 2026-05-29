@@ -32,6 +32,7 @@ export interface UserOnboardingData {
 export interface AppUserProfile {
   uid: string;
   displayName: string | null;
+  nickname?: string | null;
   email: string | null;
   photoURL: string | null;
   createdAt: unknown;

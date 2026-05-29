@@ -628,6 +628,60 @@
   font-weight: 700;
 }
 
+.nickname-card {
+  margin: 0 0 12px;
+  padding: 10px;
+  border-radius: 18px;
+  background: rgba(3, 15, 34, 0.72);
+  border: 1px solid rgba(96, 165, 250, 0.22);
+}
+
+.nickname-card label {
+  display: block;
+  margin-bottom: 7px;
+  color: #ffea00;
+  font-size: 0.62rem;
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+
+.nickname-input-wrap {
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(2, 8, 23, 0.58);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.nickname-input-wrap ion-icon {
+  flex-shrink: 0;
+  color: #38bdf8;
+  font-size: 1rem;
+}
+
+.nickname-input-wrap input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: #fff;
+  background: transparent;
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+
+.nickname-card small {
+  display: block;
+  margin-top: 6px;
+  color: #93c5fd;
+  font-size: 0.56rem;
+  font-weight: 800;
+  text-align: right;
+}
+
 .avatar-section {
   margin-top: 10px;
   padding: 11px;

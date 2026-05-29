@@ -2,7 +2,14 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { User } from 'firebase/auth';
-import { firstValueFrom, map, Observable, of, switchMap } from 'rxjs';
+import {
+  firstValueFrom,
+  map,
+  Observable,
+  of,
+  shareReplay,
+  switchMap,
+} from 'rxjs';
 import { UserStatsService } from 'src/app/services/user-stats.service';
 import { DailyRewardService } from 'src/app/services/daily-reward.service';
 import { AuthService } from 'src/app/services/auth.service';
@@ -31,6 +38,7 @@ export class ProfilePage {
       if (!user) return of(undefined);
       return this.userStatsService.getUserProfile(user.uid);
     }),
+    shareReplay(1),
   );
 
   readonly profileStats$ = this.profile$.pipe(
@@ -51,6 +59,9 @@ export class ProfilePage {
   selectedAvatar = this.dailyRewardService.getSelectedAvatar();
   tempSelectedAvatar = this.selectedAvatar;
   unlockedAvatarIds: string[] = [];
+  tempNickname = '';
+  nicknameMaxLength = 16;
+  nicknameSaving = false;
 
   showAvatarModal = false;
   showAchievementsModal = false;
@@ -123,9 +134,9 @@ export class ProfilePage {
         label: 'Giorni di streak',
       },
       {
-        icon: '⭐',
-        value: `${realStats.bestScore}/10`,
-        label: 'Miglior punteggio',
+        icon: '🪙',
+        value: String(realStats.coins),
+        label: 'TurtleCoins',
       },
     ];
   }
@@ -267,33 +278,48 @@ export class ProfilePage {
     ];
   }
 
-  getPlayerName(user: User | null): string {
+  getPlayerName(user: User | null, profile?: AppUserProfile | null): string {
+    if (profile?.nickname?.trim()) return profile.nickname.trim();
+
+    const providerName = user?.displayName || profile?.displayName;
+
+    if (providerName?.trim()) {
+      return providerName.trim().split(/\s+/)[0] || 'Giocatore';
+    }
+
     if (!user) return 'Giocatore';
     if (user.isAnonymous) return 'Ospite';
 
-    return user.displayName?.split(' ')[0] || 'Giocatore';
+    return 'Giocatore';
   }
 
-  getAvatarLetter(user: User | null): string {
-    return this.getPlayerName(user).charAt(0).toUpperCase();
+  getAvatarLetter(user: User | null, profile?: AppUserProfile | null): string {
+    return this.getPlayerName(user, profile).charAt(0).toUpperCase();
   }
 
-  getSelectedAvatarIcon(user: User | null): string {
-    return this.getAvatarIcon(this.selectedAvatar, user);
+  getSelectedAvatarIcon(
+    user: User | null,
+    profile?: AppUserProfile | null,
+  ): string {
+    return this.getAvatarIcon(this.selectedAvatar, user, profile);
   }
 
   getSelectedAvatarImageSrc(): string | null {
     return this.getAvatarImageSrc(this.selectedAvatar);
   }
 
-  getAvatarIcon(avatarId: string, user: User | null): string {
+  getAvatarIcon(
+    avatarId: string,
+    user: User | null,
+    profile?: AppUserProfile | null,
+  ): string {
     const avatar = this.avatars.find((item) => item.id === avatarId);
 
     if (!avatar || avatar.id === 'letter') {
-      return this.getAvatarLetter(user);
+      return this.getAvatarLetter(user, profile);
     }
 
-    return avatar.icon || this.getAvatarLetter(user);
+    return avatar.icon || this.getAvatarLetter(user, profile);
   }
 
   getAvatarImageSrc(avatarId: string): string | null {
@@ -315,11 +341,13 @@ export class ProfilePage {
   }
 
   async openAvatarModal() {
+    const user = await firstValueFrom(this.user$);
     const profile = await firstValueFrom(this.profile$);
 
     this.selectedAvatar = profile?.avatar?.selectedAvatar ?? 'letter';
     this.tempSelectedAvatar = this.selectedAvatar;
     this.unlockedAvatarIds = profile?.avatar?.unlockedAvatarIds ?? [];
+    this.tempNickname = this.getPlayerName(user, profile);
 
     this.showAvatarModal = true;
   }
@@ -327,6 +355,11 @@ export class ProfilePage {
   closeAvatarModal() {
     this.showAvatarModal = false;
     this.tempSelectedAvatar = this.selectedAvatar;
+    this.nicknameSaving = false;
+  }
+
+  updateTempNickname(value: string) {
+    this.tempNickname = value.slice(0, this.nicknameMaxLength);
   }
 
   chooseTempAvatar(avatarId: string, currentLevel: number) {
@@ -347,11 +380,27 @@ export class ProfilePage {
   }
 
   async saveAvatar() {
+    const user = await firstValueFrom(this.user$);
+    const profile = await firstValueFrom(this.profile$);
+
+    if (!user) return;
+
+    this.nicknameSaving = true;
     this.selectedAvatar = this.tempSelectedAvatar;
+    const nickname =
+      this.normalizeNickname(this.tempNickname) ||
+      this.getPlayerName(user, profile);
 
-    await this.dailyRewardService.saveSelectedAvatar(this.selectedAvatar);
+    try {
+      await Promise.all([
+        this.dailyRewardService.saveSelectedAvatar(this.selectedAvatar),
+        this.userStatsService.saveNickname(user.uid, nickname),
+      ]);
 
-    this.showAvatarModal = false;
+      this.showAvatarModal = false;
+    } finally {
+      this.nicknameSaving = false;
+    }
   }
 
   openAchievementsModal() {
@@ -397,5 +446,9 @@ export class ProfilePage {
     }
 
     return null;
+  }
+
+  private normalizeNickname(value: string): string {
+    return value.trim().replace(/\s+/g, ' ').slice(0, this.nicknameMaxLength);
   }
 }

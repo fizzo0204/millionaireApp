@@ -707,6 +707,14 @@ export class UserStatsService {
     });
   }
 
+  async saveNickname(uid: string, nickname: string): Promise<void> {
+    const userRef = doc(this.firestore, `users/${uid}`);
+
+    await updateDoc(userRef, {
+      nickname,
+    });
+  }
+
   async updateAvatarData(
     uid: string,
     data: Partial<UserAvatarData>,
@@ -946,6 +954,7 @@ export class UserStatsService {
       avatar: this.defaultAvatar,
       onboarding: this.defaultOnboarding,
       dailyEvents: deleteField(),
+      nickname: deleteField(),
     });
   }
 }
