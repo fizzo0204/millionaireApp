@@ -161,6 +161,7 @@ export class QuizPage implements OnInit, OnDestroy {
     const questionsPromise = this.dailyChallengeMode
       ? this.questionsService.getRandomActiveQuestions(
           DAILY_EVENTS_CONFIG.dailyChallengeQuestionCount,
+          DAILY_EVENTS_CONFIG.dailyChallengeDifficulty,
         )
       : this.questionsService.getQuestions(
           this.categoryId,
@@ -368,6 +369,8 @@ export class QuizPage implements OnInit, OnDestroy {
 
     if (this.dailyChallengeMode) {
       void this.dailyEventsService.trackDailyChallengeHelp();
+    } else {
+      void this.dailyEventsService.trackNormalHelpUsed();
     }
 
     await this.playHelpAnimation(helpId);
@@ -429,6 +432,12 @@ export class QuizPage implements OnInit, OnDestroy {
     const user = await firstValueFrom(this.auth.user$);
 
     if (user) {
+      await this.dailyEventsService.trackNormalQuizPlayed();
+
+      if (allQuestionsCorrect) {
+        await this.dailyEventsService.trackNormalQuizWon();
+      }
+
       const levelAlreadyCompleted = await this.progressService.isLevelCompleted(
         user.uid,
         this.categoryId,
@@ -660,12 +669,27 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   async confirmExitQuiz() {
-    await this.livesService.spendLife();
-
     this.showExitModal = false;
     this.stopTimer();
     this.navigatingAway = true;
+
+    if (this.dailyChallengeMode) {
+      this.goToExitPage();
+      return;
+    }
+
+    await this.livesService.spendLife();
     this.goToExitPage();
+  }
+
+  returnToEvents() {
+    this.haptics.light();
+    this.stopTimer();
+    this.showWrongModal = false;
+    this.showTimeModal = false;
+    this.showExitModal = false;
+    this.navigatingAway = true;
+    this.router.navigateByUrl('/events/challenge');
   }
 
   private startCurrentQuestion() {
@@ -816,7 +840,10 @@ export class QuizPage implements OnInit, OnDestroy {
     try {
       if (this.dailyChallengeMode) {
         const [newQuestion] =
-          await this.questionsService.getRandomActiveQuestions(1);
+          await this.questionsService.getRandomActiveQuestions(
+            1,
+            DAILY_EVENTS_CONFIG.dailyChallengeDifficulty,
+          );
 
         if (!newQuestion) return;
 

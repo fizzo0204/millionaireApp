@@ -23,7 +23,7 @@
 
       <div class="profile-info">
         <h2>{{ getPlayerName(user) }}</h2>
-        <p>{{ joinDate }}</p>
+        <p>{{ joinDate$ | async }}</p>
       </div>
     </div>
     }

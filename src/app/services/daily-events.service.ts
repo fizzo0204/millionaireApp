@@ -169,6 +169,18 @@ export class DailyEventsService {
     await this.trackMissionProgress('dailyChallengeHelps');
   }
 
+  async trackNormalQuizPlayed(): Promise<void> {
+    await this.trackMissionProgress('normalQuizPlayed');
+  }
+
+  async trackNormalQuizWon(): Promise<void> {
+    await this.trackMissionProgress('normalQuizWon');
+  }
+
+  async trackNormalHelpUsed(): Promise<void> {
+    await this.trackMissionProgress('normalHelpsUsed');
+  }
+
   async trackNormalLevelCompleted(): Promise<void> {
     await this.trackMissionProgress('normalLevelsCompleted');
   }

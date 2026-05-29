@@ -167,12 +167,16 @@ export class QuestionsService {
     });
   }
 
-  getRandomActiveQuestions(amount: number): Promise<QuestionModel[]> {
+  getRandomActiveQuestions(
+    amount: number,
+    difficulty?: DifficultyId,
+  ): Promise<QuestionModel[]> {
     return runInInjectionContext(this.injector, async () => {
       const questionsRef = collection(this.firestore, 'questions');
       const questionsQuery = query(
         questionsRef,
         where('active', '==', true),
+        ...(difficulty ? [where('difficulty', '==', difficulty)] : []),
       );
       const snapshot = await getDocs(questionsQuery);
       const questions = snapshot.docs.map((doc) => ({

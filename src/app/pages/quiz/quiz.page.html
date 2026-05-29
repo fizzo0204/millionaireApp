@@ -212,6 +212,10 @@
           >
             Ricomincia da capo
           </button>
+
+          <button class="ad-btn" type="button" (click)="returnToEvents()">
+            Torna agli eventi
+          </button>
         } @else {
         <button class="ad-btn" type="button" (click)="watchAdAndContinue()">
           ▶ Guarda pubblicità e continua
@@ -258,6 +262,10 @@
           >
             Ricomincia da capo
           </button>
+
+          <button class="ad-btn" type="button" (click)="returnToEvents()">
+            Torna agli eventi
+          </button>
         } @else {
         <button class="ad-btn" type="button" (click)="watchAdForMoreTime()">
           ▶ Guarda pubblicità e ottieni +5s
@@ -282,8 +290,13 @@
       <h2>Vuoi uscire?</h2>
 
       <p>
-        Se abbandoni il quiz perderai una vita. Puoi restare e continuare con il
-        timer attuale.
+        @if (dailyChallengeMode) {
+          Puoi tornare agli eventi senza consumare vite. La run giornaliera
+          resta interrotta.
+        } @else {
+          Se abbandoni il quiz perderai una vita. Puoi restare e continuare con
+          il timer attuale.
+        }
       </p>
 
       <div class="wrong-actions">

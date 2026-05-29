@@ -44,7 +44,9 @@ export class ProfilePage {
     }),
   );
 
-  joinDate = this.getJoinDate();
+  joinDate$ = this.profile$.pipe(
+    map((profile) => this.getJoinDate(profile?.createdAt)),
+  );
 
   selectedAvatar = this.dailyRewardService.getSelectedAvatar();
   tempSelectedAvatar = this.selectedAvatar;
@@ -360,25 +362,40 @@ export class ProfilePage {
     this.showAchievementsModal = false;
   }
 
-  private getJoinDate(): string {
-    const key = 'profile_join_date';
+  private getJoinDate(createdAt: unknown): string {
+    const date = this.toDate(createdAt);
 
-    let stored = localStorage.getItem(key);
+    if (!date) return 'Giocatore da oggi';
 
-    if (!stored) {
-      stored = new Date().toISOString();
-      localStorage.setItem(key, stored);
-    }
-
-    return this.formatJoinDate(stored);
+    return this.formatJoinDate(date);
   }
 
-  private formatJoinDate(dateString: string): string {
-    const date = new Date(dateString);
-
+  private formatJoinDate(date: Date): string {
     return `Giocatore da ${date.toLocaleDateString('it-IT', {
       month: 'long',
       year: 'numeric',
     })}`;
+  }
+
+  private toDate(value: unknown): Date | null {
+    if (!value) return null;
+
+    if (value instanceof Date) return value;
+
+    if (typeof value === 'string' || typeof value === 'number') {
+      const date = new Date(value);
+
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    if (
+      typeof value === 'object' &&
+      'toDate' in value &&
+      typeof value.toDate === 'function'
+    ) {
+      return value.toDate();
+    }
+
+    return null;
   }
 }
