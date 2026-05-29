@@ -144,7 +144,8 @@
       <button
         class="modal-close-btn"
         type="button"
-        (click)="closeAvatarModal()"
+        [disabled]="nicknameSaving"
+        (click)="closeAvatarModal(true)"
       >
         <ion-icon name="close-outline"></ion-icon>
       </button>
@@ -176,6 +177,39 @@
         <small>{{ tempNickname.length }}/{{ nicknameMaxLength }}</small>
       </div>
 
+      <!-- SPECIAL -->
+      @if (specialRewardAvatars.length > 0) {
+      <div class="avatar-section special">
+        <div class="avatar-section-top">
+          <div class="section-badge special-badge">SPECIAL</div>
+
+          <span>Avatar esclusivi regalati al tuo profilo</span>
+        </div>
+
+        <div class="avatar-grid premium-grid">
+          @for (avatar of specialRewardAvatars; track avatar.id) {
+          <button
+            class="avatar-option premium special-avatar"
+            type="button"
+            [class.active]="tempSelectedAvatar === avatar.id"
+            (click)="chooseTempAvatar(avatar.id, realStats.level)"
+          >
+            <div class="avatar-option-icon premium-icon special-icon-card">
+              @if (getAvatarImageSrc(avatar.id); as avatarImage) {
+              <img [src]="avatarImage" [alt]="avatar.label" />
+              } @else {
+              {{ avatar.icon }}
+              }
+            </div>
+
+            <strong>{{ avatar.label }}</strong>
+            <small class="special-label">Esclusivo</small>
+          </button>
+          }
+        </div>
+      </div>
+      }
+
       <!-- BASE -->
       <div class="avatar-section base">
         <div class="avatar-section-top">
@@ -194,7 +228,11 @@
             (click)="chooseTempAvatar(avatar.id, realStats.level)"
           >
             <div class="avatar-option-icon premium-icon">
+              @if (getAvatarImageSrc(avatar.id); as avatarImage) {
+              <img [src]="avatarImage" [alt]="avatar.label" />
+              } @else {
               {{ getAvatarIcon(avatar.id, user, profile$ | async) }}
+              }
             </div>
 
             <strong>{{ avatar.label }}</strong>
@@ -227,7 +265,11 @@
             (click)="chooseTempAvatar(avatar.id, realStats.level)"
           >
             <div class="avatar-option-icon premium-icon daily-icon-card">
+              @if (getAvatarImageSrc(avatar.id); as avatarImage) {
+              <img [src]="avatarImage" [alt]="avatar.label" />
+              } @else {
               {{ avatar.icon }}
+              }
             </div>
 
             <strong>{{ avatar.label }}</strong>
@@ -297,7 +339,11 @@
             (click)="chooseTempAvatar(avatar.id, realStats.level)"
           >
             <div class="avatar-option-icon premium-icon epic-icon-card">
+              @if (getAvatarImageSrc(avatar.id); as avatarImage) {
+              <img [src]="avatarImage" [alt]="avatar.label" />
+              } @else {
               {{ avatar.icon }}
+              }
             </div>
 
             <strong>{{ avatar.label }}</strong>

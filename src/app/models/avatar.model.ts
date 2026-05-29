@@ -1,11 +1,12 @@
-export type AvatarSource = 'base' | 'daily' | 'epic' | 'tutorial';
+export type AvatarSource = 'base' | 'daily' | 'epic' | 'tutorial' | 'special';
 export type AvatarRarity = 'common' | 'rare' | 'epic';
 export type AvatarUnlockType =
   | 'default'
   | 'level'
   | 'daily'
   | 'epicChest'
-  | 'tutorial';
+  | 'tutorial'
+  | 'special';
 
 export interface AvatarModel {
   id: string;

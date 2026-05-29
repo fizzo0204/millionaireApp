@@ -72,6 +72,11 @@ export class ProfilePage {
 
   readonly avatars: AvatarModel[] = [...AVATARS];
 
+  private readonly specialNicknameAvatarIds: Record<string, string[]> = {
+    prof_tonino: ['special_1_turtle'],
+    avv_chicchina: ['special_2_turtle'],
+  };
+
   constructor(
     private auth: AuthService,
     private userStatsService: UserStatsService,
@@ -92,6 +97,14 @@ export class ProfilePage {
 
   get tutorialRewardAvatars(): AvatarModel[] {
     return this.avatars.filter((avatar) => avatar.source === 'tutorial');
+  }
+
+  get specialRewardAvatars(): AvatarModel[] {
+    return this.avatars.filter(
+      (avatar) =>
+        avatar.source === 'special' &&
+        this.isSpecialAvatarAvailable(avatar.id),
+    );
   }
 
   getCurrentLevelXp(xp: number): number {
@@ -494,7 +507,12 @@ export class ProfilePage {
     this.showAvatarModal = true;
   }
 
-  closeAvatarModal() {
+  async closeAvatarModal(saveChanges = false) {
+    if (saveChanges) {
+      await this.saveAvatar();
+      return;
+    }
+
     this.showAvatarModal = false;
     this.tempSelectedAvatar = this.selectedAvatar;
     this.nicknameSaving = false;
@@ -516,6 +534,13 @@ export class ProfilePage {
       return;
     }
 
+    if (avatar.source === 'special') {
+      if (!this.isSpecialAvatarAvailable(avatarId)) return;
+
+      this.tempSelectedAvatar = avatarId;
+      return;
+    }
+
     if (!this.isRewardAvatarUnlocked(avatarId)) return;
 
     this.tempSelectedAvatar = avatarId;
@@ -528,7 +553,7 @@ export class ProfilePage {
     if (!user) return;
 
     this.nicknameSaving = true;
-    this.selectedAvatar = this.tempSelectedAvatar;
+    this.selectedAvatar = this.getSafeSelectedAvatar(this.tempSelectedAvatar);
     const nickname =
       this.normalizeNickname(this.tempNickname) ||
       this.getPlayerName(user, profile);
@@ -592,5 +617,25 @@ export class ProfilePage {
 
   private normalizeNickname(value: string): string {
     return value.trim().replace(/\s+/g, ' ').slice(0, this.nicknameMaxLength);
+  }
+
+  private getSafeSelectedAvatar(avatarId: string): string {
+    const avatar = this.avatars.find((item) => item.id === avatarId);
+
+    if (avatar?.source !== 'special') return avatarId;
+
+    return this.isSpecialAvatarAvailable(avatarId) ? avatarId : 'letter';
+  }
+
+  private isSpecialAvatarAvailable(avatarId: string): boolean {
+    return this.isSpecialAvatarUnlockedByNickname(avatarId);
+  }
+
+  private isSpecialAvatarUnlockedByNickname(avatarId: string): boolean {
+    const nicknameKey = this.normalizeNickname(this.tempNickname).toLowerCase();
+
+    return (
+      this.specialNicknameAvatarIds[nicknameKey]?.includes(avatarId) ?? false
+    );
   }
 }

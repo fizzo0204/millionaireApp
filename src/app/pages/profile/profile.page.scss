@@ -793,6 +793,7 @@
   height: 46px;
   margin: 0 auto 7px;
   border-radius: 15px;
+  overflow: hidden;
   display: grid;
   place-items: center;
   font-size: 1.35rem;
@@ -802,19 +803,18 @@
     0 10px 18px rgba(0, 0, 0, 0.28);
 }
 
+.premium-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .daily-icon-card {
   background: linear-gradient(135deg, #9333ea, #2563eb);
 }
 
 .tutorial-icon-card {
-  overflow: hidden;
   background: radial-gradient(circle at top, #ffea00, #0ea5e9);
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
 }
 
 .tutorial-avatar {
@@ -932,4 +932,42 @@
 
 .epic-label {
   color: #c084fc !important;
+}
+
+.avatar-section.special {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.18), transparent 30%),
+    linear-gradient(135deg, rgba(14, 165, 233, 0.28), rgba(15, 23, 42, 0.94));
+  border: 1px solid rgba(125, 211, 252, 0.36);
+  box-shadow:
+    inset 0 0 28px rgba(125, 211, 252, 0.08),
+    0 0 30px rgba(14, 165, 233, 0.2);
+}
+
+.special-badge {
+  color: #082f49;
+  background: linear-gradient(135deg, #e0f2fe, #67e8f9);
+}
+
+.special-avatar {
+  border-color: rgba(125, 211, 252, 0.28) !important;
+  box-shadow:
+    0 0 18px rgba(14, 165, 233, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.special-avatar.active {
+  box-shadow:
+    0 0 28px rgba(125, 211, 252, 0.45),
+    0 0 48px rgba(255, 255, 255, 0.16) !important;
+}
+
+.special-icon-card {
+  background: linear-gradient(135deg, #0ea5e9, #111827);
+}
+
+.special-label {
+  color: #7dd3fc !important;
 }
