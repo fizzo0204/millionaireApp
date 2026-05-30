@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { serverTimestamp } from '@angular/fire/firestore';
 import { firstValueFrom, Subscription } from 'rxjs';
 import {
   DailyReward,
@@ -31,6 +32,7 @@ export class DailyRewardService {
   private cachedDailyReward: UserDailyRewardData = {
     currentDay: 1,
     lastClaimDate: null,
+    lastClaimedAt: null,
     claimedToday: false,
   };
 
@@ -61,7 +63,10 @@ export class DailyRewardService {
     return {
       currentDay: this.cachedDailyReward.currentDay,
       lastClaimDate: this.cachedDailyReward.lastClaimDate,
-      claimedToday: this.cachedDailyReward.lastClaimDate === this.getTodayKey(),
+      lastClaimedAt: this.cachedDailyReward.lastClaimedAt ?? null,
+      claimedToday:
+        this.cachedDailyReward.lastClaimDate === this.getTodayKey() ||
+        this.isClaimCooldownActive(this.cachedDailyReward.lastClaimedAt),
     };
   }
 
@@ -119,6 +124,7 @@ export class DailyRewardService {
     const updatedData: UserDailyRewardData = {
       currentDay: nextDay,
       lastClaimDate: todayKey,
+      lastClaimedAt: new Date().toISOString(),
       claimedToday: true,
     };
 
@@ -205,6 +211,7 @@ export class DailyRewardService {
     const updatedData: Partial<UserDailyRewardData> = {
       currentDay: 1,
       lastClaimDate: null,
+      lastClaimedAt: null,
       claimedToday: false,
     };
 
@@ -270,6 +277,7 @@ export class DailyRewardService {
     const updatedData: Partial<UserDailyRewardData> = {
       currentDay: normalizedDay,
       lastClaimDate: null,
+      lastClaimedAt: null,
       claimedToday: false,
     };
 
@@ -363,6 +371,7 @@ export class DailyRewardService {
       await this.userStatsService.updateDailyRewardData(uid, {
         currentDay: state.currentDay ?? 1,
         lastClaimDate: state.lastClaimDate ?? null,
+        lastClaimedAt: state.lastClaimDate ? serverTimestamp() : null,
         claimedToday: state.lastClaimDate === this.getTodayKey(),
       });
     }
@@ -393,7 +402,9 @@ export class DailyRewardService {
 
     this.cachedDailyReward = {
       ...dailyReward,
-      claimedToday: dailyReward.lastClaimDate === this.getTodayKey(),
+      claimedToday:
+        dailyReward.lastClaimDate === this.getTodayKey() ||
+        this.isClaimCooldownActive(dailyReward.lastClaimedAt),
     };
 
     this.cachedAvatar = {
@@ -423,6 +434,7 @@ export class DailyRewardService {
       : {
           currentDay: 1,
           lastClaimDate: null,
+          lastClaimedAt: null,
           claimedToday: false,
         };
 
@@ -431,7 +443,10 @@ export class DailyRewardService {
     this.cachedDailyReward = {
       currentDay: state.currentDay,
       lastClaimDate: state.lastClaimDate,
-      claimedToday: state.lastClaimDate === this.getTodayKey(),
+      lastClaimedAt: state.lastClaimedAt ?? null,
+      claimedToday:
+        state.lastClaimDate === this.getTodayKey() ||
+        this.isClaimCooldownActive(state.lastClaimedAt),
     };
 
     this.cachedAvatar = {
@@ -444,6 +459,7 @@ export class DailyRewardService {
     const state: DailyRewardState = {
       currentDay: this.cachedDailyReward.currentDay,
       lastClaimDate: this.cachedDailyReward.lastClaimDate,
+      lastClaimedAt: this.cachedDailyReward.lastClaimedAt ?? null,
       claimedToday: this.cachedDailyReward.claimedToday,
     };
 
@@ -464,5 +480,32 @@ export class DailyRewardService {
     const day = String(today.getDate()).padStart(2, '0');
 
     return `${year}-${month}-${day}`;
+  }
+
+  private isClaimCooldownActive(value: unknown): boolean {
+    const lastClaimedAt = this.toDate(value);
+
+    if (!lastClaimedAt) return false;
+
+    const cooldownMs = 24 * 60 * 60 * 1000;
+
+    return Date.now() - lastClaimedAt.getTime() < cooldownMs;
+  }
+
+  private toDate(value: unknown): Date | null {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (typeof value === 'string') {
+      const parsedDate = new Date(value);
+
+      return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+    }
+    const timestampLike = value as { toDate?: () => Date };
+
+    if (typeof timestampLike.toDate === 'function') {
+      return timestampLike.toDate();
+    }
+
+    return null;
   }
 }

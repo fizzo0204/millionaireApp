@@ -25,12 +25,14 @@ export interface DailyChestReward {
 export interface DailyRewardState {
   currentDay: number;
   lastClaimDate: string | null;
+  lastClaimedAt?: unknown | null;
   claimedToday: boolean;
 }
 
 export interface UserDailyRewardData {
   currentDay: number;
   lastClaimDate: string | null;
+  lastClaimedAt?: unknown | null;
   claimedToday: boolean;
 }
 

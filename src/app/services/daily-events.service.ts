@@ -9,6 +9,7 @@ import {
   runTransaction,
   serverTimestamp,
   setDoc,
+  updateDoc,
 } from '@angular/fire/firestore';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -40,6 +41,8 @@ export class DailyEventsService {
   private auth = inject(AuthService);
   private ads = inject(AdsService);
   private userStatsService = inject(UserStatsService);
+  private readonly dailyCooldownMs = 24 * 60 * 60 * 1000;
+  private rewardedAdProgressQueue = Promise.resolve();
 
   readonly wheelRewards = DAILY_WHEEL_REWARDS;
   readonly dailyChallengeQuestionCount =
@@ -53,7 +56,12 @@ export class DailyEventsService {
      * Cosi vale sia se il video parte da Eventi, sia se parte da quiz/shop/home.
      */
     this.ads.rewardedAdCompleted$.subscribe(() => {
-      void this.trackMissionProgress('adsWatched');
+      this.rewardedAdProgressQueue = this.rewardedAdProgressQueue
+        .catch(() => undefined)
+        .then(() => this.trackRewardedAdCompleted())
+        .catch((error) => {
+          console.warn('Missione video non aggiornata:', error);
+        });
     });
   }
 
@@ -102,6 +110,24 @@ export class DailyEventsService {
     if (!user) return this.getDefaultDailyEventsData();
 
     return this.getTodayData(user.uid);
+  }
+
+  isWheelFreeSpinAvailable(data: DailyEventsData | null): boolean {
+    if (!data) return true;
+
+    return (
+      data.wheel.freeSpinDate !== this.todayKey &&
+      !this.isCooldownActive(data.wheel.lastFreeSpinAt)
+    );
+  }
+
+  isDailyChallengeAvailable(data: DailyEventsData | null): boolean {
+    if (!data) return true;
+
+    return (
+      data.dailyChallenge.rewardClaimedDate !== this.todayKey &&
+      !this.isCooldownActive(data.dailyChallenge.rewardClaimedAt)
+    );
   }
 
   getDebugWeekday(): number | null {
@@ -336,6 +362,9 @@ export class DailyEventsService {
     const user = await firstValueFrom(this.auth.user$);
 
     if (!user) return null;
+    if (useAdSpin) {
+      await this.waitForRewardedAdProgress();
+    }
 
     const userRef = doc(this.firestore, `users/${user.uid}`);
     let selectedReward = this.getWeightedWheelReward();
@@ -348,7 +377,7 @@ export class DailyEventsService {
 
       const data = snapshot.data();
       const dailyEvents = this.normalizeDailyEventsData(data['dailyEvents']);
-      const freeSpinAvailable = dailyEvents.wheel.freeSpinDate !== this.todayKey;
+      const freeSpinAvailable = this.isWheelFreeSpinAvailable(dailyEvents);
 
       if (!useAdSpin && !freeSpinAvailable) return;
 
@@ -386,6 +415,9 @@ export class DailyEventsService {
       dailyEvents.wheel.freeSpinDate = freeSpinAvailable
         ? this.todayKey
         : dailyEvents.wheel.freeSpinDate;
+      dailyEvents.wheel.lastFreeSpinAt = freeSpinAvailable
+        ? serverTimestamp()
+        : (dailyEvents.wheel.lastFreeSpinAt ?? null);
       dailyEvents.wheel.spinsToday += 1;
       dailyEvents.metrics.wheelSpins = this.capMetricProgress(
         'wheelSpins',
@@ -445,18 +477,14 @@ export class DailyEventsService {
 
     if (!user) return null;
 
+    await this.waitForRewardedAdProgress();
+
     if (wheelReward.reward.type === 'coins') {
       const userRef = doc(this.firestore, `users/${user.uid}`);
 
-      await setDoc(
-        userRef,
-        {
-          stats: {
-            coins: increment(wheelReward.amount),
-          },
-        },
-        { merge: true },
-      );
+      await updateDoc(userRef, {
+        'stats.coins': increment(wheelReward.amount),
+      });
     }
 
     if (wheelReward.reward.type === 'xp') {
@@ -494,8 +522,7 @@ export class DailyEventsService {
 
       const data = snapshot.data();
       const dailyEvents = this.normalizeDailyEventsData(data['dailyEvents']);
-      const alreadyClaimed =
-        dailyEvents.dailyChallenge.rewardClaimedDate === this.todayKey;
+      const alreadyClaimed = !this.isDailyChallengeAvailable(dailyEvents);
 
       dailyEvents.metrics.dailyChallengeCompleted = 1;
       dailyEvents.metrics.dailyChallengeQuestions = Math.max(
@@ -516,6 +543,7 @@ export class DailyEventsService {
       }
 
       dailyEvents.dailyChallenge.completedDate = this.todayKey;
+      dailyEvents.dailyChallenge.completedAt = serverTimestamp();
       dailyEvents.dailyChallenge.bestCorrectToday = Math.max(
         dailyEvents.dailyChallenge.bestCorrectToday ?? 0,
         correctAnswers,
@@ -528,6 +556,7 @@ export class DailyEventsService {
 
       if (!alreadyClaimed) {
         dailyEvents.dailyChallenge.rewardClaimedDate = this.todayKey;
+        dailyEvents.dailyChallenge.rewardClaimedAt = serverTimestamp();
         updates['dailyEvents'] = dailyEvents;
         updates['stats.coins'] = increment(this.dailyChallengeCoinsReward);
       }
@@ -546,6 +575,8 @@ export class DailyEventsService {
 
     if (!user) return 0;
 
+    await this.waitForRewardedAdProgress();
+
     const userRef = doc(this.firestore, `users/${user.uid}`);
 
     return runTransaction(this.firestore, async (transaction) => {
@@ -562,6 +593,7 @@ export class DailyEventsService {
       if (!canDouble) return 0;
 
       dailyEvents.dailyChallenge.rewardDoubledDate = this.todayKey;
+      dailyEvents.dailyChallenge.rewardDoubledAt = serverTimestamp();
 
       transaction.update(userRef, {
         dailyEvents,
@@ -588,11 +620,46 @@ export class DailyEventsService {
     return dailyEvents;
   }
 
+  private async trackRewardedAdCompleted(): Promise<void> {
+    const user = await firstValueFrom(this.auth.user$);
+
+    if (!user) return;
+
+    await this.getTodayData(user.uid);
+
+    const userRef = doc(this.firestore, `users/${user.uid}`);
+
+    /*
+     * Per il video usiamo un update atomico semplice, non una transazione:
+     * il video spesso viene seguito subito da un altro premio e cosi evitiamo
+     * collisioni sullo stesso documento utente.
+     */
+    await updateDoc(userRef, {
+      'dailyEvents.metrics.adsWatched': increment(1),
+    });
+  }
+
+  private async waitForRewardedAdProgress(): Promise<void> {
+    await this.rewardedAdProgressQueue.catch(() => undefined);
+  }
+
   private normalizeDailyEventsData(rawData: unknown): DailyEventsData {
     const fallback = this.getDefaultDailyEventsData();
     const data = rawData as Partial<DailyEventsData> | undefined;
 
-    if (!data || data.dateKey !== this.todayKey) return fallback;
+    if (!data || data.dateKey !== this.todayKey) {
+      return {
+        ...fallback,
+        wheel: {
+          ...fallback.wheel,
+          lastFreeSpinAt: data?.wheel?.lastFreeSpinAt ?? null,
+        },
+        dailyChallenge: {
+          ...fallback.dailyChallenge,
+          rewardClaimedAt: data?.dailyChallenge?.rewardClaimedAt ?? null,
+        },
+      };
+    }
 
     return {
       dateKey: data.dateKey,
@@ -623,12 +690,16 @@ export class DailyEventsService {
       missionProgressBaselines: {},
       wheel: {
         freeSpinDate: null,
+        lastFreeSpinAt: null,
         spinsToday: 0,
       },
       dailyChallenge: {
         completedDate: null,
+        completedAt: null,
         rewardClaimedDate: null,
+        rewardClaimedAt: null,
         rewardDoubledDate: null,
+        rewardDoubledAt: null,
         bestCorrectToday: 0,
       },
     };
@@ -782,5 +853,31 @@ export class DailyEventsService {
     const day = String(today.getDate()).padStart(2, '0');
 
     return `${year}-${month}-${day}`;
+  }
+
+  private isCooldownActive(value: unknown): boolean {
+    const lastActionAt = this.toDate(value);
+
+    if (!lastActionAt) return false;
+
+    return Date.now() - lastActionAt.getTime() < this.dailyCooldownMs;
+  }
+
+  private toDate(value: unknown): Date | null {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (typeof value === 'string') {
+      const parsedDate = new Date(value);
+
+      return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+    }
+
+    const timestampLike = value as { toDate?: () => Date };
+
+    if (typeof timestampLike.toDate === 'function') {
+      return timestampLike.toDate();
+    }
+
+    return null;
   }
 }

@@ -34,8 +34,8 @@ export class EventsChallengePage implements OnInit {
   }
 
   get dailyChallengeCompleted(): boolean {
-    return (
-      this.dailyEventsData?.dailyChallenge.rewardClaimedDate === this.todayKey
+    return !this.dailyEventsService.isDailyChallengeAvailable(
+      this.dailyEventsData,
     );
   }
 
@@ -64,12 +64,4 @@ export class EventsChallengePage implements OnInit {
     this.router.navigateByUrl('/events');
   }
 
-  private get todayKey(): string {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
-  }
 }

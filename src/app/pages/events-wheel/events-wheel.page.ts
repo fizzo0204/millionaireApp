@@ -42,7 +42,9 @@ export class EventsWheelPage implements OnInit {
   }
 
   get wheelFreeSpinAvailable(): boolean {
-    return this.dailyEventsData?.wheel.freeSpinDate !== this.todayKey;
+    return this.dailyEventsService.isWheelFreeSpinAvailable(
+      this.dailyEventsData,
+    );
   }
 
   getWheelLabelAngle(index: number): number {
@@ -138,12 +140,4 @@ export class EventsWheelPage implements OnInit {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  private get todayKey(): string {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
-  }
 }

@@ -10,6 +10,756 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
+    function isStringOrNull(value, maxLength) {
+      return value == null || (value is string && value.size() <= maxLength);
+    }
+
+    function isTimestampOrNull(value) {
+      return value == null || value is timestamp;
+    }
+
+    function isCooldownReady(value) {
+      return !(value is timestamp)
+        || request.time >= value + duration.value(24, 'h');
+    }
+
+    function isNumberInRange(value, min, max) {
+      return value is number && value >= min && value <= max;
+    }
+
+    function isBooleanOrMissing(data, key) {
+      return !data.keys().hasAny([key]) || data[key] is bool;
+    }
+
+    function isStringOrNullOrMissing(data, key, maxLength) {
+      return !data.keys().hasAny([key]) || isStringOrNull(data[key], maxLength);
+    }
+
+    function isTimestampOrNullOrMissing(data, key) {
+      return !data.keys().hasAny([key]) || isTimestampOrNull(data[key]);
+    }
+
+    function isNumberInRangeOrMissing(data, key, min, max) {
+      return !data.keys().hasAny([key]) || isNumberInRange(data[key], min, max);
+    }
+
+    function isValidDifficultyId(value) {
+      return value in ['easy', 'medium', 'hard', 'extreme'];
+    }
+
+    function isValidStats(stats) {
+      return stats is map
+        && stats.keys().hasOnly([
+          'quizPlayed',
+          'correctAnswers',
+          'wrongAnswers',
+          'bestScore',
+          'streakDays',
+          'lastQuizPlayedAt',
+          'lastLifeUpdate',
+          'xp',
+          'level',
+          'levelRewardLastClaimedLevel',
+          'coins',
+          'lives',
+        ])
+        && stats.keys().hasAll([
+          'quizPlayed',
+          'correctAnswers',
+          'wrongAnswers',
+          'bestScore',
+          'streakDays',
+          'lastQuizPlayedAt',
+          'xp',
+          'level',
+          'coins',
+          'lives',
+        ])
+        && isNumberInRange(stats.quizPlayed, 0, 1000000)
+        && isNumberInRange(stats.correctAnswers, 0, 10000000)
+        && isNumberInRange(stats.wrongAnswers, 0, 10000000)
+        && isNumberInRange(stats.bestScore, 0, 100)
+        && isNumberInRange(stats.streakDays, 0, 10000)
+        && isTimestampOrNull(stats.lastQuizPlayedAt)
+        && isTimestampOrNullOrMissing(stats, 'lastLifeUpdate')
+        && isNumberInRange(stats.xp, 0, 10000000)
+        && isNumberInRange(stats.level, 1, 100)
+        && isNumberInRangeOrMissing(stats, 'levelRewardLastClaimedLevel', 1, 100)
+        && isNumberInRange(stats.coins, 0, 1000000)
+        && isNumberInRange(stats.lives, 0, 5);
+    }
+
+    function isDefaultStatsReset(stats) {
+      return isValidStats(stats)
+        && stats.quizPlayed == 0
+        && stats.correctAnswers == 0
+        && stats.wrongAnswers == 0
+        && stats.bestScore == 0
+        && stats.streakDays == 0
+        && stats.lastQuizPlayedAt == null
+        && (!stats.keys().hasAny(['lastLifeUpdate']) || stats.lastLifeUpdate == null)
+        && stats.xp == 0
+        && stats.level == 1
+        && (!stats.keys().hasAny(['levelRewardLastClaimedLevel']) || stats.levelRewardLastClaimedLevel == 1)
+        && stats.coins == 20
+        && stats.lives == 5;
+    }
+
+    function isExistingNumberDeltaOk(before, after, field, minDelta, maxDelta) {
+      return !(before is map)
+        || !before.keys().hasAny([field])
+        || (
+          after[field] is number
+          && before[field] is number
+          && after[field] - before[field] >= minDelta
+          && after[field] - before[field] <= maxDelta
+        );
+    }
+
+    function isNumberStepOk(before, after, field, maxInitial, minDelta, maxDelta) {
+      return (
+          (!(before is map) || !before.keys().hasAny([field]))
+          && isNumberInRange(after[field], 0, maxInitial)
+        )
+        || (
+          before is map
+          && before.keys().hasAny([field])
+          && isExistingNumberDeltaOk(before, after, field, minDelta, maxDelta)
+        );
+    }
+
+    function isMetricDeltaOk(before, after, field, maxDelta) {
+      return (
+          (!(before is map) || !before.keys().hasAny([field]))
+          && (
+            !after.keys().hasAny([field])
+            || isNumberInRange(after[field], 0, maxDelta)
+          )
+        )
+        || (
+          before is map
+          && before.keys().hasAny([field])
+          && after.keys().hasAny([field])
+          && isExistingNumberDeltaOk(before, after, field, 0, maxDelta)
+        );
+    }
+
+    function isEmptyMap(value) {
+      return value is map && value.keys().size() == 0;
+    }
+
+    function isMapSameResetOrGrowingOk(before, after, maxGrowth) {
+      return after is map
+        && (
+          !(before is map)
+          || after.keys().size() == 0
+          || after == before
+          || (
+            after.keys().size() >= before.keys().size()
+            && after.keys().size() - before.keys().size() <= maxGrowth
+          )
+        );
+    }
+
+    function isMapSameResetOrOneNewKeyOk(before, after) {
+      return after is map
+        && (
+          !(before is map)
+          || after.keys().size() == 0
+          || after == before
+          || (
+            after.keys().size() == before.keys().size() + 1
+            && after.keys().hasAll(before.keys())
+          )
+        );
+    }
+
+    function isListSameResetOrGrowingOk(before, after, maxGrowth) {
+      return after is list
+        && (
+          !(before is list)
+          || after.size() == 0
+          || after == before
+          || (
+            after.size() > before.size()
+            && after.size() - before.size() <= maxGrowth
+          )
+        );
+    }
+
+    function isStatsChangeReasonable(before, after) {
+      return isDefaultStatsReset(after)
+        || (
+          isValidStats(after)
+          && isExistingNumberDeltaOk(before, after, 'quizPlayed', 0, 1)
+          && isExistingNumberDeltaOk(before, after, 'correctAnswers', 0, 50)
+          && isExistingNumberDeltaOk(before, after, 'wrongAnswers', 0, 50)
+          && isExistingNumberDeltaOk(before, after, 'bestScore', -100, 50)
+          && isExistingNumberDeltaOk(before, after, 'streakDays', -10000, 1)
+          && isExistingNumberDeltaOk(before, after, 'xp', 0, 1000)
+          && isExistingNumberDeltaOk(before, after, 'level', 0, 10)
+          && isExistingNumberDeltaOk(before, after, 'levelRewardLastClaimedLevel', 0, 10)
+          && isExistingNumberDeltaOk(before, after, 'coins', -1000, 500)
+          && isExistingNumberDeltaOk(before, after, 'lives', -1, 5)
+        );
+    }
+
+    function isValidDailyReward(dailyReward) {
+      return dailyReward is map
+        && dailyReward.keys().hasOnly([
+          'currentDay',
+          'lastClaimDate',
+          'lastClaimedAt',
+          'claimedToday',
+        ])
+        && dailyReward.keys().hasAll([
+          'currentDay',
+          'lastClaimDate',
+          'claimedToday',
+        ])
+        && isNumberInRange(dailyReward.currentDay, 1, 7)
+        && isStringOrNull(dailyReward.lastClaimDate, 10)
+        && isTimestampOrNullOrMissing(dailyReward, 'lastClaimedAt')
+        && dailyReward.claimedToday is bool;
+    }
+
+    function isDailyRewardIdleState(dailyReward) {
+      return isValidDailyReward(dailyReward)
+        && dailyReward.lastClaimDate == null
+        && (
+          !dailyReward.keys().hasAny(['lastClaimedAt'])
+          || dailyReward.lastClaimedAt == null
+        )
+        && dailyReward.claimedToday == false;
+    }
+
+    function isDefaultDailyRewardState(dailyReward) {
+      return isDailyRewardIdleState(dailyReward)
+        && dailyReward.currentDay == 1;
+    }
+
+    function isDailyRewardClaimTransition(before, after) {
+      return before is map
+        && isValidDailyReward(before)
+        && isValidDailyReward(after)
+        && after.claimedToday == true
+        && after.lastClaimDate is string
+        && after.lastClaimDate.size() == 10
+        && after.lastClaimedAt == request.time
+        && isCooldownReady(before.lastClaimedAt)
+        && (
+          before.lastClaimDate == null
+          || before.lastClaimDate != after.lastClaimDate
+        )
+        && (
+          (
+            before.currentDay >= 1
+            && before.currentDay < 7
+            && after.currentDay == before.currentDay + 1
+          )
+          || (
+            before.currentDay == 7
+            && after.currentDay == 1
+          )
+        );
+    }
+
+    function isDailyRewardChangeReasonable(before, after) {
+      return after == before
+        || (!(before is map) && isValidDailyReward(after))
+        || isDailyRewardIdleState(after)
+        || (
+          isDefaultDailyRewardState(before)
+          && isValidDailyReward(after)
+          && (
+            after.claimedToday == false
+            || after.lastClaimedAt == request.time
+          )
+        )
+        || isDailyRewardClaimTransition(before, after);
+    }
+
+    function isValidAvatar(avatar, nickname) {
+      return avatar is map
+        && avatar.keys().hasOnly(['selectedAvatar', 'unlockedAvatarIds'])
+        && avatar.keys().hasAll(['selectedAvatar', 'unlockedAvatarIds'])
+        && avatar.selectedAvatar is string
+        && avatar.selectedAvatar.size() <= 80
+        && avatar.unlockedAvatarIds is list
+        && avatar.unlockedAvatarIds.size() <= 200
+        && (
+          !(avatar.selectedAvatar in ['special_1_turtle', 'special_2_turtle'])
+          || nickname in ['Prof_Tonino', 'prof_tonino', 'Avv_Chicchina', 'avv_chicchina']
+        );
+    }
+
+    function isAvatarChangeReasonable(before, after, nickname) {
+      return after == before
+        || (!(before is map) && isValidAvatar(after, nickname))
+        || (
+          before is map
+          && isValidAvatar(after, nickname)
+          && isListSameResetOrGrowingOk(
+            before.unlockedAvatarIds,
+            after.unlockedAvatarIds,
+            20
+          )
+        );
+    }
+
+    function isValidOnboarding(onboarding) {
+      return onboarding is map
+        && onboarding.keys().hasOnly([
+          'tutorialCompleted',
+          'tutorialRewardClaimed',
+          'tutorialSkipped',
+          'tutorialCompletedAt',
+          'tutorialSkippedAt',
+        ])
+        && onboarding.keys().hasAll([
+          'tutorialCompleted',
+          'tutorialRewardClaimed',
+        ])
+        && onboarding.tutorialCompleted is bool
+        && onboarding.tutorialRewardClaimed is bool
+        && isBooleanOrMissing(onboarding, 'tutorialSkipped')
+        && isTimestampOrNullOrMissing(onboarding, 'tutorialCompletedAt')
+        && isTimestampOrNullOrMissing(onboarding, 'tutorialSkippedAt');
+    }
+
+    function isOnboardingDebugReset(onboarding) {
+      return isValidOnboarding(onboarding)
+        && onboarding.tutorialCompleted == false
+        && onboarding.tutorialRewardClaimed == false
+        && (
+          !onboarding.keys().hasAny(['tutorialSkipped'])
+          || onboarding.tutorialSkipped == false
+        )
+        && (
+          !onboarding.keys().hasAny(['tutorialCompletedAt'])
+          || onboarding.tutorialCompletedAt == null
+        )
+        && (
+          !onboarding.keys().hasAny(['tutorialSkippedAt'])
+          || onboarding.tutorialSkippedAt == null
+        );
+    }
+
+    function isOnboardingChangeReasonable(before, after) {
+      return after == before
+        || (!(before is map) && isValidOnboarding(after))
+        || isOnboardingDebugReset(after)
+        || (
+          before is map
+          && isValidOnboarding(after)
+          && (
+            before.tutorialCompleted == false
+            || after.tutorialCompleted == true
+          )
+          && (
+            before.tutorialRewardClaimed == false
+            || after.tutorialRewardClaimed == true
+          )
+        );
+    }
+
+    function isValidAuth(auth) {
+      return auth is map
+        && auth.keys().hasOnly([
+          'providerIds',
+          'createdFromProviderId',
+          'loginRewardClaimed',
+          'lastMergeCheckedAt',
+          'migratedFromUid',
+          'migratedFromProviderId',
+          'migratedFromAnonymousUid',
+          'migratedAt',
+        ])
+        && auth.keys().hasAll([
+          'providerIds',
+          'createdFromProviderId',
+          'loginRewardClaimed',
+        ])
+        && auth.providerIds is list
+        && auth.providerIds.size() <= 4
+        && auth.createdFromProviderId is string
+        && auth.createdFromProviderId.size() <= 40
+        && auth.loginRewardClaimed is bool
+        && isTimestampOrNullOrMissing(auth, 'lastMergeCheckedAt')
+        && isStringOrNullOrMissing(auth, 'migratedFromUid', 128)
+        && isStringOrNullOrMissing(auth, 'migratedFromProviderId', 40)
+        && isStringOrNullOrMissing(auth, 'migratedFromAnonymousUid', 128)
+        && isTimestampOrNullOrMissing(auth, 'migratedAt');
+    }
+
+    function isValidMetrics(metrics) {
+      return metrics is map
+        && metrics.keys().hasOnly([
+          'adsWatched',
+          'dailyRewardChecks',
+          'wheelSpins',
+          'normalQuizPlayed',
+          'normalQuizWon',
+          'normalHelpsUsed',
+          'normalLevelsCompleted',
+          'dailyChallengeStarted',
+          'dailyChallengeQuestions',
+          'dailyChallengeCorrect',
+          'dailyChallengeCompleted',
+          'dailyChallengeHelps',
+          'dailyChallengePerfect',
+          'dailyChallengeNoHelp',
+        ])
+        && isNumberInRangeOrMissing(metrics, 'adsWatched', 0, 20)
+        && isNumberInRangeOrMissing(metrics, 'dailyRewardChecks', 0, 5)
+        && isNumberInRangeOrMissing(metrics, 'wheelSpins', 0, 20)
+        && isNumberInRangeOrMissing(metrics, 'normalQuizPlayed', 0, 50)
+        && isNumberInRangeOrMissing(metrics, 'normalQuizWon', 0, 50)
+        && isNumberInRangeOrMissing(metrics, 'normalHelpsUsed', 0, 50)
+        && isNumberInRangeOrMissing(metrics, 'normalLevelsCompleted', 0, 50)
+        && isNumberInRangeOrMissing(metrics, 'dailyChallengeStarted', 0, 1)
+        && isNumberInRangeOrMissing(metrics, 'dailyChallengeQuestions', 0, 10)
+        && isNumberInRangeOrMissing(metrics, 'dailyChallengeCorrect', 0, 10)
+        && isNumberInRangeOrMissing(metrics, 'dailyChallengeCompleted', 0, 1)
+        && isNumberInRangeOrMissing(metrics, 'dailyChallengeHelps', 0, 10)
+        && isNumberInRangeOrMissing(metrics, 'dailyChallengePerfect', 0, 1)
+        && isNumberInRangeOrMissing(metrics, 'dailyChallengeNoHelp', 0, 1);
+    }
+
+    function isValidDailyEvents(dailyEvents) {
+      return dailyEvents is map
+        && dailyEvents.keys().hasOnly([
+          'dateKey',
+          'metrics',
+          'missionClaims',
+          'missionSwitches',
+          'missionProgressBaselines',
+          'wheel',
+          'dailyChallenge',
+        ])
+        && dailyEvents.keys().hasAll([
+          'dateKey',
+          'metrics',
+          'missionClaims',
+          'missionSwitches',
+          'missionProgressBaselines',
+          'wheel',
+          'dailyChallenge',
+        ])
+        && dailyEvents.dateKey is string
+        && dailyEvents.dateKey.size() == 10
+        && isValidMetrics(dailyEvents.metrics)
+        && dailyEvents.missionClaims is map
+        && dailyEvents.missionClaims.keys().size() <= 30
+        && dailyEvents.missionSwitches is map
+        && dailyEvents.missionSwitches.keys().size() <= 10
+        && dailyEvents.missionProgressBaselines is map
+        && dailyEvents.missionProgressBaselines.keys().size() <= 10
+        && dailyEvents.wheel is map
+        && dailyEvents.wheel.keys().hasOnly([
+          'freeSpinDate',
+          'lastFreeSpinAt',
+          'spinsToday',
+        ])
+        && dailyEvents.wheel.keys().hasAll(['freeSpinDate', 'spinsToday'])
+        && isStringOrNull(dailyEvents.wheel.freeSpinDate, 10)
+        && isTimestampOrNullOrMissing(dailyEvents.wheel, 'lastFreeSpinAt')
+        && isNumberInRange(dailyEvents.wheel.spinsToday, 0, 20)
+        && dailyEvents.dailyChallenge is map
+        && dailyEvents.dailyChallenge.keys().hasOnly([
+          'completedDate',
+          'completedAt',
+          'rewardClaimedDate',
+          'rewardClaimedAt',
+          'rewardDoubledDate',
+          'rewardDoubledAt',
+          'bestCorrectToday',
+        ])
+        && dailyEvents.dailyChallenge.keys().hasAll([
+          'completedDate',
+          'rewardClaimedDate',
+          'rewardDoubledDate',
+          'bestCorrectToday',
+        ])
+        && isStringOrNull(dailyEvents.dailyChallenge.completedDate, 10)
+        && isTimestampOrNullOrMissing(dailyEvents.dailyChallenge, 'completedAt')
+        && isStringOrNull(dailyEvents.dailyChallenge.rewardClaimedDate, 10)
+        && isTimestampOrNullOrMissing(dailyEvents.dailyChallenge, 'rewardClaimedAt')
+        && isStringOrNull(dailyEvents.dailyChallenge.rewardDoubledDate, 10)
+        && isTimestampOrNullOrMissing(dailyEvents.dailyChallenge, 'rewardDoubledAt')
+        && isNumberInRange(dailyEvents.dailyChallenge.bestCorrectToday, 0, 10);
+    }
+
+    function isDefaultDailyEventsReset(dailyEvents) {
+      return isValidDailyEvents(dailyEvents)
+        && isEmptyMap(dailyEvents.metrics)
+        && isEmptyMap(dailyEvents.missionClaims)
+        && isEmptyMap(dailyEvents.missionSwitches)
+        && isEmptyMap(dailyEvents.missionProgressBaselines)
+        && dailyEvents.wheel.freeSpinDate == null
+        && dailyEvents.wheel.spinsToday == 0
+        && dailyEvents.dailyChallenge.completedDate == null
+        && dailyEvents.dailyChallenge.rewardClaimedDate == null
+        && dailyEvents.dailyChallenge.rewardDoubledDate == null
+        && dailyEvents.dailyChallenge.bestCorrectToday == 0;
+    }
+
+    function isDailyEventsMetricsChangeReasonable(before, after) {
+      return isEmptyMap(after)
+        || (
+          isValidMetrics(after)
+          && isMetricDeltaOk(before, after, 'adsWatched', 1)
+          && isMetricDeltaOk(before, after, 'dailyRewardChecks', 1)
+          && isMetricDeltaOk(before, after, 'wheelSpins', 1)
+          && isMetricDeltaOk(before, after, 'normalQuizPlayed', 1)
+          && isMetricDeltaOk(before, after, 'normalQuizWon', 1)
+          && isMetricDeltaOk(before, after, 'normalHelpsUsed', 1)
+          && isMetricDeltaOk(before, after, 'normalLevelsCompleted', 1)
+          && isMetricDeltaOk(before, after, 'dailyChallengeStarted', 1)
+          && isMetricDeltaOk(before, after, 'dailyChallengeQuestions', 10)
+          && isMetricDeltaOk(before, after, 'dailyChallengeCorrect', 10)
+          && isMetricDeltaOk(before, after, 'dailyChallengeCompleted', 1)
+          && isMetricDeltaOk(before, after, 'dailyChallengeHelps', 1)
+          && isMetricDeltaOk(before, after, 'dailyChallengePerfect', 1)
+          && isMetricDeltaOk(before, after, 'dailyChallengeNoHelp', 1)
+        );
+    }
+
+    function isWheelChangeReasonable(before, after) {
+      return after is map
+        && (
+          (
+            after.freeSpinDate == null
+            && after.spinsToday == 0
+          )
+          || (
+            isStringOrNull(after.freeSpinDate, 10)
+            && isNumberStepOk(before, after, 'spinsToday', 1, 0, 1)
+            && (
+              !(before is map)
+              || after.freeSpinDate == before.freeSpinDate
+              || (
+                after.lastFreeSpinAt == request.time
+                && isCooldownReady(before.lastFreeSpinAt)
+              )
+            )
+            && (
+              !(before is map)
+              || after.freeSpinDate != before.freeSpinDate
+              || !after.keys().hasAny(['lastFreeSpinAt'])
+              || !before.keys().hasAny(['lastFreeSpinAt'])
+              || after.lastFreeSpinAt == before.lastFreeSpinAt
+            )
+          )
+        );
+    }
+
+    function isDailyChallengeChangeReasonable(before, after) {
+      return after is map
+        && (
+          (
+            after.completedDate == null
+            && after.rewardClaimedDate == null
+            && after.rewardDoubledDate == null
+            && after.bestCorrectToday == 0
+          )
+          || (
+            isStringOrNull(after.completedDate, 10)
+            && isStringOrNull(after.rewardClaimedDate, 10)
+            && isStringOrNull(after.rewardDoubledDate, 10)
+            && (
+              !(before is map)
+              || after.completedDate == before.completedDate
+              || after.completedAt == request.time
+            )
+            && (
+              !(before is map)
+              || after.rewardClaimedDate == before.rewardClaimedDate
+              || (
+                after.rewardClaimedAt == request.time
+                && isCooldownReady(before.rewardClaimedAt)
+              )
+            )
+            && (
+              !(before is map)
+              || after.rewardDoubledDate == before.rewardDoubledDate
+              || after.rewardDoubledAt == request.time
+            )
+            && (
+              after.rewardDoubledDate == null
+              || after.rewardClaimedDate != null
+            )
+            && isNumberStepOk(
+              before,
+              after,
+              'bestCorrectToday',
+              10,
+              0,
+              10
+            )
+          )
+        );
+    }
+
+    function isDailyEventsChangeReasonable(before, after) {
+      return after == null
+        || after == before
+        || isDefaultDailyEventsReset(after)
+        || (
+          !(before is map)
+          && isValidDailyEvents(after)
+        )
+        || (
+          before is map
+          && isValidDailyEvents(after)
+          && before.dateKey == after.dateKey
+          && isDailyEventsMetricsChangeReasonable(before.metrics, after.metrics)
+          && isMapSameResetOrOneNewKeyOk(
+            before.missionClaims,
+            after.missionClaims
+          )
+          && isMapSameResetOrGrowingOk(
+            before.missionSwitches,
+            after.missionSwitches,
+            1
+          )
+          && isMapSameResetOrGrowingOk(
+            before.missionProgressBaselines,
+            after.missionProgressBaselines,
+            1
+          )
+          && isWheelChangeReasonable(before.wheel, after.wheel)
+          && isDailyChallengeChangeReasonable(
+            before.dailyChallenge,
+            after.dailyChallenge
+          )
+        );
+    }
+
+    function isValidUserDocument(uid, data) {
+      return data.keys().hasOnly([
+          'uid',
+          'displayName',
+          'nickname',
+          'email',
+          'photoURL',
+          'createdAt',
+          'lastLoginAt',
+          'stats',
+          'dailyReward',
+          'avatar',
+          'onboarding',
+          'auth',
+          'dailyEvents',
+          'selectedAvatar',
+          'unlockedAvatarIds',
+        ])
+        && data.uid == uid
+        && isStringOrNull(data.displayName, 80)
+        && isStringOrNullOrMissing(data, 'nickname', 16)
+        && isStringOrNull(data.email, 160)
+        && isStringOrNull(data.photoURL, 600)
+        && data.createdAt is timestamp
+        && data.lastLoginAt is timestamp
+        && isValidStats(data.stats)
+        && isValidDailyReward(data.dailyReward)
+        && isValidAvatar(data.avatar, data.nickname)
+        && isValidOnboarding(data.onboarding)
+        && isValidAuth(data.auth)
+        && (!data.keys().hasAny(['dailyEvents']) || isValidDailyEvents(data.dailyEvents))
+        && isStringOrNullOrMissing(data, 'selectedAvatar', 80)
+        && (!data.keys().hasAny(['unlockedAvatarIds'])
+          || (data.unlockedAvatarIds is list && data.unlockedAvatarIds.size() <= 200));
+    }
+
+    function isAllowedUserUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayName',
+          'nickname',
+          'email',
+          'photoURL',
+          'lastLoginAt',
+          'stats',
+          'dailyReward',
+          'avatar',
+          'onboarding',
+          'auth',
+          'dailyEvents',
+          'selectedAvatar',
+          'unlockedAvatarIds',
+        ])
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.createdAt == resource.data.createdAt
+        && isStatsChangeReasonable(resource.data.stats, request.resource.data.stats)
+        && isDailyRewardChangeReasonable(
+          resource.data.dailyReward,
+          request.resource.data.dailyReward
+        )
+        && isAvatarChangeReasonable(
+          resource.data.avatar,
+          request.resource.data.avatar,
+          request.resource.data.nickname
+        )
+        && isOnboardingChangeReasonable(
+          resource.data.onboarding,
+          request.resource.data.onboarding
+        )
+        && isDailyEventsChangeReasonable(
+          resource.data.dailyEvents,
+          request.resource.data.dailyEvents
+        );
+    }
+
+    function isValidProgressDocument(data) {
+      return data.keys().hasOnly(['completedDifficulties'])
+        && data.keys().hasAll(['completedDifficulties'])
+        && data.completedDifficulties is list
+        && data.completedDifficulties.size() <= 4;
+    }
+
+    function isValidCompletedLevelDocument(data) {
+      return data.keys().hasOnly([
+          'categoryId',
+          'difficultyId',
+          'levelNumber',
+          'completedAt',
+        ])
+        && data.keys().hasAll([
+          'categoryId',
+          'difficultyId',
+          'levelNumber',
+          'completedAt',
+        ])
+        && data.categoryId is string
+        && data.categoryId.size() <= 40
+        && isValidDifficultyId(data.difficultyId)
+        && isNumberInRange(data.levelNumber, 1, 10000)
+        && data.completedAt is timestamp;
+    }
+
+    function isValidQuizHistoryDocument(data) {
+      return data.keys().hasOnly([
+          'categoryId',
+          'difficultyId',
+          'correctAnswers',
+          'totalQuestions',
+          'playedAt',
+        ])
+        && data.keys().hasAll([
+          'categoryId',
+          'difficultyId',
+          'correctAnswers',
+          'totalQuestions',
+          'playedAt',
+        ])
+        && data.categoryId is string
+        && data.categoryId.size() <= 40
+        && isValidDifficultyId(data.difficultyId)
+        && isNumberInRange(data.totalQuestions, 1, 100)
+        && isNumberInRange(data.correctAnswers, 0, data.totalQuestions)
+        && data.playedAt is timestamp;
+    }
+
     /*
      * Le domande sono contenuto del gioco:
      * - il client puo leggere solo quelle attive;
@@ -24,21 +774,37 @@ service cloud.firestore {
 
     /*
      * Profilo giocatore: anonimo, Play Games, Google e Facebook salvano tutti
-     * sotto users/{uid}. Il client puo gestire solo il proprio documento.
+     * sotto users/{uid}. Il client puo gestire solo il proprio documento, ma
+     * con una forma valida e incrementi ragionevoli per limitare manomissioni
+     * grossolane lato client.
      */
     match /users/{uid} {
-      allow read, create, update, delete: if isOwner(uid);
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) && isValidUserDocument(uid, request.resource.data);
+      allow update: if isOwner(uid)
+        && isValidUserDocument(uid, request.resource.data)
+        && isAllowedUserUpdate();
+      allow delete: if isOwner(uid);
 
       match /progress/{progressId} {
-        allow read, create, update, delete: if isOwner(uid);
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && isValidProgressDocument(request.resource.data);
+        allow delete: if isOwner(uid);
       }
 
       match /completedLevels/{levelId} {
-        allow read, create, update, delete: if isOwner(uid);
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && isValidCompletedLevelDocument(request.resource.data);
+        allow delete: if isOwner(uid);
       }
 
       match /quizHistory/{historyId} {
-        allow read, create, update, delete: if isOwner(uid);
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && isValidQuizHistoryDocument(request.resource.data);
+        allow delete: if isOwner(uid);
       }
     }
 

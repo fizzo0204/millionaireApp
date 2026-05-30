@@ -79,6 +79,7 @@ export class UserStatsService {
   readonly defaultDailyReward: UserDailyRewardData = {
     currentDay: 1,
     lastClaimDate: null,
+    lastClaimedAt: null,
     claimedToday: false,
   };
 
@@ -545,7 +546,12 @@ export class UserStatsService {
         ...(data['dailyReward'] as Partial<UserDailyRewardData> | undefined),
       };
 
-      if (dailyReward.lastClaimDate === todayKey) return null;
+      if (
+        dailyReward.lastClaimDate === todayKey ||
+        this.isDailyRewardCooldownActive(dailyReward.lastClaimedAt)
+      ) {
+        return null;
+      }
 
       const currentDay = Math.min(
         Math.max(dailyReward.currentDay ?? 1, 1),
@@ -564,12 +570,14 @@ export class UserStatsService {
       const updatedDailyReward: UserDailyRewardData = {
         currentDay: nextDay,
         lastClaimDate: todayKey,
+        lastClaimedAt: new Date(),
         claimedToday: true,
       };
 
       const updates: UpdateData<DocumentData> = {
         'dailyReward.currentDay': updatedDailyReward.currentDay,
         'dailyReward.lastClaimDate': updatedDailyReward.lastClaimDate,
+        'dailyReward.lastClaimedAt': serverTimestamp(),
         'dailyReward.claimedToday': updatedDailyReward.claimedToday,
       };
 
@@ -956,5 +964,33 @@ export class UserStatsService {
       dailyEvents: deleteField(),
       nickname: deleteField(),
     });
+  }
+
+  private isDailyRewardCooldownActive(value: unknown): boolean {
+    const lastClaimedAt = this.toDate(value);
+
+    if (!lastClaimedAt) return false;
+
+    const cooldownMs = 24 * 60 * 60 * 1000;
+
+    return Date.now() - lastClaimedAt.getTime() < cooldownMs;
+  }
+
+  private toDate(value: unknown): Date | null {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (typeof value === 'string') {
+      const parsedDate = new Date(value);
+
+      return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+    }
+
+    const timestampLike = value as { toDate?: () => Date };
+
+    if (typeof timestampLike.toDate === 'function') {
+      return timestampLike.toDate();
+    }
+
+    return null;
   }
 }

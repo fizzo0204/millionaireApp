@@ -59,12 +59,16 @@ export interface DailyEventsData {
   missionProgressBaselines: Record<string, number>;
   wheel: {
     freeSpinDate: string | null;
+    lastFreeSpinAt?: unknown | null;
     spinsToday: number;
   };
   dailyChallenge: {
     completedDate: string | null;
+    completedAt?: unknown | null;
     rewardClaimedDate: string | null;
+    rewardClaimedAt?: unknown | null;
     rewardDoubledDate: string | null;
+    rewardDoubledAt?: unknown | null;
     bestCorrectToday: number;
   };
 }
