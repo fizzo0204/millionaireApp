@@ -546,10 +546,7 @@ export class UserStatsService {
         ...(data['dailyReward'] as Partial<UserDailyRewardData> | undefined),
       };
 
-      if (
-        dailyReward.lastClaimDate === todayKey ||
-        this.isDailyRewardCooldownActive(dailyReward.lastClaimedAt)
-      ) {
+      if (dailyReward.lastClaimDate === todayKey) {
         return null;
       }
 
@@ -966,31 +963,4 @@ export class UserStatsService {
     });
   }
 
-  private isDailyRewardCooldownActive(value: unknown): boolean {
-    const lastClaimedAt = this.toDate(value);
-
-    if (!lastClaimedAt) return false;
-
-    const cooldownMs = 24 * 60 * 60 * 1000;
-
-    return Date.now() - lastClaimedAt.getTime() < cooldownMs;
-  }
-
-  private toDate(value: unknown): Date | null {
-    if (!value) return null;
-    if (value instanceof Date) return value;
-    if (typeof value === 'string') {
-      const parsedDate = new Date(value);
-
-      return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
-    }
-
-    const timestampLike = value as { toDate?: () => Date };
-
-    if (typeof timestampLike.toDate === 'function') {
-      return timestampLike.toDate();
-    }
-
-    return null;
-  }
 }

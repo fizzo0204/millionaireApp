@@ -19,6 +19,7 @@ import { LevelUpModalComponent } from './components/level-up-modal/level-up-moda
 import { TutorialOverlayComponent } from './components/tutorial-overlay/tutorial-overlay.component';
 import { LevelUpModalService } from './services/level-up-modal.service';
 import { DailyEventsService } from './services/daily-events.service';
+import { DailyRewardAutoOpenService } from './services/daily-reward-auto-open.service';
 import { NavigationTab } from './models/navigation.model';
 import { APP_CONFIG } from 'src/app/config/app.config';
 import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
@@ -68,6 +69,7 @@ export class AppComponent implements OnDestroy {
     private audioService: AudioService,
     private adsService: AdsService,
     private dailyEventsService: DailyEventsService,
+    private dailyRewardAutoOpen: DailyRewardAutoOpenService,
     private router: Router,
   ) {
     void this.dailyEventsService;
@@ -83,6 +85,7 @@ export class AppComponent implements OnDestroy {
     ]);
 
     this.showAppLoader = false;
+    this.dailyRewardAutoOpen.start();
     this.syncBannerVisibility();
   }
 
@@ -110,6 +113,7 @@ export class AppComponent implements OnDestroy {
           }
 
           this.syncBannerVisibility();
+          this.dailyRewardAutoOpen.notifyAppBecameActive();
           return;
         }
 
@@ -149,6 +153,7 @@ export class AppComponent implements OnDestroy {
       .subscribe((event) => {
         this.updateActiveTabFromUrl(event.urlAfterRedirects);
         this.syncBannerVisibility();
+        void this.dailyRewardAutoOpen.checkAndOpen({ delayMs: 250 });
       });
   }
 

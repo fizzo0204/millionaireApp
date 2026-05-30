@@ -246,7 +246,6 @@ service cloud.firestore {
         && after.lastClaimDate is string
         && after.lastClaimDate.size() == 10
         && after.lastClaimedAt == request.time
-        && isCooldownReady(before.lastClaimedAt)
         && (
           before.lastClaimDate == null
           || before.lastClaimDate != after.lastClaimDate

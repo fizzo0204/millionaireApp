@@ -64,9 +64,7 @@ export class DailyRewardService {
       currentDay: this.cachedDailyReward.currentDay,
       lastClaimDate: this.cachedDailyReward.lastClaimDate,
       lastClaimedAt: this.cachedDailyReward.lastClaimedAt ?? null,
-      claimedToday:
-        this.cachedDailyReward.lastClaimDate === this.getTodayKey() ||
-        this.isClaimCooldownActive(this.cachedDailyReward.lastClaimedAt),
+      claimedToday: this.cachedDailyReward.lastClaimDate === this.getTodayKey(),
     };
   }
 
@@ -402,9 +400,7 @@ export class DailyRewardService {
 
     this.cachedDailyReward = {
       ...dailyReward,
-      claimedToday:
-        dailyReward.lastClaimDate === this.getTodayKey() ||
-        this.isClaimCooldownActive(dailyReward.lastClaimedAt),
+      claimedToday: dailyReward.lastClaimDate === this.getTodayKey(),
     };
 
     this.cachedAvatar = {
@@ -444,9 +440,7 @@ export class DailyRewardService {
       currentDay: state.currentDay,
       lastClaimDate: state.lastClaimDate,
       lastClaimedAt: state.lastClaimedAt ?? null,
-      claimedToday:
-        state.lastClaimDate === this.getTodayKey() ||
-        this.isClaimCooldownActive(state.lastClaimedAt),
+      claimedToday: state.lastClaimDate === this.getTodayKey(),
     };
 
     this.cachedAvatar = {
@@ -482,30 +476,4 @@ export class DailyRewardService {
     return `${year}-${month}-${day}`;
   }
 
-  private isClaimCooldownActive(value: unknown): boolean {
-    const lastClaimedAt = this.toDate(value);
-
-    if (!lastClaimedAt) return false;
-
-    const cooldownMs = 24 * 60 * 60 * 1000;
-
-    return Date.now() - lastClaimedAt.getTime() < cooldownMs;
-  }
-
-  private toDate(value: unknown): Date | null {
-    if (!value) return null;
-    if (value instanceof Date) return value;
-    if (typeof value === 'string') {
-      const parsedDate = new Date(value);
-
-      return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
-    }
-    const timestampLike = value as { toDate?: () => Date };
-
-    if (typeof timestampLike.toDate === 'function') {
-      return timestampLike.toDate();
-    }
-
-    return null;
-  }
 }
