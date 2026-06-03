@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { NavigationTab } from 'src/app/models/navigation.model';
+import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 
 @Component({
   selector: 'app-bottom-nav',
@@ -14,7 +15,10 @@ export class BottomNavComponent {
   @Input() activeTab: NavigationTab = 'home';
   @Output() tabChange = new EventEmitter<NavigationTab>();
 
-  constructor(private router: Router) {}
+  constructor(
+    private navigation: NavigationTransitionService,
+    private router: Router,
+  ) {}
 
   setActiveTab(tab: NavigationTab) {
     if (tab === this.activeTab) {
@@ -23,35 +27,16 @@ export class BottomNavComponent {
       if (tab !== 'eventi' || cleanUrl === '/events') return;
     }
 
-    const page = document.querySelector('.page-fade');
-    page?.classList.add('page-fade-out');
+    this.tabChange.emit(tab);
 
-    setTimeout(async () => {
-      this.tabChange.emit(tab);
+    const routes: Record<NavigationTab, string> = {
+      home: '/home',
+      eventi: '/events',
+      negozio: '/shop',
+      profilo: '/profile',
+      impostazioni: '/settings',
+    };
 
-      if (tab === 'home') {
-        await this.router.navigateByUrl('/home');
-      }
-
-      if (tab === 'negozio') {
-        await this.router.navigateByUrl('/shop');
-      }
-
-      if (tab === 'eventi') {
-        await this.router.navigateByUrl('/events');
-      }
-
-      if (tab === 'profilo') {
-        await this.router.navigateByUrl('/profile');
-      }
-
-      if (tab === 'impostazioni') {
-        await this.router.navigateByUrl('/settings');
-      }
-
-      document.querySelectorAll('.page-fade-out').forEach((el) => {
-        el.classList.remove('page-fade-out');
-      });
-    }, 160);
+    void this.navigation.navigateByUrl(routes[tab]);
   }
 }

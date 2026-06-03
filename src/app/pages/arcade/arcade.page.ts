@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
-import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ARCADE_CONFIG } from 'src/app/config/arcade.config';
 import { GameLoaderComponent } from 'src/app/components/game-loader/game-loader.component';
@@ -9,6 +8,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { QuestionsService } from 'src/app/services/questions.service';
 import { UserStatsService } from 'src/app/services/user-stats.service';
 import { UserArcadeData } from 'src/app/models/user-stats.model';
+import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 
 interface ArcadeMapLevel {
   level: number;
@@ -30,8 +30,8 @@ export class ArcadePage {
 
   constructor(
     private auth: AuthService,
+    private navigation: NavigationTransitionService,
     private questionsService: QuestionsService,
-    private router: Router,
     private userStatsService: UserStatsService,
   ) {}
 
@@ -97,11 +97,12 @@ export class ArcadePage {
   startCurrentLevel() {
     if (!this.canPlayCurrentLevel) return;
 
-    this.router.navigateByUrl('/arcade/play');
+    this.loading = true;
+    void this.navigation.navigateByUrl('/arcade/play');
   }
 
   goHome() {
-    this.router.navigateByUrl('/home');
+    void this.navigation.navigateByUrl('/home');
   }
 
   private buildVisibleLevels(): ArcadeMapLevel[] {

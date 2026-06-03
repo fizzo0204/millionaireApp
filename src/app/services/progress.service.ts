@@ -99,25 +99,16 @@ export class ProgressService {
     categoryId: string,
     difficultyId: DifficultyId,
   ): Promise<boolean> {
-    const levels = await this.questionsService.getDifficultyLevelNumbers(
-      categoryId,
-      difficultyId,
-    );
+    const [levels, completedLevelNumbers] = await Promise.all([
+      this.questionsService.getDifficultyLevelNumbers(categoryId, difficultyId),
+      this.getCompletedLevelNumbers(uid, categoryId, difficultyId),
+    ]);
 
     if (levels.length === 0) return false;
 
-    for (const levelNumber of levels) {
-      const completed = await this.isLevelCompleted(
-        uid,
-        categoryId,
-        difficultyId,
-        levelNumber,
-      );
+    const completedLevels = new Set(completedLevelNumbers);
 
-      if (!completed) return false;
-    }
-
-    return true;
+    return levels.every((levelNumber) => completedLevels.has(levelNumber));
   }
 
   async isDifficultyUnlocked(

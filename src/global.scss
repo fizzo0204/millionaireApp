@@ -555,104 +555,116 @@ ion-modal.anon-modal::part(content) {
   z-index: 100000;
   display: grid;
   place-items: center;
-  padding: 0;
+  overflow: hidden;
+  padding: calc(env(safe-area-inset-top) + 22px) 22px
+    calc(env(safe-area-inset-bottom) + 26px);
+  color: #fff;
   background:
-    radial-gradient(circle at 50% 22%, rgba(255, 234, 0, 0.2), transparent 34%),
-    rgba(2, 6, 23, 0.82);
-  backdrop-filter: blur(10px);
+    radial-gradient(circle at 50% 28%, rgba(255, 234, 0, 0.32), transparent 24%),
+    radial-gradient(circle at 24% 72%, rgba(34, 211, 238, 0.28), transparent 23%),
+    radial-gradient(circle at 78% 68%, rgba(168, 85, 247, 0.22), transparent 24%),
+    linear-gradient(180deg, #03102b 0%, #071d4a 48%, #020817 100%);
+  animation: arcadeModalPop 260ms ease both;
 }
 
 .arcade-chest-modal {
   position: relative;
   overflow: hidden;
-  width: 100%;
-  min-height: 100dvh;
-  padding: calc(34px + env(safe-area-inset-top)) 22px
-    calc(28px + env(safe-area-inset-bottom));
-  border-radius: 0;
+  width: min(100%, 430px);
+  min-height: min(720px, calc(100vh - 58px));
+  padding: 0 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
   color: #fff;
-  background:
-    radial-gradient(circle at top, rgba(255, 234, 0, 0.28), transparent 38%),
-    linear-gradient(180deg, #7c3aed, #061d48);
-  border: 1px solid rgba(255, 234, 0, 0.42);
-  box-shadow:
-    0 0 44px rgba(255, 234, 0, 0.24),
-    0 24px 52px rgba(0, 0, 0, 0.58);
-  animation: arcadeModalPop 360ms cubic-bezier(0.22, 1.2, 0.36, 1);
+  transform: translateY(-10px);
 }
 
 .arcade-chest-glow {
   position: absolute;
-  inset: -40%;
+  inset: -30%;
+  z-index: 1;
   background: conic-gradient(
     from 0deg,
     transparent,
-    rgba(255, 234, 0, 0.24),
-    transparent,
-    rgba(103, 232, 249, 0.18),
-    transparent
+    rgba(255, 234, 0, 0.2),
+    transparent 16%,
+    rgba(103, 232, 249, 0.16),
+    transparent 32%,
+    rgba(168, 85, 247, 0.14),
+    transparent 48%
   );
   animation: arcadeChestSpin 7s linear infinite;
+  pointer-events: none;
 }
 
 .arcade-chest-modal > *:not(.arcade-chest-glow) {
   position: relative;
-  z-index: 2;
+  z-index: 3;
 }
 
 .arcade-chest-copy span {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
   padding: 7px 12px;
   border-radius: 999px;
   color: #04111f;
   background: #ffea00;
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 1000;
   text-transform: uppercase;
-  box-shadow: 0 6px 0 rgba(129, 90, 0, 0.72);
+  box-shadow:
+    0 7px 0 rgba(129, 90, 0, 0.78),
+    0 0 22px rgba(255, 234, 0, 0.34);
+  animation: arcadeChestBadgeDrop 480ms cubic-bezier(0.22, 1.35, 0.36, 1)
+    both;
 }
 
 .arcade-chest-copy h2 {
-  margin: 18px 0 8px;
+  margin: 14px 0 7px;
   color: #ffea00;
-  font-size: 2.25rem;
-  line-height: 1;
+  font-size: clamp(2rem, 9vw, 3.35rem);
+  line-height: 0.96;
   font-weight: 1000;
-  text-shadow: 0 4px 0 rgba(129, 90, 0, 0.72);
+  text-shadow:
+    0 4px 0 rgba(129, 90, 0, 0.8),
+    0 0 28px rgba(255, 234, 0, 0.38);
 }
 
 .arcade-chest-copy p {
-  max-width: 250px;
+  max-width: 300px;
   margin: 0 auto;
   color: #dbeafe;
-  font-size: 0.9rem;
+  font-size: 0.94rem;
+  line-height: 1.32;
   font-weight: 850;
 }
 
 .arcade-chest-icon {
-  margin: 26px 0 20px;
+  margin: 22px 0 14px;
   filter: drop-shadow(0 0 20px rgba(255, 234, 0, 0.45));
-  animation: chestShake 1.2s ease-in-out infinite;
+  animation:
+    arcadeChestImagePop 760ms cubic-bezier(0.22, 1.45, 0.36, 1) both,
+    chestShake 1.45s ease-in-out 860ms infinite;
 }
 
 .arcade-chest-icon img {
-  width: min(58vw, 230px);
+  width: min(58vw, 238px);
   height: auto;
   display: block;
   object-fit: contain;
 }
 
 .arcade-chest-rewards {
-  width: 100%;
-  max-width: 360px;
+  width: min(330px, 86vw);
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
+  animation: arcadeChestCopyIn 500ms ease 360ms both;
 }
 
 .arcade-chest-rewards div {
@@ -661,36 +673,39 @@ ion-modal.anon-modal::part(content) {
   display: grid;
   place-items: center;
   background: rgba(2, 8, 23, 0.42);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 234, 0, 0.28);
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.24),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 .arcade-chest-rewards strong {
   color: #ffea00;
-  font-size: 1.65rem;
+  font-size: clamp(1.35rem, 6vw, 1.7rem);
   font-weight: 1000;
 }
 
 .arcade-chest-rewards span {
-  margin-top: -20px;
+  margin-top: -18px;
   color: #dbeafe;
   font-size: 0.72rem;
   font-weight: 900;
 }
 
 .arcade-chest-btn {
-  width: 100%;
-  max-width: 360px;
-  min-height: 54px;
-  margin-top: 22px;
+  width: min(330px, 86vw);
+  min-height: 52px;
+  margin-top: 18px;
   border: 0;
-  border-radius: 18px;
+  border-radius: 999px;
   color: #04111f;
   background: linear-gradient(180deg, #ffea00, #ffc400);
-  font-size: 0.9rem;
+  font-size: 0.98rem;
   font-weight: 1000;
   box-shadow:
     0 7px 0 rgba(129, 90, 0, 0.78),
     0 0 24px rgba(255, 234, 0, 0.28);
+  animation: arcadeChestButtonIn 520ms ease 500ms both;
 }
 
 @keyframes chestShake {
@@ -711,5 +726,61 @@ ion-modal.anon-modal::part(content) {
 @keyframes arcadeChestSpin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes arcadeChestBadgeDrop {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.82);
+  }
+
+  70% {
+    transform: translateY(5px) scale(1.06);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes arcadeChestImagePop {
+  from {
+    opacity: 0;
+    transform: scale(0.45) rotate(-12deg);
+  }
+
+  65% {
+    opacity: 1;
+    transform: scale(1.12) rotate(3deg);
+  }
+
+  to {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes arcadeChestCopyIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes arcadeChestButtonIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

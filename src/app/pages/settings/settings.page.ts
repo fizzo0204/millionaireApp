@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { User } from 'firebase/auth';
 import { ModalController } from '@ionic/angular/standalone';
@@ -15,6 +14,7 @@ import { LogoutDecision } from 'src/app/models/logout.model';
 import { environment } from 'src/environments/environment';
 import { TutorialService } from 'src/app/services/tutorial.service';
 import { DailyEventsService } from 'src/app/services/daily-events.service';
+import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 
 @Component({
   selector: 'app-settings',
@@ -46,7 +46,7 @@ export class SettingsPage {
   constructor(
     private audioService: AudioService,
     private authService: AuthService,
-    private router: Router,
+    private navigation: NavigationTransitionService,
     private userStatsService: UserStatsService,
     private dailyRewardService: DailyRewardService,
     private authPromptService: AuthPromptService,
@@ -79,7 +79,7 @@ export class SettingsPage {
     if (decision === 'cancel') return;
 
     await this.authService.logout();
-    await this.router.navigateByUrl('/home');
+    await this.navigation.navigateByUrl('/home');
   }
 
   private async confirmLogout(): Promise<LogoutDecision> {

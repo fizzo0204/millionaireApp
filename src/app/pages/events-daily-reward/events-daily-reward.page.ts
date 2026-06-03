@@ -1,11 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
-import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { ModalController } from '@ionic/angular/standalone';
 import { DailyRewardModalComponent } from 'src/app/components/daily-reward-modal/daily-reward-modal.component';
 import { DailyEventsService } from 'src/app/services/daily-events.service';
 import { DailyRewardService } from 'src/app/services/daily-reward.service';
+import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 
 @Component({
   selector: 'app-events-daily-reward',
@@ -15,7 +15,7 @@ import { DailyRewardService } from 'src/app/services/daily-reward.service';
   styleUrls: ['./events-daily-reward.page.scss'],
 })
 export class EventsDailyRewardPage implements OnInit {
-  private router = inject(Router);
+  private navigation = inject(NavigationTransitionService);
   private modalCtrl = inject(ModalController);
   private dailyEventsService = inject(DailyEventsService);
   private dailyRewardService = inject(DailyRewardService);
@@ -70,6 +70,6 @@ export class EventsDailyRewardPage implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigateByUrl('/events');
+    void this.navigation.navigateByUrl('/events');
   }
 }

@@ -11,7 +11,6 @@ import {
   switchMap,
 } from 'rxjs';
 import { User } from 'firebase/auth';
-import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { UserStatsService } from 'src/app/services/user-stats.service';
 import { AVATARS } from 'src/app/data/avatars.data';
@@ -19,6 +18,7 @@ import { AppUserProfile } from 'src/app/models/user-stats.model';
 import { AuthPromptService } from 'src/app/services/auth-prompt.service';
 import { AUTH_CONFIG } from 'src/app/config/auth.config';
 import { AppAuthProviderId } from 'src/app/models/auth.model';
+import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 
 @Component({
   selector: 'app-login-button',
@@ -72,7 +72,7 @@ export class LoginButtonComponent {
     private auth: AuthService,
     private userStatsService: UserStatsService,
     private authPromptService: AuthPromptService,
-    private router: Router,
+    private navigation: NavigationTransitionService,
   ) {}
 
   getFirstName(user: User, profile?: AppUserProfile): string {
@@ -148,7 +148,7 @@ export class LoginButtonComponent {
       return;
     }
 
-    await this.router.navigateByUrl('/profile');
+    await this.navigation.navigateByUrl('/profile');
   }
 
   private isPlayGamesProfile(

@@ -12,6 +12,7 @@ import { CATEGORIES } from 'src/app/data/categories.data';
 import { CategoryModel } from 'src/app/models/category.model';
 import { AuthPromptService } from 'src/app/services/auth-prompt.service';
 import { TutorialService } from 'src/app/services/tutorial.service';
+import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 
 @Component({
   selector: 'app-home',
@@ -58,6 +59,7 @@ export class HomePage implements OnInit, OnDestroy {
     private userStatsService: UserStatsService,
     private authPromptService: AuthPromptService,
     private tutorialService: TutorialService,
+    private navigation: NavigationTransitionService,
   ) {
     this.coins$ = this.coinsService.coins$;
     this.lives$ = this.livesService.lives$;
@@ -90,11 +92,11 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   selectCategory(categoryId: string) {
-    this.router.navigateByUrl(`/difficulty/${categoryId}`);
+    void this.navigation.navigateByUrl(`/difficulty/${categoryId}`);
   }
 
   startArcade() {
-    this.router.navigateByUrl('/arcade');
+    void this.navigation.navigateByUrl('/arcade');
   }
 
   showCategories() {

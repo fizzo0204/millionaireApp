@@ -1,7 +1,7 @@
-import { Component, inject, ElementRef, ViewChild } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from 'src/app/services/auth.service';
 import { ProgressService } from 'src/app/services/progress.service';
@@ -9,6 +9,7 @@ import { QuestionsService } from 'src/app/services/questions.service';
 import { DifficultyModel } from 'src/app/models/difficulty.model';
 import { DIFFICULTIES } from 'src/app/data/difficulties.data';
 import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
+import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 
 @Component({
   selector: 'app-difficulty',
@@ -19,12 +20,10 @@ import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
 })
 export class DifficultyPage {
   private route = inject(ActivatedRoute);
-  private router = inject(Router);
+  private navigation = inject(NavigationTransitionService);
   private progressService = inject(ProgressService);
   private questionsService = inject(QuestionsService);
   private auth = inject(AuthService);
-
-  @ViewChild('pageAnim') pageAnim?: ElementRef<HTMLElement>;
 
   categoryId = '';
   categoryTitle = 'Quiz';
@@ -39,8 +38,6 @@ export class DifficultyPage {
   }
 
   async ionViewWillEnter() {
-    this.pageAnim?.nativeElement.classList.remove('page-fade-out');
-
     await this.loadDifficultyProgress();
   }
 
@@ -178,14 +175,6 @@ export class DifficultyPage {
   }
 
   private animateAndNavigate(url: string) {
-    const el = this.pageAnim?.nativeElement;
-
-    el?.classList.remove('page-fade-out');
-    void el?.offsetWidth;
-    el?.classList.add('page-fade-out');
-
-    setTimeout(() => {
-      this.router.navigateByUrl(url);
-    }, 160);
+    void this.navigation.navigateByUrl(url);
   }
 }

@@ -23,6 +23,7 @@ import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
 import { DailyEventsService } from 'src/app/services/daily-events.service';
 import { DAILY_EVENTS_CONFIG } from 'src/app/config/daily-events.config';
 import { ARCADE_CONFIG } from 'src/app/config/arcade.config';
+import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 
 @Component({
   selector: 'app-quiz',
@@ -44,6 +45,7 @@ export class QuizPage implements OnInit, OnDestroy {
   private haptics = inject(HapticsService);
   private audioService = inject(AudioService);
   private dailyEventsService = inject(DailyEventsService);
+  private navigation = inject(NavigationTransitionService);
 
   private appStateListener?: PluginListenerHandle;
 
@@ -150,11 +152,25 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   private async setupLevelProgress() {
-    this.difficultyLevelNumbers =
-      await this.questionsService.getDifficultyLevelNumbers(
+    const user = await firstValueFrom(this.auth.user$);
+
+    const [difficultyLevelNumbers, levelAlreadyCompleted] = await Promise.all([
+      this.questionsService.getDifficultyLevelNumbers(
         this.categoryId,
         this.difficultyId,
-      );
+      ),
+      user
+        ? this.progressService.isLevelCompleted(
+            user.uid,
+            this.categoryId,
+            this.difficultyId,
+            this.levelNumber,
+          )
+        : Promise.resolve(false),
+    ]);
+
+    this.difficultyLevelNumbers = difficultyLevelNumbers;
+    this.levelAlreadyCompleted = levelAlreadyCompleted;
 
     const currentLevelIndex = this.difficultyLevelNumbers.indexOf(
       this.levelNumber,
@@ -526,55 +542,71 @@ export class QuizPage implements OnInit, OnDestroy {
     const user = await firstValueFrom(this.auth.user$);
 
     if (user) {
-      await this.dailyEventsService.trackNormalQuizPlayed();
+      void this.dailyEventsService
+        .trackNormalQuizPlayed()
+        .catch(() => undefined);
 
       if (allQuestionsCorrect) {
-        await this.dailyEventsService.trackNormalQuizWon();
+        void this.dailyEventsService
+          .trackNormalQuizWon()
+          .catch(() => undefined);
       }
 
-      const levelAlreadyCompleted = await this.progressService.isLevelCompleted(
-        user.uid,
-        this.categoryId,
-        this.difficultyId,
-        this.levelNumber,
-      );
-
-      if (allQuestionsCorrect && !levelAlreadyCompleted) {
-        await this.userStatsService.recordQuizResult(
-          user.uid,
-          this.correctAnswers,
-          this.questions.length,
-        );
-
-        await this.userStatsService.recordQuizHistory(
-          user.uid,
-          this.categoryId,
-          this.difficultyId,
-          this.correctAnswers,
-          this.questions.length,
-        );
-
-        await this.progressService.completeLevel(
-          user.uid,
-          this.categoryId,
-          this.difficultyId,
-          this.levelNumber,
-        );
-        await this.dailyEventsService.trackNormalLevelCompleted();
-
-        const difficultyCompleted =
-          await this.progressService.isDifficultyFullyCompleted(
+      if (allQuestionsCorrect && !this.levelAlreadyCompleted) {
+        /*
+         * Queste operazioni non dipendono una dall'altra: le salviamo in
+         * parallelo per mostrare prima la modale di livello sbloccato.
+         */
+        await Promise.all([
+          this.userStatsService.recordQuizResult(
+            user.uid,
+            this.correctAnswers,
+            this.questions.length,
+          ),
+          this.userStatsService.recordQuizHistory(
             user.uid,
             this.categoryId,
             this.difficultyId,
-          );
-
-        if (difficultyCompleted) {
-          await this.progressService.completeUserDifficulty(
+            this.correctAnswers,
+            this.questions.length,
+          ),
+          this.progressService.completeLevel(
             user.uid,
             this.categoryId,
             this.difficultyId,
-          );
+            this.levelNumber,
+          ),
+        ]);
+
+        this.levelAlreadyCompleted = true;
+
+        void this.dailyEventsService
+          .trackNormalLevelCompleted()
+          .catch(() => undefined);
+
+        if (this.isLastLevelInDifficulty()) {
+          const completedLevelNumbers =
+            await this.progressService.getCompletedLevelNumbers(
+              user.uid,
+              this.categoryId,
+              this.difficultyId,
+            );
+          const completedLevels = new Set(completedLevelNumbers);
+          completedLevels.add(this.levelNumber);
+
+          const difficultyCompleted =
+            this.difficultyLevelNumbers.length > 0 &&
+            this.difficultyLevelNumbers.every((levelNumber) =>
+              completedLevels.has(levelNumber),
+            );
+
+          if (difficultyCompleted) {
+            await this.progressService.completeUserDifficulty(
+              user.uid,
+              this.categoryId,
+              this.difficultyId,
+            );
+          }
         }
 
         this.rewardXp =
@@ -798,7 +830,7 @@ export class QuizPage implements OnInit, OnDestroy {
     this.showTimeModal = false;
     this.showExitModal = false;
     this.navigatingAway = true;
-    this.router.navigateByUrl('/events/challenge');
+    void this.navigation.navigateByUrl('/events/challenge');
   }
 
   private async loseArcadeLifeAndExit() {
@@ -909,6 +941,7 @@ export class QuizPage implements OnInit, OnDestroy {
 
   async continueAfterArcadeTransition() {
     this.haptics.light();
+    this.loading = true;
     this.arcadeTransitionVisible = false;
     this.arcadeTransitionReady = false;
     this.usedHelps = [];
@@ -1047,16 +1080,16 @@ export class QuizPage implements OnInit, OnDestroy {
 
   private goToExitPage() {
     if (this.dailyChallengeMode) {
-      this.router.navigateByUrl('/events/challenge');
+      void this.navigation.navigateByUrl('/events/challenge');
       return;
     }
 
     if (this.arcadeMode) {
-      this.router.navigateByUrl('/arcade');
+      void this.navigation.navigateByUrl('/arcade');
       return;
     }
 
-    this.router.navigateByUrl(
+    void this.navigation.navigateByUrl(
       `/levels/${this.categoryId}/${this.difficultyId}`,
     );
   }
@@ -1075,6 +1108,15 @@ export class QuizPage implements OnInit, OnDestroy {
     }
 
     return 'Difficolta completata';
+  }
+
+  private isLastLevelInDifficulty(): boolean {
+    if (this.difficultyLevelNumbers.length === 0) return false;
+
+    return (
+      this.difficultyLevelNumbers[this.difficultyLevelNumbers.length - 1] ===
+      this.levelNumber
+    );
   }
 
   private async switchQuestion() {

@@ -1,7 +1,7 @@
-import { Component, inject, ElementRef, ViewChild } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { LivesService } from 'src/app/services/lives';
 import { AuthService } from 'src/app/services/auth.service';
@@ -10,6 +10,7 @@ import { QuestionsService } from 'src/app/services/questions.service';
 import { AdsService } from 'src/app/services/ads.service';
 import { LevelModel } from 'src/app/models/level.model';
 import { DifficultyId } from 'src/app/models/difficulty.model';
+import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 
 @Component({
   selector: 'app-levels',
@@ -20,14 +21,12 @@ import { DifficultyId } from 'src/app/models/difficulty.model';
 })
 export class LevelsPage {
   private route = inject(ActivatedRoute);
-  private router = inject(Router);
+  private navigation = inject(NavigationTransitionService);
   private auth = inject(AuthService);
   private progressService = inject(ProgressService);
   private questionsService = inject(QuestionsService);
   private livesService = inject(LivesService);
   private ads = inject(AdsService);
-
-  @ViewChild('pageAnim') pageAnim?: ElementRef<HTMLElement>;
 
   categoryId = '';
   difficultyId: DifficultyId = 'easy';
@@ -53,8 +52,6 @@ export class LevelsPage {
   }
 
   async ionViewWillEnter() {
-    this.pageAnim?.nativeElement.classList.remove('page-fade-out');
-
     await this.generateLevels();
     await this.loadLevelProgress();
   }
@@ -188,15 +185,7 @@ export class LevelsPage {
   }
 
   private animateAndNavigate(url: string) {
-    const el = this.pageAnim?.nativeElement;
-
-    el?.classList.remove('page-fade-out');
-    void el?.offsetWidth;
-    el?.classList.add('page-fade-out');
-
-    setTimeout(() => {
-      this.router.navigateByUrl(url);
-    }, 160);
+    void this.navigation.navigateByUrl(url);
   }
 
   get firstPlayableLevel(): number {

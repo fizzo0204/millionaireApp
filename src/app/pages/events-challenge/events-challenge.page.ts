@@ -1,10 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
-import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { DAILY_EVENTS_CONFIG } from 'src/app/config/daily-events.config';
 import { DailyEventsData } from 'src/app/models/daily-events.model';
 import { DailyEventsService } from 'src/app/services/daily-events.service';
+import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 
 @Component({
   selector: 'app-events-challenge',
@@ -14,7 +14,7 @@ import { DailyEventsService } from 'src/app/services/daily-events.service';
   styleUrls: ['./events-challenge.page.scss'],
 })
 export class EventsChallengePage implements OnInit {
-  private router = inject(Router);
+  private navigation = inject(NavigationTransitionService);
   private dailyEventsService = inject(DailyEventsService);
 
   loading = true;
@@ -57,11 +57,11 @@ export class EventsChallengePage implements OnInit {
   startDailyChallenge(): void {
     if (this.dailyChallengeCompleted) return;
 
-    this.router.navigateByUrl('/daily-challenge');
+    void this.navigation.navigateByUrl('/daily-challenge');
   }
 
   goBack(): void {
-    this.router.navigateByUrl('/events');
+    void this.navigation.navigateByUrl('/events');
   }
 
 }

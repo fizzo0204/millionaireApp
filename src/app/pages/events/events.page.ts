@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
-import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { DAILY_EVENTS_CONFIG } from 'src/app/config/daily-events.config';
 import {
@@ -9,6 +8,7 @@ import {
 } from 'src/app/models/daily-events.model';
 import { DailyEventsService } from 'src/app/services/daily-events.service';
 import { DailyRewardService } from 'src/app/services/daily-reward.service';
+import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 
 interface EventHubCard {
   id: 'missions' | 'dailyReward' | 'wheel' | 'challenge';
@@ -28,7 +28,7 @@ interface EventHubCard {
   styleUrls: ['./events.page.scss'],
 })
 export class EventsPage implements OnInit {
-  private router = inject(Router);
+  private navigation = inject(NavigationTransitionService);
   private dailyEventsService = inject(DailyEventsService);
   private dailyRewardService = inject(DailyRewardService);
 
@@ -133,7 +133,7 @@ export class EventsPage implements OnInit {
   }
 
   openEvent(route: string): void {
-    this.router.navigateByUrl(route);
+    void this.navigation.navigateByUrl(route);
   }
 
   getCardStatus(card: EventHubCard): string {

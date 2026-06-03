@@ -61,8 +61,12 @@
     } @if (loading) {
     <app-game-loader
       icon="🎯"
-      title="Preparazione quiz..."
-      subtitle="Stiamo caricando le domande migliori per te"
+      [title]="arcadeMode ? 'Preparazione Scalata...' : 'Preparazione quiz...'"
+      [subtitle]="
+        arcadeMode
+          ? 'Stiamo caricando il prossimo livello'
+          : 'Stiamo caricando le domande migliori per te'
+      "
     ></app-game-loader>
     } @else if (!currentQuestion) {
     <div class="empty-state">

@@ -15,6 +15,7 @@ import {
   TutorialStep,
 } from 'src/app/models/tutorial.model';
 import { HapticsService } from 'src/app/services/haptics.service';
+import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 import { TutorialService } from 'src/app/services/tutorial.service';
 
 type RewardChestPhase = 'idle' | 'charging' | 'revealed';
@@ -46,6 +47,7 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
 
   constructor(
     private haptics: HapticsService,
+    private navigation: NavigationTransitionService,
     private router: Router,
     private tutorialService: TutorialService,
   ) {}
@@ -193,7 +195,7 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
     }
 
     if (step.route && this.router.url.split('?')[0] !== step.route) {
-      await this.router.navigateByUrl(step.route);
+      await this.navigation.navigateByUrl(step.route);
     }
 
     if (token !== this.syncToken) return;

@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import {
   DailyMissionConfig,
@@ -8,6 +7,7 @@ import {
 } from 'src/app/models/daily-events.model';
 import { DailyEventsService } from 'src/app/services/daily-events.service';
 import { HapticsService } from 'src/app/services/haptics.service';
+import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 
 @Component({
   selector: 'app-events-missions',
@@ -17,7 +17,7 @@ import { HapticsService } from 'src/app/services/haptics.service';
   styleUrls: ['./events-missions.page.scss'],
 })
 export class EventsMissionsPage implements OnInit, OnDestroy {
-  private router = inject(Router);
+  private navigation = inject(NavigationTransitionService);
   private dailyEventsService = inject(DailyEventsService);
   private haptics = inject(HapticsService);
 
@@ -135,7 +135,7 @@ export class EventsMissionsPage implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    this.router.navigateByUrl('/events');
+    void this.navigation.navigateByUrl('/events');
   }
 
   ngOnDestroy(): void {
