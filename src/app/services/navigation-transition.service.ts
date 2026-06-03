@@ -6,7 +6,7 @@ import { Router } from '@angular/router';
 })
 export class NavigationTransitionService {
   private navigating = false;
-  private readonly transitionMs = 160;
+  private readonly transitionMs = 190;
 
   constructor(private router: Router) {}
 
@@ -19,6 +19,8 @@ export class NavigationTransitionService {
     if (cleanCurrentUrl === cleanTargetUrl) return false;
 
     this.navigating = true;
+    document.body.classList.add('tm-route-changing');
+
     const pages = Array.from(document.querySelectorAll('.page-fade'));
 
     pages.forEach((page) => page.classList.add('page-fade-out'));
@@ -37,7 +39,10 @@ export class NavigationTransitionService {
           page.classList.remove('page-fade-out');
         });
 
-        this.navigating = false;
+        setTimeout(() => {
+          document.body.classList.remove('tm-route-changing');
+          this.navigating = false;
+        }, 70);
       });
     }
   }

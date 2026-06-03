@@ -91,24 +91,25 @@ export class ProfilePage {
     avv_chicchina: ['special_2_turtle'],
   };
 
-  private readonly specialIntroByNickname: Record<string, SpecialIntroConfig> = {
-    prof_tonino: {
-      avatarId: 'special_1_turtle',
-      title: 'Avatar speciale sbloccato',
-      text:
-        'Salve Prof. Tonino,\n\n' +
-        'innanzitutto la ringrazio per aver preso parte al gioco TurtleMind, anche se lei \u00e8 la padrona, si sa. Il team TurtleMind voleva regalarLe questo fantastico avatar, tutto per lei!\n\n' +
-        'Si diverta, mi raccomando!',
-    },
-    avv_chicchina: {
-      avatarId: 'special_2_turtle',
-      title: 'Avatar speciale sbloccato',
-      text:
-        'Salve Avv. Chicchina,\n\n' +
-        'innanzitutto la ringrazio per aver preso parte al gioco TurtleMind, anche se lei \u00e8 la padrona, si sa. Il team TurtleMind voleva regalarLe questo fantastico avatar, tutto per lei!\n\n' +
-        'Si diverta, mi raccomando!',
-    },
-  };
+  private readonly specialIntroByNickname: Record<string, SpecialIntroConfig> =
+    {
+      prof_tonino: {
+        avatarId: 'special_1_turtle',
+        title: 'Avatar speciale sbloccato',
+        text:
+          'Salve Prof. Tonino,\n\n' +
+          'innanzitutto la ringrazio per aver preso parte al gioco TurtleMind, anche se lei \u00e8 la padrona, si sa. Il team TurtleMind voleva regalarLe questo fantastico avatar, tutto per lei!\n\n' +
+          'Si diverta, mi raccomando!',
+      },
+      avv_chicchina: {
+        avatarId: 'special_2_turtle',
+        title: 'Avatar speciale sbloccato',
+        text:
+          'Salve Avv. Chicchina,\n\n' +
+          'innanzitutto la ringrazio per aver preso parte al gioco TurtleMind, anche se lei \u00e8 la padrona, si sa. Il team TurtleMind voleva regalarLe questo fantastico avatar, tutto per lei!\n\n' +
+          'Si diverta, mi raccomando!',
+      },
+    };
 
   private lastSpecialIntroKey: string | null = null;
 
@@ -137,8 +138,7 @@ export class ProfilePage {
   get specialRewardAvatars(): AvatarModel[] {
     return this.avatars.filter(
       (avatar) =>
-        avatar.source === 'special' &&
-        this.isSpecialAvatarAvailable(avatar.id),
+        avatar.source === 'special' && this.isSpecialAvatarAvailable(avatar.id),
     );
   }
 
@@ -179,7 +179,7 @@ export class ProfilePage {
         value: String(realStats.quizPlayed),
         label: 'Quiz giocati',
       },
-      { icon: '⚡', value: String(arcadeLevel), label: 'Livello Arcade' },
+      { icon: '⚡', value: String(arcadeLevel), label: 'Livello Scalata' },
       {
         icon: '🔥',
         value: String(realStats.streakDays),
@@ -401,7 +401,8 @@ export class ProfilePage {
   ): AchievementModel {
     const minAnswers = achievement.minAnswers ?? 0;
     const hasEnoughAnswers = totalAnswers >= minAnswers;
-    const completed = hasEnoughAnswers && correctPercentage >= achievement.target;
+    const completed =
+      hasEnoughAnswers && correctPercentage >= achievement.target;
     const progress = hasEnoughAnswers
       ? `${correctPercentage}/${achievement.target}%`
       : `${totalAnswers}/${minAnswers} risposte`;

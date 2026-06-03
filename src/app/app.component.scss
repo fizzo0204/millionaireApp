@@ -28,6 +28,23 @@ app-bottom-nav {
 
 app-bottom-nav {
   margin-bottom: calc(env(safe-area-inset-bottom) + 30px);
+  max-height: 96px;
+  overflow: hidden;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    max-height 220ms ease,
+    margin-bottom 220ms ease;
+}
+
+app-bottom-nav.bottom-nav-hidden {
+  max-height: 0;
+  margin-bottom: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(18px);
 }
 
 ion-page {

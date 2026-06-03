@@ -19,8 +19,15 @@
         <app-bottom-nav
           [activeTab]="activeTab"
           (tabChange)="setActiveTab($event)"
-          [hidden]="
-            hideBottomNav || ui.hideBottomNavForModal()
+          [class.bottom-nav-hidden]="
+            hideBottomNav ||
+            ui.hideBottomNavForModal() ||
+            ui.hideBottomNavForSubpage()
+          "
+          [attr.aria-hidden]="
+            hideBottomNav ||
+            ui.hideBottomNavForModal() ||
+            ui.hideBottomNavForSubpage()
           "
         ></app-bottom-nav>
       }

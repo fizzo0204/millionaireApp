@@ -5,6 +5,7 @@ import { Injectable, signal } from '@angular/core';
 })
 export class UiService {
   hideBottomNavForModal = signal(false);
+  hideBottomNavForSubpage = signal(false);
 
   openModalOverlay() {
     this.hideBottomNavForModal.set(true);
@@ -12,5 +13,13 @@ export class UiService {
 
   closeModalOverlay() {
     this.hideBottomNavForModal.set(false);
+  }
+
+  hideBottomNavForInnerPage() {
+    this.hideBottomNavForSubpage.set(true);
+  }
+
+  showBottomNavForInnerPage() {
+    this.hideBottomNavForSubpage.set(false);
   }
 }

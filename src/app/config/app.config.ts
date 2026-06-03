@@ -5,6 +5,6 @@ export const APP_CONFIG = {
     '/levels',
     '/quiz',
     '/daily-challenge',
-    '/arcade/play',
+    '/arcade',
   ],
 };

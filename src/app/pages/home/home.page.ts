@@ -13,6 +13,7 @@ import { CategoryModel } from 'src/app/models/category.model';
 import { AuthPromptService } from 'src/app/services/auth-prompt.service';
 import { TutorialService } from 'src/app/services/tutorial.service';
 import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
+import { UiService } from 'src/app/services/ui.service';
 
 @Component({
   selector: 'app-home',
@@ -60,6 +61,7 @@ export class HomePage implements OnInit, OnDestroy {
     private authPromptService: AuthPromptService,
     private tutorialService: TutorialService,
     private navigation: NavigationTransitionService,
+    private ui: UiService,
   ) {
     this.coins$ = this.coinsService.coins$;
     this.lives$ = this.livesService.lives$;
@@ -78,6 +80,7 @@ export class HomePage implements OnInit, OnDestroy {
 
   async ionViewWillEnter() {
     this.activeView = 'menu';
+    this.ui.showBottomNavForInnerPage();
 
     /*
      * Il login non blocca piu il gioco. Quando l'ospite torna in home,
@@ -96,15 +99,18 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   startArcade() {
+    this.ui.hideBottomNavForInnerPage();
     void this.navigation.navigateByUrl('/arcade');
   }
 
   showCategories() {
     this.activeView = 'categories';
+    this.ui.hideBottomNavForInnerPage();
   }
 
   showMenu() {
     this.activeView = 'menu';
+    this.ui.showBottomNavForInnerPage();
   }
 
   async watchCoinsAd() {
@@ -165,6 +171,7 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.ui.showBottomNavForInnerPage();
     this.livesSub?.unsubscribe();
   }
 }

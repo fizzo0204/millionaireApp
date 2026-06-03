@@ -68,6 +68,25 @@ ion-content {
   animation: pageExit 0.18s ease forwards;
 }
 
+/*
+ * Copre i piccoli scatti del router outlet nelle navigazioni interne
+ * dove la bottom nav cambia visibilita o la pagina carica dati asincroni.
+ */
+.app-content {
+  transition:
+    opacity 190ms ease,
+    transform 190ms ease,
+    filter 190ms ease;
+  will-change: opacity, transform, filter;
+}
+
+body.tm-route-changing .app-content {
+  opacity: 0;
+  transform: translateY(8px) scale(0.992);
+  filter: blur(5px);
+  pointer-events: none;
+}
+
 @keyframes pageEnter {
   from {
     opacity: 0;
