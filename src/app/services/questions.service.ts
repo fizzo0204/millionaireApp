@@ -32,18 +32,34 @@ export interface ArcadeQuestionSelection extends ArcadeLevelTarget {
   question: QuestionModel;
 }
 
+interface CacheEntry<T> {
+  createdAt: number;
+  value: T;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class QuestionsService {
   private firestore = inject(Firestore);
   private injector = inject(EnvironmentInjector);
+  private difficultyStatsCache = new Map<
+    string,
+    CacheEntry<DifficultyQuestionStats>
+  >();
+  private levelQuestionsCache = new Map<string, CacheEntry<QuestionModel[]>>();
+  private randomQuestionsCache = new Map<string, CacheEntry<QuestionModel[]>>();
+  private arcadeQuestionsCache = new Map<string, CacheEntry<QuestionModel[]>>();
   private arcadePlanCache:
     | {
         createdAt: number;
         targets: ArcadeLevelTarget[];
       }
     | undefined;
+
+  private readonly questionCacheMs = 120_000;
+  private readonly randomQuestionCacheMs = 60_000;
+  private readonly difficultyStatsCacheMs = 120_000;
   private readonly arcadePlanCacheMs = 60_000;
 
   private getSeenKey(
@@ -93,6 +109,20 @@ export class QuestionsService {
     category: string,
     difficulty: DifficultyId,
   ): Promise<DifficultyQuestionStats> {
+    const cacheKey = `${category}_${difficulty}`;
+    const cached = this.getCachedValue(
+      this.difficultyStatsCache,
+      cacheKey,
+      this.difficultyStatsCacheMs,
+    );
+
+    if (cached) {
+      return Promise.resolve({
+        questionCount: cached.questionCount,
+        levelNumbers: [...cached.levelNumbers],
+      });
+    }
+
     return runInInjectionContext(this.injector, async () => {
       const questionsRef = collection(this.firestore, 'questions');
 
@@ -113,9 +143,16 @@ export class QuestionsService {
         ),
       ).sort((a, b) => a - b);
 
-      return {
+      const stats = {
         questionCount: snapshot.size,
         levelNumbers,
+      };
+
+      this.setCachedValue(this.difficultyStatsCache, cacheKey, stats);
+
+      return {
+        questionCount: stats.questionCount,
+        levelNumbers: [...stats.levelNumbers],
       };
     });
   }
@@ -135,6 +172,19 @@ export class QuestionsService {
     levelNumber: number,
     amount: number = 1,
   ): Promise<QuestionModel[]> {
+    const cacheKey = `${category}_${difficulty}_${levelNumber}`;
+    const cached = this.getCachedValue(
+      this.levelQuestionsCache,
+      cacheKey,
+      this.questionCacheMs,
+    );
+
+    if (cached) {
+      return Promise.resolve(
+        this.selectQuestions(cached, category, difficulty, levelNumber, amount),
+      );
+    }
+
     return runInInjectionContext(this.injector, async () => {
       const questionsRef = collection(this.firestore, 'questions');
 
@@ -153,36 +203,15 @@ export class QuestionsService {
         ...(doc.data() as Omit<QuestionModel, 'id'>),
       }));
 
-      const seenIds = this.getSeenQuestionIds(
+      this.setCachedValue(this.levelQuestionsCache, cacheKey, questions);
+
+      return this.selectQuestions(
+        questions,
         category,
         difficulty,
         levelNumber,
+        amount,
       );
-
-      let availableQuestions = questions.filter(
-        (question) => question.id && !seenIds.includes(question.id),
-      );
-
-      if (availableQuestions.length === 0) {
-        availableQuestions = questions;
-      }
-
-      const selectedQuestions = availableQuestions
-        .sort(() => Math.random() - 0.5)
-        .slice(0, amount);
-
-      for (const question of selectedQuestions) {
-        if (question.id) {
-          this.saveSeenQuestionId(
-            category,
-            difficulty,
-            levelNumber,
-            question.id,
-          );
-        }
-      }
-
-      return selectedQuestions;
     });
   }
 
@@ -190,6 +219,17 @@ export class QuestionsService {
     amount: number,
     difficulty?: DifficultyId,
   ): Promise<QuestionModel[]> {
+    const cacheKey = difficulty ?? 'all';
+    const cached = this.getCachedValue(
+      this.randomQuestionsCache,
+      cacheKey,
+      this.randomQuestionCacheMs,
+    );
+
+    if (cached) {
+      return Promise.resolve(this.pickRandomQuestions(cached, amount));
+    }
+
     return runInInjectionContext(this.injector, async () => {
       const questionsRef = collection(this.firestore, 'questions');
       const questionsQuery = query(
@@ -203,7 +243,9 @@ export class QuestionsService {
         ...(doc.data() as Omit<QuestionModel, 'id'>),
       }));
 
-      return questions.sort(() => Math.random() - 0.5).slice(0, amount);
+      this.setCachedValue(this.randomQuestionsCache, cacheKey, questions);
+
+      return this.pickRandomQuestions(questions, amount);
     });
   }
 
@@ -300,6 +342,23 @@ export class QuestionsService {
   private async getArcadeQuestionsForTarget(
     target: ArcadeLevelTarget,
   ): Promise<QuestionModel[]> {
+    const cacheKey = `${target.difficultyId}_${target.levelNumber}`;
+    const cached = this.getCachedValue(
+      this.arcadeQuestionsCache,
+      cacheKey,
+      this.questionCacheMs,
+    );
+
+    if (cached) {
+      return this.selectQuestions(
+        cached,
+        'arcade',
+        target.difficultyId,
+        target.levelNumber,
+        1,
+      );
+    }
+
     return runInInjectionContext(this.injector, async () => {
       const questionsRef = collection(this.firestore, 'questions');
       const questionsQuery = query(
@@ -315,36 +374,86 @@ export class QuestionsService {
         ...(doc.data() as Omit<QuestionModel, 'id'>),
       }));
 
-      const seenIds = this.getSeenQuestionIds(
+      this.setCachedValue(this.arcadeQuestionsCache, cacheKey, questions);
+
+      return this.selectQuestions(
+        questions,
         'arcade',
         target.difficultyId,
         target.levelNumber,
+        1,
       );
+    });
+  }
 
-      let availableQuestions = questions.filter(
-        (question) => question.id && !seenIds.includes(question.id),
-      );
+  private selectQuestions(
+    questions: QuestionModel[],
+    category: string,
+    difficulty: DifficultyId,
+    levelNumber: number,
+    amount: number,
+  ): QuestionModel[] {
+    const seenIds = this.getSeenQuestionIds(category, difficulty, levelNumber);
 
-      if (availableQuestions.length === 0) {
-        availableQuestions = questions;
+    let availableQuestions = questions.filter(
+      (question) => question.id && !seenIds.includes(question.id),
+    );
+
+    if (availableQuestions.length === 0) {
+      availableQuestions = questions;
+    }
+
+    const selectedQuestions = this.pickRandomQuestions(
+      availableQuestions,
+      amount,
+    );
+
+    for (const question of selectedQuestions) {
+      if (question.id) {
+        this.saveSeenQuestionId(
+          category,
+          difficulty,
+          levelNumber,
+          question.id,
+        );
       }
+    }
 
-      const selectedQuestions = availableQuestions
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 1);
+    return selectedQuestions;
+  }
 
-      for (const question of selectedQuestions) {
-        if (question.id) {
-          this.saveSeenQuestionId(
-            'arcade',
-            target.difficultyId,
-            target.levelNumber,
-            question.id,
-          );
-        }
-      }
+  private pickRandomQuestions(
+    questions: QuestionModel[],
+    amount: number,
+  ): QuestionModel[] {
+    return [...questions].sort(() => Math.random() - 0.5).slice(0, amount);
+  }
 
-      return selectedQuestions;
+  private getCachedValue<T>(
+    cache: Map<string, CacheEntry<T>>,
+    key: string,
+    maxAgeMs: number,
+  ): T | null {
+    const cached = cache.get(key);
+
+    if (!cached) return null;
+
+    if (Date.now() - cached.createdAt > maxAgeMs) {
+      cache.delete(key);
+      return null;
+    }
+
+    return cached.value;
+  }
+
+  private setCachedValue<T>(
+    cache: Map<string, CacheEntry<T>>,
+    key: string,
+    value: T,
+  ) {
+    cache.set(key, {
+      createdAt: Date.now(),
+      value,
     });
   }
 }

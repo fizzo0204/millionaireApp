@@ -190,7 +190,11 @@ export class QuizPage implements OnInit, OnDestroy {
     this.loading = true;
 
     const questionsPromise = this.getQuestionsForCurrentMode();
-    const minLoaderMs = this.arcadeMode ? 520 : 1400;
+    const minLoaderMs = this.arcadeMode
+      ? 360
+      : this.dailyChallengeMode
+        ? 520
+        : 650;
 
     const [questions] = await Promise.all([
       questionsPromise,
