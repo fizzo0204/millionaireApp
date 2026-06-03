@@ -18,6 +18,46 @@
         }
       </div>
     </div>
+    } @if (arcadeTransitionVisible) {
+    <div class="arcade-transition-backdrop">
+      <div class="arcade-transition-card" [class.bonus]="arcadeRewardHasBonus">
+        <div class="arcade-transition-eyebrow">
+          @if (arcadeRewardHasBonus) { Forziere vicino! } @else { Scalata }
+        </div>
+
+        <div class="arcade-path">
+          <div class="arcade-node from">{{ arcadeTransitionFrom }}</div>
+          <div class="arcade-walk-line">
+            <span></span>
+          </div>
+          <div class="arcade-node to">{{ arcadeTransitionTo }}</div>
+        </div>
+
+        <h2>Livello superato!</h2>
+
+        <p>+{{ arcadeRewardXp }} XP e +{{ arcadeRewardCoins }} TurtleCoins</p>
+
+        @if (arcadeTransitionReady) {
+        <div class="arcade-transition-actions">
+          <button
+            class="arcade-transition-continue"
+            type="button"
+            (click)="continueAfterArcadeTransition()"
+          >
+            Continua
+          </button>
+
+          <button
+            class="arcade-transition-map"
+            type="button"
+            (click)="returnToArcadeMapAfterTransition()"
+          >
+            Torna alla scalata
+          </button>
+        </div>
+        }
+      </div>
+    </div>
     } @if (loading) {
     <app-game-loader
       icon="🎯"
@@ -32,7 +72,9 @@
         preparando nuove interessanti novità!
       </p>
 
-      <button type="button" (click)="goBack()">Torna ai livelli</button>
+      <button type="button" (click)="goBack()">
+        @if (arcadeMode) { Torna alla scalata } @else { Torna ai livelli }
+      </button>
     </div>
     } @else {
     <div class="quiz-topbar">
@@ -91,7 +133,7 @@
 
     <div class="question-card" [class.question-success]="answered && isCorrect">
       @if (answered && isCorrect && !dailyChallengeMode) {
-      <div class="xp-float">+{{ xpPerQuestion }} XP</div>
+      <div class="xp-float">{{ correctRewardLabel }}</div>
       }
 
       <h1>{{ currentQuestion.question }}</h1>
@@ -183,39 +225,52 @@
 
   @if (showWrongModal) {
   <div class="quiz-modal-backdrop">
-    <div class="wrong-modal" [class.daily-fail]="dailyChallengeMode">
+    <div
+      class="wrong-modal"
+      [class.daily-fail]="dailyChallengeMode"
+      [class.arcade-fail]="arcadeMode"
+    >
       <div class="wrong-icon">💔</div>
 
       <h2>
-        @if (dailyChallengeMode) { Sfida interrotta! } @else { Risposta errata! }
+        @if (dailyChallengeMode) { Sfida interrotta! } @else if (arcadeMode) {
+        Scalata interrotta! } @else { Risposta errata! }
       </h2>
 
       <p>
-        @if (dailyChallengeMode) {
-          Nella sfida giornaliera basta un errore per ricominciare da capo.
-          Guarda un video per salvare la run e riprovare questa domanda.
-        } @else {
-          Riprova o continua usando una vita
-        }
+        @if (dailyChallengeMode) { Nella sfida giornaliera basta un errore per
+        ricominciare da capo. Guarda un video per salvare la run e riprovare
+        questa domanda. } @else if (arcadeMode) { Hai perso la domanda del
+        livello {{ displayLevelNumber }}. Guarda un video per cambiare domanda e
+        continuare, oppure perdi una vita e riparti da questo livello quando
+        vuoi. } @else { Riprova o continua usando una vita }
       </p>
 
       <div class="wrong-actions">
         @if (dailyChallengeMode) {
-          <button class="ad-btn" type="button" (click)="watchAdAndContinue()">
-            Guarda video e riprova
-          </button>
+        <button class="ad-btn" type="button" (click)="watchAdAndContinue()">
+          Guarda video e riprova
+        </button>
 
-          <button
-            class="life-btn"
-            type="button"
-            (click)="restartDailyChallenge()"
-          >
-            Ricomincia da capo
-          </button>
+        <button
+          class="life-btn"
+          type="button"
+          (click)="restartDailyChallenge()"
+        >
+          Ricomincia da capo
+        </button>
 
-          <button class="ad-btn" type="button" (click)="returnToEvents()">
-            Torna agli eventi
-          </button>
+        <button class="ad-btn" type="button" (click)="returnToEvents()">
+          Torna agli eventi
+        </button>
+        } @else if (arcadeMode) {
+        <button class="ad-btn" type="button" (click)="watchAdAndContinue()">
+          ▶ Guarda video e cambia domanda
+        </button>
+
+        <button class="life-btn" type="button" (click)="loseLifeAndContinue()">
+          Perdi una vita e torna alla scalata
+        </button>
         } @else {
         <button class="ad-btn" type="button" (click)="watchAdAndContinue()">
           ▶ Guarda pubblicità e continua
@@ -230,16 +285,26 @@
   </div>
   } @if (showTimeModal) {
   <div class="quiz-modal-backdrop">
-    <div class="wrong-modal time-modal" [class.daily-fail]="dailyChallengeMode">
+    <div
+      class="wrong-modal time-modal"
+      [class.daily-fail]="dailyChallengeMode"
+      [class.arcade-fail]="arcadeMode"
+    >
       <div class="wrong-icon">⏰</div>
 
       <h2>Tempo scaduto!</h2>
 
       @if (dailyChallengeMode) {
       <p>
-        Il tempo e finito: nella sfida giornaliera conta come errore e la run
+        Il tempo è finito: nella sfida giornaliera conta come errore e la run
         riparte da capo. Puoi guardare un video per ottenere
         <strong>+5 secondi</strong>.
+      </p>
+      } @else if (arcadeMode) {
+      <p>
+        Il tempo del livello {{ displayLevelNumber }} è finito. Guarda un video
+        per ottenere <strong>+5 secondi</strong>, oppure perdi una vita e torna
+        alla mappa senza azzerare la scalata.
       </p>
       } @else {
       <p>
@@ -251,21 +316,33 @@
 
       <div class="wrong-actions">
         @if (dailyChallengeMode) {
-          <button class="ad-btn" type="button" (click)="watchAdForMoreTime()">
-            Guarda video e ottieni +5s
-          </button>
+        <button class="ad-btn" type="button" (click)="watchAdForMoreTime()">
+          Guarda video e ottieni +5s
+        </button>
 
-          <button
-            class="life-btn"
-            type="button"
-            (click)="restartDailyChallenge()"
-          >
-            Ricomincia da capo
-          </button>
+        <button
+          class="life-btn"
+          type="button"
+          (click)="restartDailyChallenge()"
+        >
+          Ricomincia da capo
+        </button>
 
-          <button class="ad-btn" type="button" (click)="returnToEvents()">
-            Torna agli eventi
-          </button>
+        <button class="ad-btn" type="button" (click)="returnToEvents()">
+          Torna agli eventi
+        </button>
+        } @else if (arcadeMode) {
+        <button class="ad-btn" type="button" (click)="watchAdForMoreTime()">
+          ▶ Guarda video e ottieni +5s
+        </button>
+
+        <button
+          class="life-btn"
+          type="button"
+          (click)="loseLifeAfterTimeExpired()"
+        >
+          Perdi una vita e torna alla scalata
+        </button>
         } @else {
         <button class="ad-btn" type="button" (click)="watchAdForMoreTime()">
           ▶ Guarda pubblicità e ottieni +5s
@@ -290,22 +367,22 @@
       <h2>Vuoi uscire?</h2>
 
       <p>
-        @if (dailyChallengeMode) {
-          Puoi tornare agli eventi senza consumare vite. La run giornaliera
-          resta interrotta.
-        } @else {
-          Se abbandoni il quiz perderai una vita. Puoi restare e continuare con
-          il timer attuale.
-        }
+        @if (dailyChallengeMode) { Puoi tornare agli eventi senza consumare
+        vite. La run giornaliera resta interrotta. } @else if (arcadeMode) {
+        Puoi uscire e tornare alla scalata senza perdere vite. La scalata
+        ripartira dal livello {{ displayLevelNumber }}. } @else { Se abbandoni
+        il quiz perderai una vita. Puoi restare e continuare con il timer
+        attuale. }
       </p>
 
       <div class="wrong-actions">
         <button class="ad-btn" type="button" (click)="closeExitModal()">
-          Continua il quiz
+          @if (arcadeMode) { Continua Scalata } @else { Continua il quiz }
         </button>
 
         <button class="life-btn" type="button" (click)="confirmExitQuiz()">
-          Esci e perdi una vita
+          @if (dailyChallengeMode) { Torna agli eventi } @else if (arcadeMode) {
+          Torna alla scalata } @else { Esci e perdi una vita }
         </button>
       </div>
     </div>
@@ -342,6 +419,42 @@
           <strong>Guarda video</strong>
           <small>Ottieni 10 TurtleCoins</small>
         </span>
+      </button>
+    </div>
+  </div>
+  } @if (showArcadeChestRewardModal) {
+  <div class="arcade-chest-modal-backdrop">
+    <div class="arcade-chest-modal">
+      <div class="arcade-chest-glow"></div>
+
+      <div class="arcade-chest-copy">
+        <span>Forziere Scalata</span>
+        <h2>Bonus sbloccato!</h2>
+        <p>Hai completato 10 livelli della scalata.</p>
+      </div>
+
+      <div class="arcade-chest-icon">
+        <img src="assets/ui/epic-chest-reward.webp" alt="Forziere Scalata" />
+      </div>
+
+      <div class="arcade-chest-rewards">
+        <div>
+          <strong>+{{ arcadeChestRewardCoins }}</strong>
+          <span>TurtleCoins</span>
+        </div>
+
+        <div>
+          <strong>+{{ arcadeChestRewardXp }}</strong>
+          <span>XP</span>
+        </div>
+      </div>
+
+      <button
+        class="arcade-chest-btn"
+        type="button"
+        (click)="continueAfterArcadeChestReward()"
+      >
+        Torna alla scalata
       </button>
     </div>
   </div>
@@ -386,7 +499,8 @@
         Continua così!
       </div>
 
-      @if (!rewardDoubled && (!dailyChallengeMode || dailyChallengeRewardCoins > 0)) {
+      @if (!rewardDoubled && (!dailyChallengeMode || dailyChallengeRewardCoins >
+      0)) {
       <button
         class="reward-double-btn"
         type="button"

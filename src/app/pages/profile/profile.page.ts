@@ -165,13 +165,13 @@ export class ProfilePage {
     return 'Principiante';
   }
 
-  getStats(realStats: AppUserProfile['stats']): ProfileStatModel[] {
-    const totalAnswers = realStats.correctAnswers + realStats.wrongAnswers;
-
-    const correctPercentage =
-      totalAnswers <= 0
-        ? 0
-        : Math.round((realStats.correctAnswers / totalAnswers) * 100);
+  getStats(
+    realStats: AppUserProfile['stats'],
+    profile?: AppUserProfile | null,
+  ): ProfileStatModel[] {
+    const arcadeLevel =
+      profile?.arcade?.currentLevel ??
+      this.userStatsService.defaultArcade.currentLevel;
 
     return [
       {
@@ -179,7 +179,7 @@ export class ProfilePage {
         value: String(realStats.quizPlayed),
         label: 'Quiz giocati',
       },
-      { icon: '🎯', value: `${correctPercentage}%`, label: '% corrette' },
+      { icon: '⚡', value: String(arcadeLevel), label: 'Livello Arcade' },
       {
         icon: '🔥',
         value: String(realStats.streakDays),

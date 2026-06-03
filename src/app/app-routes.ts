@@ -77,6 +77,16 @@ export const routes: Routes = [
       import('./pages/quiz/quiz.page').then((m) => m.QuizPage),
   },
   {
+    path: 'arcade/play',
+    loadComponent: () =>
+      import('./pages/quiz/quiz.page').then((m) => m.QuizPage),
+  },
+  {
+    path: 'arcade',
+    loadComponent: () =>
+      import('./pages/arcade/arcade.page').then((m) => m.ArcadePage),
+  },
+  {
     path: 'daily-challenge',
     loadComponent: () =>
       import('./pages/quiz/quiz.page').then((m) => m.QuizPage),

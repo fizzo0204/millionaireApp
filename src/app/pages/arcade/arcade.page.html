@@ -1,0 +1,94 @@
+<ion-content class="arcade-content">
+  <div class="page-fade">
+    @if (loading) {
+    <app-game-loader
+      icon="⚡"
+      title="Preparazione Scalata..."
+      subtitle="Stiamo disegnando la tua scalata"
+    ></app-game-loader>
+    } @else {
+    <div class="arcade-top">
+      <button class="arcade-back-btn" type="button" (click)="goHome()">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
+
+      <div>
+        <span>Scalata infinita</span>
+        <h1>Scalata</h1>
+      </div>
+    </div>
+
+    <section class="arcade-hero">
+      <div class="arcade-hero-copy">
+        <span>Livello corrente</span>
+        <strong>{{ currentLevel }}</strong>
+        <p>Supera il livello attuale per avanzare nella scalata.</p>
+      </div>
+
+      <div class="arcade-record">
+        <span>Record</span>
+        <strong>{{ bestLevel }}</strong>
+      </div>
+    </section>
+
+    <section class="chest-card">
+      <div class="chest-info">
+        <div class="chest-icon">🎁</div>
+
+        <div>
+          <span>Forziere bonus</span>
+          <h2>Livello {{ nextChestLevel }}</h2>
+          <p>{{ chestProgressLabel }} passi completati</p>
+        </div>
+      </div>
+
+      <div class="chest-steps">
+        @for (step of chestSteps; track step) {
+        <span [class.filled]="isChestStepFilled(step)">{{ step }}</span>
+        }
+      </div>
+    </section>
+
+    <section class="climb-card">
+      <div class="climb-title">
+        <span>Tratto {{ segmentStart }}-{{ nextChestLevel }}</span>
+        <h2>La tua scalata</h2>
+      </div>
+
+      <div class="climb-path">
+        @for (item of visibleLevels; track item.level) {
+        <button
+          class="climb-level"
+          type="button"
+          [class.completed]="item.state === 'completed'"
+          [class.current]="item.state === 'current'"
+          [class.locked]="item.state === 'locked'"
+          [disabled]="item.state !== 'current'"
+          (click)="startCurrentLevel()"
+        >
+          <span>{{ item.level }}</span>
+
+          @if (item.state === 'completed') {
+          <ion-icon name="checkmark-circle"></ion-icon>
+          } @else if (item.state === 'current') {
+          <small>Gioca</small>
+          } @else {
+          <ion-icon name="lock-closed-outline"></ion-icon>
+          }
+        </button>
+        }
+      </div>
+    </section>
+
+    @if (!canPlayCurrentLevel) {
+    <section class="arcade-empty">
+      <h2>Scalata completata</h2>
+      <p>
+        Hai raggiunto tutti i livelli della Scalata disponibili. Appena aggiungi nuove
+        domande, potrai continuare da qui.
+      </p>
+    </section>
+    }
+    }
+  </div>
+</ion-content>

@@ -29,6 +29,7 @@ export class SettingsPage {
   musicEnabled = true;
   clickEnabled = true;
   resetLoading = false;
+  arcadeResetLoading = false;
   eventsDebugLoading = false;
   eventsDebugWeekday: number | null = null;
   readonly isDebugMode = !environment.production;
@@ -143,6 +144,35 @@ export class SettingsPage {
       alert('Errore durante il reset');
     } finally {
       this.resetLoading = false;
+    }
+  }
+
+  async resetArcadeDebug() {
+    if (this.arcadeResetLoading) return;
+
+    const confirmed = confirm(
+      'Vuoi azzerare solo la Scalata e ripartire dal livello 1?',
+    );
+
+    if (!confirmed) return;
+
+    this.arcadeResetLoading = true;
+
+    try {
+      const user = await firstValueFrom(this.authService.user$);
+
+      if (!user) {
+        alert('Nessun utente valido trovato');
+        return;
+      }
+
+      await this.userStatsService.resetArcadeDebugData(user.uid);
+      alert('Scalata resettata: riparti dal livello 1');
+    } catch (error) {
+      console.error('Errore reset scalata:', error);
+      alert('Errore durante il reset della scalata');
+    } finally {
+      this.arcadeResetLoading = false;
     }
   }
 

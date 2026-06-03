@@ -22,6 +22,7 @@ import { AudioService } from 'src/app/services/audio';
 import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
 import { DailyEventsService } from 'src/app/services/daily-events.service';
 import { DAILY_EVENTS_CONFIG } from 'src/app/config/daily-events.config';
+import { ARCADE_CONFIG } from 'src/app/config/arcade.config';
 
 @Component({
   selector: 'app-quiz',
@@ -53,8 +54,19 @@ export class QuizPage implements OnInit, OnDestroy {
   rewardDoubleLoading = false;
   rewardDoubled = false;
   dailyChallengeMode = false;
+  arcadeMode = false;
   dailyChallengeRewardCoins = 0;
   dailyChallengeRewardAlreadyClaimed = false;
+  arcadeRewardCoins = 0;
+  arcadeRewardXp = 0;
+  arcadeChestRewardCoins = 0;
+  arcadeChestRewardXp = 0;
+  arcadeRewardHasBonus = false;
+  arcadeTransitionVisible = false;
+  arcadeTransitionReady = false;
+  arcadeTransitionFrom = 1;
+  arcadeTransitionTo = 2;
+  showArcadeChestRewardModal = false;
 
   difficultyId: DifficultyId = 'easy';
   categoryTitle = 'Quiz';
@@ -106,13 +118,16 @@ export class QuizPage implements OnInit, OnDestroy {
   async ngOnInit() {
     this.audioService.suspendMusicForGame();
 
-    this.dailyChallengeMode = this.router.url
-      .split('?')[0]
-      .startsWith('/daily-challenge');
+    const cleanUrl = this.router.url.split('?')[0];
+
+    this.dailyChallengeMode = cleanUrl.startsWith('/daily-challenge');
+    this.arcadeMode = cleanUrl.startsWith('/arcade/play');
 
     if (this.dailyChallengeMode) {
       this.setupDailyChallengeLabels();
       await this.dailyEventsService.trackDailyChallengeStarted();
+    } else if (this.arcadeMode) {
+      await this.setupArcadeLabels();
     } else {
       this.categoryId = this.route.snapshot.paramMap.get('categoryId') || '';
       this.difficultyId =
@@ -158,19 +173,13 @@ export class QuizPage implements OnInit, OnDestroy {
   async loadQuestions() {
     this.loading = true;
 
-    const questionsPromise = this.dailyChallengeMode
-      ? this.questionsService.getRandomActiveQuestions(
-          DAILY_EVENTS_CONFIG.dailyChallengeQuestionCount,
-          DAILY_EVENTS_CONFIG.dailyChallengeDifficulty,
-        )
-      : this.questionsService.getQuestions(
-          this.categoryId,
-          this.difficultyId,
-          this.levelNumber,
-          1,
-        );
+    const questionsPromise = this.getQuestionsForCurrentMode();
+    const minLoaderMs = this.arcadeMode ? 520 : 1400;
 
-    const [questions] = await Promise.all([questionsPromise, this.wait(1400)]);
+    const [questions] = await Promise.all([
+      questionsPromise,
+      this.wait(minLoaderMs),
+    ]);
 
     this.questions = questions;
     this.trackedDailyQuestionIndexes.clear();
@@ -187,6 +196,51 @@ export class QuizPage implements OnInit, OnDestroy {
     }
 
     this.startCurrentQuestion();
+  }
+
+  private async getQuestionsForCurrentMode(): Promise<QuestionModel[]> {
+    if (this.dailyChallengeMode) {
+      return this.questionsService.getRandomActiveQuestions(
+        DAILY_EVENTS_CONFIG.dailyChallengeQuestionCount,
+        DAILY_EVENTS_CONFIG.dailyChallengeDifficulty,
+      );
+    }
+
+    if (this.arcadeMode) {
+      return this.getArcadeQuestion();
+    }
+
+    return this.questionsService.getQuestions(
+      this.categoryId,
+      this.difficultyId,
+      this.levelNumber,
+      1,
+    );
+  }
+
+  private async getArcadeQuestion(): Promise<QuestionModel[]> {
+    const user = await firstValueFrom(this.auth.user$);
+    const arcade = user
+      ? await this.userStatsService.getArcadeData(user.uid)
+      : this.userStatsService.defaultArcade;
+
+    const selection = await this.questionsService.getArcadeQuestionForLevel(
+      arcade.currentLevel,
+    );
+
+    if (!selection) {
+      this.displayLevelNumber = arcade.currentLevel;
+      this.totalLevels = await this.questionsService.getArcadeTotalLevels();
+      return [];
+    }
+
+    this.displayLevelNumber = selection.arcadeLevel;
+    this.totalLevels = selection.totalLevels;
+    this.difficultyId = selection.difficultyId;
+    this.levelNumber = selection.levelNumber;
+    this.difficultyTitle = this.getDifficultyTitle(selection.difficultyId);
+
+    return [selection.question];
   }
 
   private wait(ms: number): Promise<void> {
@@ -236,16 +290,9 @@ export class QuizPage implements OnInit, OnDestroy {
       altro: { title: 'Altro', icon: '⭐' },
     };
 
-    const difficulties: Record<string, string> = {
-      easy: 'Easy',
-      medium: 'Medium',
-      hard: 'Hard',
-      extreme: 'Extreme',
-    };
-
     this.categoryTitle = categories[this.categoryId]?.title || 'Quiz';
     this.categoryIcon = categories[this.categoryId]?.icon || '❓';
-    this.difficultyTitle = difficulties[this.difficultyId] || 'Easy';
+    this.difficultyTitle = this.getDifficultyTitle(this.difficultyId);
   }
 
   setupDailyChallengeLabels() {
@@ -258,21 +305,63 @@ export class QuizPage implements OnInit, OnDestroy {
     this.totalLevels = DAILY_EVENTS_CONFIG.dailyChallengeQuestionCount;
   }
 
+  private async setupArcadeLabels() {
+    this.categoryId = 'arcade';
+    this.categoryTitle = 'Scalata';
+    this.categoryIcon = '⚡';
+    this.difficultyId = 'easy';
+    this.difficultyTitle = 'Progressiva';
+    this.levelNumber = 1;
+    this.displayLevelNumber = 1;
+    this.totalLevels = await this.questionsService.getArcadeTotalLevels();
+  }
+
+  private getDifficultyTitle(difficultyId: DifficultyId): string {
+    const difficulties: Record<DifficultyId, string> = {
+      easy: 'Easy',
+      medium: 'Medium',
+      hard: 'Hard',
+      extreme: 'Extreme',
+    };
+
+    return difficulties[difficultyId] || 'Easy';
+  }
+
   get currentQuestion(): QuestionModel | null {
     return this.questions[this.currentIndex] || null;
   }
 
   get progressPercent(): number {
     if (!this.questions.length) return 0;
+
+    if (this.arcadeMode) {
+      const stepInBonus =
+        ((this.displayLevelNumber - 1) % ARCADE_CONFIG.bonusEveryLevels) + 1;
+
+      return (stepInBonus / ARCADE_CONFIG.bonusEveryLevels) * 100;
+    }
+
     return ((this.currentIndex + 1) / this.questions.length) * 100;
   }
 
   get questionProgressLabel(): string {
+    if (this.arcadeMode) {
+      return `Livello Scalata ${this.displayLevelNumber}/${this.totalLevels}`;
+    }
+
     if (this.dailyChallengeMode) {
       return `Domanda ${this.currentIndex + 1}/${this.questions.length}`;
     }
 
     return `Domanda ${this.displayLevelNumber}/${this.totalLevels}`;
+  }
+
+  get correctRewardLabel(): string {
+    if (this.arcadeMode) {
+      return `+${ARCADE_CONFIG.baseXpPerLevel} XP +${ARCADE_CONFIG.baseCoinsPerLevel}`;
+    }
+
+    return `+${this.xpPerQuestion} XP`;
   }
 
   get timerPercent(): number {
@@ -369,7 +458,7 @@ export class QuizPage implements OnInit, OnDestroy {
 
     if (this.dailyChallengeMode) {
       void this.dailyEventsService.trackDailyChallengeHelp();
-    } else {
+    } else if (!this.arcadeMode) {
       void this.dailyEventsService.trackNormalHelpUsed();
     }
 
@@ -422,6 +511,11 @@ export class QuizPage implements OnInit, OnDestroy {
   async finishQuiz() {
     if (this.dailyChallengeMode) {
       await this.finishDailyChallenge();
+      return;
+    }
+
+    if (this.arcadeMode) {
+      await this.finishArcadeLevel();
       return;
     }
 
@@ -523,6 +617,11 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   async loseLifeAndContinue() {
+    if (this.arcadeMode) {
+      await this.loseArcadeLifeAndExit();
+      return;
+    }
+
     await this.livesService.spendLife();
     this.showWrongModal = false;
     this.nextQuestion();
@@ -539,6 +638,11 @@ export class QuizPage implements OnInit, OnDestroy {
 
         if (this.dailyChallengeMode) {
           this.retryCurrentDailyChallengeQuestion();
+          return;
+        }
+
+        if (this.arcadeMode) {
+          await this.switchQuestion();
           return;
         }
 
@@ -571,6 +675,11 @@ export class QuizPage implements OnInit, OnDestroy {
   async loseLifeAfterTimeExpired() {
     if (this.dailyChallengeMode) {
       await this.restartDailyChallenge();
+      return;
+    }
+
+    if (this.arcadeMode) {
+      await this.loseArcadeLifeAndExit();
       return;
     }
 
@@ -673,7 +782,7 @@ export class QuizPage implements OnInit, OnDestroy {
     this.stopTimer();
     this.navigatingAway = true;
 
-    if (this.dailyChallengeMode) {
+    if (this.dailyChallengeMode || this.arcadeMode) {
       this.goToExitPage();
       return;
     }
@@ -690,6 +799,22 @@ export class QuizPage implements OnInit, OnDestroy {
     this.showExitModal = false;
     this.navigatingAway = true;
     this.router.navigateByUrl('/events/challenge');
+  }
+
+  private async loseArcadeLifeAndExit() {
+    const user = await firstValueFrom(this.auth.user$);
+
+    if (user) {
+      await this.userStatsService.recordArcadeMistake(user.uid);
+    }
+
+    await this.livesService.spendLife();
+
+    this.markCurrentQuestionAsWrong();
+    this.showWrongModal = false;
+    this.showTimeModal = false;
+    this.navigatingAway = true;
+    this.goToExitPage();
   }
 
   private startCurrentQuestion() {
@@ -732,6 +857,121 @@ export class QuizPage implements OnInit, OnDestroy {
     if (stopGameSound) {
       this.audioService.stopGameSound();
     }
+  }
+
+  private async finishArcadeLevel() {
+    const user = await firstValueFrom(this.auth.user$);
+
+    if (!user) {
+      this.navigatingAway = true;
+      this.goToExitPage();
+      return;
+    }
+
+    const reward = this.getArcadeReward(this.displayLevelNumber);
+    const updatedArcade =
+      await this.userStatsService.recordArcadeLevelCompleted(
+        user.uid,
+        this.displayLevelNumber,
+        reward.totalCoins,
+        reward.totalXp,
+      );
+
+    if (!updatedArcade) {
+      this.navigatingAway = true;
+      this.goToExitPage();
+      return;
+    }
+
+    this.arcadeRewardCoins = reward.baseCoins;
+    this.arcadeRewardXp = reward.baseXp;
+    this.arcadeChestRewardCoins = reward.bonusCoins;
+    this.arcadeChestRewardXp = reward.bonusXp;
+    this.arcadeRewardHasBonus = reward.hasBonus;
+
+    await this.playArcadeTransition(
+      this.displayLevelNumber,
+      updatedArcade.currentLevel,
+      !reward.hasBonus,
+    );
+
+    if (reward.hasBonus) {
+      this.showArcadeChestRewardModal = true;
+      return;
+    }
+
+    /*
+     * Nei livelli normali della Scalata non carichiamo subito la domanda
+     * successiva: lasciamo scegliere al giocatore se continuare o tornare
+     * alla mappa.
+     */
+  }
+
+  async continueAfterArcadeTransition() {
+    this.haptics.light();
+    this.arcadeTransitionVisible = false;
+    this.arcadeTransitionReady = false;
+    this.usedHelps = [];
+    await this.loadQuestions();
+  }
+
+  returnToArcadeMapAfterTransition() {
+    this.haptics.light();
+    this.arcadeTransitionVisible = false;
+    this.arcadeTransitionReady = false;
+    this.navigatingAway = true;
+    this.goToExitPage();
+  }
+
+  continueAfterArcadeChestReward() {
+    this.haptics.heavy();
+    this.showArcadeChestRewardModal = false;
+    this.navigatingAway = true;
+    this.goToExitPage();
+  }
+
+  private getArcadeReward(arcadeLevel: number): {
+    baseCoins: number;
+    baseXp: number;
+    bonusCoins: number;
+    bonusXp: number;
+    totalCoins: number;
+    totalXp: number;
+    hasBonus: boolean;
+  } {
+    const hasBonus = arcadeLevel % ARCADE_CONFIG.bonusEveryLevels === 0;
+    const bonusCoins = hasBonus ? ARCADE_CONFIG.bonusCoins : 0;
+    const bonusXp = hasBonus ? ARCADE_CONFIG.bonusXp : 0;
+
+    return {
+      baseCoins: ARCADE_CONFIG.baseCoinsPerLevel,
+      baseXp: ARCADE_CONFIG.baseXpPerLevel,
+      bonusCoins,
+      bonusXp,
+      totalCoins: ARCADE_CONFIG.baseCoinsPerLevel + bonusCoins,
+      totalXp: ARCADE_CONFIG.baseXpPerLevel + bonusXp,
+      hasBonus,
+    };
+  }
+
+  private async playArcadeTransition(
+    fromLevel: number,
+    toLevel: number,
+    waitForUserChoice: boolean,
+  ) {
+    this.arcadeTransitionFrom = fromLevel;
+    this.arcadeTransitionTo = toLevel;
+    this.arcadeTransitionReady = false;
+    this.arcadeTransitionVisible = true;
+
+    await this.wait(this.arcadeRewardHasBonus ? 1900 : 1350);
+
+    if (waitForUserChoice) {
+      this.arcadeTransitionReady = true;
+      return;
+    }
+
+    this.arcadeTransitionVisible = false;
   }
 
   private async finishDailyChallenge() {
@@ -811,6 +1051,11 @@ export class QuizPage implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.arcadeMode) {
+      this.router.navigateByUrl('/arcade');
+      return;
+    }
+
     this.router.navigateByUrl(
       `/levels/${this.categoryId}/${this.difficultyId}`,
     );
@@ -848,6 +1093,19 @@ export class QuizPage implements OnInit, OnDestroy {
         if (!newQuestion) return;
 
         this.questions[this.currentIndex] = newQuestion;
+        this.startCurrentQuestion();
+        return;
+      }
+
+      if (this.arcadeMode) {
+        const selection = await this.questionsService.getArcadeQuestionForLevel(
+          this.displayLevelNumber,
+        );
+
+        if (!selection) return;
+
+        this.questions = [selection.question];
+        this.currentIndex = 0;
         this.startCurrentQuestion();
         return;
       }

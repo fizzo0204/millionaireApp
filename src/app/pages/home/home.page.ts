@@ -23,6 +23,7 @@ import { TutorialService } from 'src/app/services/tutorial.service';
 export class HomePage implements OnInit, OnDestroy {
   private livesSub?: Subscription;
 
+  activeView: 'menu' | 'categories' = 'menu';
   private previousLives?: number;
   readonly maxLives = 5;
 
@@ -74,6 +75,8 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   async ionViewWillEnter() {
+    this.activeView = 'menu';
+
     /*
      * Il login non blocca piu il gioco. Quando l'ospite torna in home,
      * ogni tanto proponiamo il salvataggio cloud con Google/Facebook.
@@ -88,6 +91,18 @@ export class HomePage implements OnInit, OnDestroy {
 
   selectCategory(categoryId: string) {
     this.router.navigateByUrl(`/difficulty/${categoryId}`);
+  }
+
+  startArcade() {
+    this.router.navigateByUrl('/arcade');
+  }
+
+  showCategories() {
+    this.activeView = 'categories';
+  }
+
+  showMenu() {
+    this.activeView = 'menu';
   }
 
   async watchCoinsAd() {

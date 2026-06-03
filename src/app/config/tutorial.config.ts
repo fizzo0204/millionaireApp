@@ -15,24 +15,43 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     kind: 'intro',
     eyebrow: 'La guida inizia',
     title: 'Sono la tua tartaruga saggia',
-    body: 'Ti accompagno in un giro veloce tra categorie, livelli e aiuti. Arriva fino in fondo e ti regalo 30 TurtleCoins più il mio avatar speciale.',
+    body: 'Ti accompagno in un giro veloce tra categorie, Scalata, livelli e aiuti. Arriva fino in fondo e ti regalo 30 TurtleCoins piu il mio avatar speciale.',
   },
   {
     id: 'categories',
     kind: 'coach',
     eyebrow: 'Prima lezione',
-    title: 'Parti da una categoria',
-    body: 'Scegli la strada che ti ispira. Ogni categoria è una piccola scalata da conquistare, domanda dopo domanda.',
+    title: 'Scegli come vuoi giocare',
+    body: 'Puoi partire dalle categorie oppure entrare nella Scalata progressiva, una domanda alla volta.',
     route: '/home',
-    targetId: 'home-category-card',
+    targetId: 'home-categories-mode',
     highlights: [
       {
         title: 'Categorie',
         description: 'Sport, cinema, storia, scienze e altro.',
       },
       {
-        title: 'Progressi',
-        description: 'Ogni vittoria sblocca nuove sfide.',
+        title: 'Scalata',
+        description: 'Una scalata unica con difficolta crescente.',
+      },
+    ],
+  },
+  {
+    id: 'arcade',
+    kind: 'coach',
+    eyebrow: 'Nuova scalata',
+    title: 'La Scalata non riparte da zero',
+    body: 'Supera un livello alla volta, guadagna TurtleCoins e XP, e ogni 10 livelli ricevi un bonus extra. Se sbagli, riparti dal livello raggiunto.',
+    route: '/home',
+    targetId: 'home-arcade-card',
+    highlights: [
+      {
+        title: 'Progressiva',
+        description: 'Prima Easy, poi Medium, Hard ed Extreme.',
+      },
+      {
+        title: 'Bonus x10',
+        description: 'Ogni dieci livelli la ricompensa cresce.',
       },
     ],
   },
@@ -40,7 +59,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'difficulty',
     kind: 'coach',
     eyebrow: 'Seconda lezione',
-    title: 'Le difficoltà si aprono con i risultati',
+    title: 'Le difficolta si aprono con i risultati',
     body: 'Completa Easy per aprire Medium, poi continua verso Hard ed Extreme. La strada cresce con le nuove domande.',
     route: '/difficulty/sport',
     targetId: 'difficulty-grid',
@@ -98,7 +117,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
       },
       {
         title: 'Pubblico',
-        description: 'Ti suggerisce la risposta più probabile.',
+        description: 'Ti suggerisce la risposta piu probabile.',
       },
       {
         title: 'Cambio',

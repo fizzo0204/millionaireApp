@@ -29,6 +29,14 @@ export interface UserOnboardingData {
   tutorialSkippedAt?: unknown;
 }
 
+export interface UserArcadeData {
+  currentLevel: number;
+  bestLevel: number;
+  totalLevelsCompleted: number;
+  lastPlayedAt: unknown;
+  lastCompletedAt: unknown;
+}
+
 export interface AppUserProfile {
   uid: string;
   displayName: string | null;
@@ -41,6 +49,7 @@ export interface AppUserProfile {
   avatar: UserAvatarData;
   auth?: UserAuthProfile;
   onboarding?: UserOnboardingData;
+  arcade?: UserArcadeData;
 }
 
 export interface QuizHistoryItem {

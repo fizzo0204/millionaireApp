@@ -1,0 +1,270 @@
+.arcade-content {
+  color: #fff;
+}
+
+.arcade-top {
+  margin: 28px 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.arcade-back-btn {
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgba(7, 44, 82, 0.9);
+  border: 1px solid rgba(96, 165, 250, 0.28);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.22);
+}
+
+.arcade-back-btn ion-icon {
+  font-size: 1.45rem;
+}
+
+.arcade-top span,
+.arcade-hero-copy span,
+.arcade-record span,
+.chest-info span,
+.climb-title span {
+  color: #ffea00;
+  font-size: 0.68rem;
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+
+.arcade-top h1 {
+  margin: 2px 0 0;
+  font-size: 1.75rem;
+  line-height: 1;
+  font-weight: 1000;
+}
+
+.arcade-hero,
+.chest-card,
+.climb-card,
+.arcade-empty {
+  border-radius: 24px;
+  background: rgba(7, 44, 82, 0.86);
+  border: 1px solid rgba(96, 165, 250, 0.24);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 12px 26px rgba(0, 0, 0, 0.28);
+}
+
+.arcade-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 154px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background:
+    radial-gradient(circle at 88% 0%, rgba(255, 234, 0, 0.22), transparent 34%),
+    linear-gradient(135deg, #7c3aed, #0f766e);
+}
+
+.arcade-hero::after {
+  content: "";
+  position: absolute;
+  right: -34px;
+  top: -36px;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.arcade-hero-copy,
+.arcade-record {
+  position: relative;
+  z-index: 2;
+}
+
+.arcade-hero-copy strong {
+  display: block;
+  margin: 4px 0;
+  color: #fff;
+  font-size: 3.5rem;
+  line-height: 0.9;
+  font-weight: 1000;
+}
+
+.arcade-hero-copy p {
+  max-width: 190px;
+  margin: 0;
+  color: #f8fafc;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+.arcade-record {
+  width: 86px;
+  height: 86px;
+  border-radius: 28px;
+  display: grid;
+  place-items: center;
+  color: #04111f;
+  background: #ffea00;
+  box-shadow: 0 7px 0 rgba(129, 90, 0, 0.78);
+}
+
+.arcade-record span {
+  color: #04111f;
+  font-size: 0.62rem;
+}
+
+.arcade-record strong {
+  font-size: 1.9rem;
+  font-weight: 1000;
+}
+
+.chest-card {
+  margin-top: 14px;
+  padding: 16px;
+}
+
+.chest-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chest-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  color: #04111f;
+  background: #ffea00;
+  font-size: 1.75rem;
+  box-shadow: 0 6px 0 rgba(129, 90, 0, 0.78);
+}
+
+.chest-info h2,
+.climb-title h2,
+.arcade-empty h2 {
+  margin: 2px 0 0;
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 1000;
+}
+
+.chest-info p,
+.arcade-empty p {
+  margin: 4px 0 0;
+  color: #dbeafe;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.chest-steps {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 5px;
+}
+
+.chest-steps span {
+  height: 26px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: #93c5fd;
+  background: rgba(2, 8, 23, 0.46);
+  font-size: 0.58rem;
+  font-weight: 1000;
+}
+
+.chest-steps span.filled {
+  color: #04111f;
+  background: #ffea00;
+  box-shadow: 0 0 12px rgba(255, 234, 0, 0.35);
+}
+
+.climb-card {
+  margin-top: 14px;
+  padding: 16px;
+}
+
+.climb-title {
+  margin-bottom: 14px;
+}
+
+.climb-path {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.climb-level {
+  position: relative;
+  min-height: 74px;
+  border: 0;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #dbeafe;
+  background: rgba(3, 31, 61, 0.9);
+  border: 1px solid rgba(96, 165, 250, 0.22);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.22);
+}
+
+.climb-level span {
+  font-size: 1.55rem;
+  font-weight: 1000;
+}
+
+.climb-level ion-icon,
+.climb-level small {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+}
+
+.climb-level.completed {
+  color: #04111f;
+  background: linear-gradient(135deg, #22c55e, #ffea00);
+}
+
+.climb-level.current {
+  color: #04111f;
+  background: #ffea00;
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 7px 0 rgba(129, 90, 0, 0.78),
+    0 0 22px rgba(255, 234, 0, 0.34);
+  animation: currentLevelPulse 1.6s ease-in-out infinite;
+}
+
+.climb-level.locked {
+  opacity: 0.45;
+}
+
+.climb-level small {
+  font-size: 0.64rem;
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+
+.arcade-empty {
+  margin-top: 14px;
+  padding: 16px;
+  text-align: center;
+}
+
+@keyframes currentLevelPulse {
+  50% {
+    transform: translateY(-3px);
+    filter: brightness(1.08);
+  }
+}

@@ -20,7 +20,11 @@ import { TutorialService } from 'src/app/services/tutorial.service';
   providedIn: 'root',
 })
 export class DailyRewardAutoOpenService implements OnDestroy {
-  private readonly blockedRoutePrefixes = ['/quiz', '/daily-challenge'];
+  private readonly blockedRoutePrefixes = [
+    '/quiz',
+    '/daily-challenge',
+    '/arcade/play',
+  ];
 
   private routeSub?: Subscription;
   private tutorialSub?: Subscription;

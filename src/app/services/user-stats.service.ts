@@ -27,6 +27,7 @@ import {
   QuizHistoryItem,
   UserAvatarData,
   UserOnboardingData,
+  UserArcadeData,
   UserProfileMigrationSnapshot,
 } from 'src/app/models/user-stats.model';
 import { User } from 'firebase/auth';
@@ -44,6 +45,7 @@ import {
   DailyRewardClaimPayload,
   UserDailyRewardData,
 } from 'src/app/models/daily-reward.model';
+import { ARCADE_CONFIG } from 'src/app/config/arcade.config';
 
 @Injectable({
   providedIn: 'root',
@@ -87,6 +89,14 @@ export class UserStatsService {
     tutorialCompleted: false,
     tutorialRewardClaimed: false,
     tutorialSkipped: false,
+  };
+
+  readonly defaultArcade: UserArcadeData = {
+    currentLevel: 1,
+    bestLevel: 1,
+    totalLevelsCompleted: 0,
+    lastPlayedAt: null,
+    lastCompletedAt: null,
   };
 
   private getProviderIds(user: User): AppAuthProviderId[] {
@@ -137,6 +147,7 @@ export class UserStatsService {
         dailyReward: this.defaultDailyReward,
         avatar: this.defaultAvatar,
         onboarding: this.defaultOnboarding,
+        arcade: this.defaultArcade,
         auth: authProfile,
       });
 
@@ -189,6 +200,10 @@ export class UserStatsService {
 
     if (!data['onboarding']) {
       updates['onboarding'] = this.defaultOnboarding;
+    }
+
+    if (!data['arcade']) {
+      updates['arcade'] = this.defaultArcade;
     }
 
     updates['auth.providerIds'] = authProfile.providerIds;
@@ -285,6 +300,7 @@ export class UserStatsService {
       | undefined;
     const avatar = profileData['avatar'] as Partial<UserAvatarData> | undefined;
     const auth = profileData['auth'] as Partial<UserAuthProfile> | undefined;
+    const arcade = profileData['arcade'] as Partial<UserArcadeData> | undefined;
 
     const hasStatsProgress = Boolean(
       (stats?.quizPlayed ?? 0) > 0 ||
@@ -317,12 +333,22 @@ export class UserStatsService {
     );
 
     const hasAuthRewardProgress = auth?.loginRewardClaimed === true;
+    const hasArcadeProgress = Boolean(
+      (arcade?.currentLevel ?? this.defaultArcade.currentLevel) !==
+        this.defaultArcade.currentLevel ||
+      (arcade?.bestLevel ?? this.defaultArcade.bestLevel) !==
+        this.defaultArcade.bestLevel ||
+      (arcade?.totalLevelsCompleted ??
+        this.defaultArcade.totalLevelsCompleted) !==
+        this.defaultArcade.totalLevelsCompleted,
+    );
 
     return (
       hasStatsProgress ||
       hasDailyRewardProgress ||
       hasAvatarProgress ||
-      hasAuthRewardProgress
+      hasAuthRewardProgress ||
+      hasArcadeProgress
     );
   }
 
@@ -411,6 +437,12 @@ export class UserStatsService {
             | Partial<UserAvatarData>
             | undefined) ?? {}),
         },
+        arcade: {
+          ...this.defaultArcade,
+          ...((sourceProfile['arcade'] as
+            | Partial<UserArcadeData>
+            | undefined) ?? {}),
+        },
         auth: {
           ...sourceAuth,
           providerIds: authProfile.providerIds,
@@ -472,6 +504,116 @@ export class UserStatsService {
         };
       }),
     );
+  }
+
+  async getArcadeData(uid: string): Promise<UserArcadeData> {
+    const userRef = doc(this.firestore, `users/${uid}`);
+    const snapshot = await getDoc(userRef);
+
+    if (!snapshot.exists()) {
+      return this.defaultArcade;
+    }
+
+    const data = snapshot.data();
+    const arcade = data['arcade'] as Partial<UserArcadeData> | undefined;
+
+    if (!arcade) {
+      await updateDoc(userRef, {
+        arcade: this.defaultArcade,
+      });
+
+      return this.defaultArcade;
+    }
+
+    return {
+      ...this.defaultArcade,
+      ...arcade,
+    };
+  }
+
+  async recordArcadeLevelCompleted(
+    uid: string,
+    completedArcadeLevel: number,
+    rewardCoins: number,
+    rewardXp: number,
+  ): Promise<UserArcadeData | null> {
+    /*
+     * Arcade e una scalata persistente: quando superi il livello corrente,
+     * spostiamo in avanti il cursore e salviamo il record raggiunto.
+     * Se arriva una richiesta vecchia o duplicata, non assegniamo premi.
+     */
+    const userRef = doc(this.firestore, `users/${uid}`);
+    const safeCompletedLevel = Math.max(
+      1,
+      Math.min(
+        ARCADE_CONFIG.maxTrackedLevel,
+        Math.floor(completedArcadeLevel),
+      ),
+    );
+
+    return runTransaction(this.firestore, async (transaction) => {
+      const snapshot = await transaction.get(userRef);
+
+      if (!snapshot.exists()) return null;
+
+      const data = snapshot.data();
+      const arcade = {
+        ...this.defaultArcade,
+        ...(data['arcade'] as Partial<UserArcadeData> | undefined),
+      };
+
+      if (arcade.currentLevel !== safeCompletedLevel) {
+        return null;
+      }
+
+      const nextLevel = Math.min(
+        safeCompletedLevel + 1,
+        ARCADE_CONFIG.maxTrackedLevel,
+      );
+      const currentXp =
+        typeof data['stats']?.xp === 'number'
+          ? data['stats'].xp
+          : this.defaultStats.xp;
+      const updatedXp = currentXp + rewardXp;
+      const updatedLevel = getLevelFromXp(updatedXp);
+
+      const updatedArcade: UserArcadeData = {
+        currentLevel: nextLevel,
+        bestLevel: Math.max(arcade.bestLevel ?? 1, nextLevel),
+        totalLevelsCompleted: (arcade.totalLevelsCompleted ?? 0) + 1,
+        lastPlayedAt: new Date(),
+        lastCompletedAt: new Date(),
+      };
+
+      transaction.update(userRef, {
+        'arcade.currentLevel': updatedArcade.currentLevel,
+        'arcade.bestLevel': updatedArcade.bestLevel,
+        'arcade.totalLevelsCompleted': increment(1),
+        'arcade.lastPlayedAt': serverTimestamp(),
+        'arcade.lastCompletedAt': serverTimestamp(),
+        'stats.correctAnswers': increment(1),
+        'stats.coins': increment(rewardCoins),
+        'stats.xp': increment(rewardXp),
+        'stats.level': updatedLevel,
+        'stats.lastQuizPlayedAt': serverTimestamp(),
+      });
+
+      return updatedArcade;
+    });
+  }
+
+  async recordArcadeMistake(uid: string): Promise<void> {
+    /*
+     * L'errore in Arcade non azzera la scalata: registra solo la risposta
+     * sbagliata e lascia il livello corrente invariato.
+     */
+    const userRef = doc(this.firestore, `users/${uid}`);
+
+    await updateDoc(userRef, {
+      'stats.wrongAnswers': increment(1),
+      'stats.lastQuizPlayedAt': serverTimestamp(),
+      'arcade.lastPlayedAt': serverTimestamp(),
+    });
   }
 
   async userProfileExists(uid: string): Promise<boolean> {
@@ -958,8 +1100,21 @@ export class UserStatsService {
       dailyReward: this.defaultDailyReward,
       avatar: this.defaultAvatar,
       onboarding: this.defaultOnboarding,
+      arcade: this.defaultArcade,
       dailyEvents: deleteField(),
       nickname: deleteField(),
+    });
+  }
+
+  async resetArcadeDebugData(uid: string): Promise<void> {
+    /*
+     * Reset mirato della Scalata per i test: non tocca XP, TurtleCoins,
+     * vite, tutorial, reward o progressi delle categorie.
+     */
+    const userRef = doc(this.firestore, `users/${uid}`);
+
+    await updateDoc(userRef, {
+      arcade: this.defaultArcade,
     });
   }
 

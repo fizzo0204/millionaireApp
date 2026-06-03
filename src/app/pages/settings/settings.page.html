@@ -105,6 +105,27 @@
         }
       </button>
       <button
+        class="login-card"
+        type="button"
+        (click)="resetArcadeDebug()"
+        [disabled]="arcadeResetLoading"
+      >
+        <div class="login-icon">
+          <ion-icon name="sparkles-outline"></ion-icon>
+        </div>
+
+        <div class="login-text">
+          <h3>Reset scalata</h3>
+          <p>Riparti dal livello 1 senza cancellare il resto</p>
+        </div>
+
+        @if (!arcadeResetLoading) {
+        <ion-icon class="login-arrow" name="refresh-outline"></ion-icon>
+        } @else {
+        <ion-spinner name="dots"></ion-spinner>
+        }
+      </button>
+      <button
         class="logout-card"
         type="button"
         (click)="openFreshTutorialDebug()"

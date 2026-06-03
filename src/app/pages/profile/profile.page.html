@@ -65,7 +65,7 @@
     </div>
 
     <div class="stats-grid">
-      @for (stat of getStats(realStats); track stat.label) {
+      @for (stat of getStats(realStats, profile$ | async); track stat.label) {
       <div class="stat-card">
         <div class="stat-icon">{{ stat.icon }}</div>
         <strong>{{ stat.value }}</strong>

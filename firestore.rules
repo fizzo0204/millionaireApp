@@ -362,6 +362,72 @@ service cloud.firestore {
         );
     }
 
+    function isValidArcade(arcade) {
+      return arcade is map
+        && arcade.keys().hasOnly([
+          'currentLevel',
+          'bestLevel',
+          'totalLevelsCompleted',
+          'lastPlayedAt',
+          'lastCompletedAt',
+        ])
+        && arcade.keys().hasAll([
+          'currentLevel',
+          'bestLevel',
+          'totalLevelsCompleted',
+          'lastPlayedAt',
+          'lastCompletedAt',
+        ])
+        && isNumberInRange(arcade.currentLevel, 1, 10000)
+        && isNumberInRange(arcade.bestLevel, 1, 10000)
+        && isNumberInRange(arcade.totalLevelsCompleted, 0, 1000000)
+        && isTimestampOrNull(arcade.lastPlayedAt)
+        && isTimestampOrNull(arcade.lastCompletedAt);
+    }
+
+    function isDefaultArcadeReset(arcade) {
+      return isValidArcade(arcade)
+        && arcade.currentLevel == 1
+        && arcade.bestLevel == 1
+        && arcade.totalLevelsCompleted == 0
+        && arcade.lastPlayedAt == null
+        && arcade.lastCompletedAt == null;
+    }
+
+    function isArcadeTimestampOk(before, after, key) {
+      return after[key] == null
+        || (
+          before is map
+          && before.keys().hasAny([key])
+          && after[key] == before[key]
+        )
+        || after[key] == request.time;
+    }
+
+    function isArcadeChangeReasonable(before, after) {
+      return after == null
+        || after == before
+        || isDefaultArcadeReset(after)
+        || (!(before is map) && isValidArcade(after))
+        || (
+          before is map
+          && isValidArcade(after)
+          && isExistingNumberDeltaOk(before, after, 'currentLevel', 0, 1)
+          && isExistingNumberDeltaOk(before, after, 'bestLevel', 0, 1)
+          && isExistingNumberDeltaOk(
+            before,
+            after,
+            'totalLevelsCompleted',
+            0,
+            1
+          )
+          && after.bestLevel >= before.bestLevel
+          && after.currentLevel <= after.bestLevel
+          && isArcadeTimestampOk(before, after, 'lastPlayedAt')
+          && isArcadeTimestampOk(before, after, 'lastCompletedAt')
+        );
+    }
+
     function isValidAuth(auth) {
       return auth is map
         && auth.keys().hasOnly([
@@ -648,6 +714,7 @@ service cloud.firestore {
           'dailyReward',
           'avatar',
           'onboarding',
+          'arcade',
           'auth',
           'dailyEvents',
           'selectedAvatar',
@@ -664,6 +731,7 @@ service cloud.firestore {
         && isValidDailyReward(data.dailyReward)
         && isValidAvatar(data.avatar, data.nickname)
         && isValidOnboarding(data.onboarding)
+        && (!data.keys().hasAny(['arcade']) || isValidArcade(data.arcade))
         && isValidAuth(data.auth)
         && (!data.keys().hasAny(['dailyEvents']) || isValidDailyEvents(data.dailyEvents))
         && isStringOrNullOrMissing(data, 'selectedAvatar', 80)
@@ -682,6 +750,7 @@ service cloud.firestore {
           'dailyReward',
           'avatar',
           'onboarding',
+          'arcade',
           'auth',
           'dailyEvents',
           'selectedAvatar',
@@ -702,6 +771,10 @@ service cloud.firestore {
         && isOnboardingChangeReasonable(
           resource.data.onboarding,
           request.resource.data.onboarding
+        )
+        && isArcadeChangeReasonable(
+          resource.data.arcade,
+          request.resource.data.arcade
         )
         && isDailyEventsChangeReasonable(
           resource.data.dailyEvents,
