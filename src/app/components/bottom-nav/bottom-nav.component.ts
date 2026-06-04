@@ -1,24 +1,32 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
 import { NavigationTab } from 'src/app/models/navigation.model';
+import { DailyEventsService } from 'src/app/services/daily-events.service';
 import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 
 @Component({
   selector: 'app-bottom-nav',
   standalone: true,
-  imports: [IonicModule],
+  imports: [CommonModule, IonicModule],
   templateUrl: './bottom-nav.component.html',
   styleUrls: ['./bottom-nav.component.scss'],
 })
-export class BottomNavComponent {
+export class BottomNavComponent implements OnInit {
   @Input() activeTab: NavigationTab = 'home';
   @Output() tabChange = new EventEmitter<NavigationTab>();
+  dailyNotificationCount$ = this.dailyEventsService.dailyNotificationCount$;
 
   constructor(
+    private dailyEventsService: DailyEventsService,
     private navigation: NavigationTransitionService,
     private router: Router,
   ) {}
+
+  ngOnInit() {
+    void this.dailyEventsService.refreshNotificationCount();
+  }
 
   setActiveTab(tab: NavigationTab) {
     if (tab === this.activeTab) {

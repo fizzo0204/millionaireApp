@@ -5,6 +5,7 @@ import {
   DailyMissionConfig,
   DailyMissionView,
 } from 'src/app/models/daily-events.model';
+import { Subscription } from 'rxjs';
 import { DailyEventsService } from 'src/app/services/daily-events.service';
 import { HapticsService } from 'src/app/services/haptics.service';
 import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
@@ -30,8 +31,13 @@ export class EventsMissionsPage implements OnInit, OnDestroy {
   private claimAnimationTimer?: ReturnType<typeof setTimeout>;
   private switchAnimationTimer?: ReturnType<typeof setTimeout>;
   private lastFastSwitchEventAt = 0;
+  private dayChangedSub?: Subscription;
 
   async ngOnInit(): Promise<void> {
+    this.dayChangedSub = this.dailyEventsService.dayChanged$.subscribe(() => {
+      void this.refresh();
+    });
+
     await this.refresh();
   }
 
@@ -139,6 +145,7 @@ export class EventsMissionsPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.dayChangedSub?.unsubscribe();
     this.clearClaimAnimationTimer();
     this.clearSwitchAnimationTimer();
   }

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
+import { Subscription } from 'rxjs';
 import { DAILY_EVENTS_CONFIG } from 'src/app/config/daily-events.config';
 import {
   DailyEventsData,
@@ -27,7 +28,7 @@ interface EventHubCard {
   templateUrl: './events.page.html',
   styleUrls: ['./events.page.scss'],
 })
-export class EventsPage implements OnInit {
+export class EventsPage implements OnInit, OnDestroy {
   private navigation = inject(NavigationTransitionService);
   private dailyEventsService = inject(DailyEventsService);
   private dailyRewardService = inject(DailyRewardService);
@@ -35,6 +36,7 @@ export class EventsPage implements OnInit {
   loading = true;
   missions: DailyMissionView[] = [];
   dailyEventsData: DailyEventsData | null = null;
+  private dayChangedSub?: Subscription;
 
   readonly cards: EventHubCard[] = [
     {
@@ -79,6 +81,10 @@ export class EventsPage implements OnInit {
   ];
 
   async ngOnInit(): Promise<void> {
+    this.dayChangedSub = this.dailyEventsService.dayChanged$.subscribe(() => {
+      void this.refresh();
+    });
+
     await this.refresh();
   }
 
@@ -134,6 +140,10 @@ export class EventsPage implements OnInit {
 
   openEvent(route: string): void {
     void this.navigation.navigateByUrl(route);
+  }
+
+  ngOnDestroy(): void {
+    this.dayChangedSub?.unsubscribe();
   }
 
   getCardStatus(card: EventHubCard): string {

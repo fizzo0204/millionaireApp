@@ -11,7 +11,7 @@ import {
   setDoc,
   updateDoc,
 } from '@angular/fire/firestore';
-import { firstValueFrom } from 'rxjs';
+import { BehaviorSubject, Subject, firstValueFrom } from 'rxjs';
 import {
   DAILY_EVENTS_CONFIG,
   DAILY_MISSION_PLANS,
@@ -43,7 +43,12 @@ export class DailyEventsService {
   private userStatsService = inject(UserStatsService);
   private readonly dailyCooldownMs = 24 * 60 * 60 * 1000;
   private rewardedAdProgressQueue = Promise.resolve();
+  private dailyNotificationCountSubject = new BehaviorSubject(0);
+  private dayChangedSubject = new Subject<void>();
 
+  readonly dailyNotificationCount$ =
+    this.dailyNotificationCountSubject.asObservable();
+  readonly dayChanged$ = this.dayChangedSubject.asObservable();
   readonly wheelRewards = DAILY_WHEEL_REWARDS;
   readonly dailyChallengeQuestionCount =
     DAILY_EVENTS_CONFIG.dailyChallengeQuestionCount;
@@ -77,6 +82,7 @@ export class DailyEventsService {
 
     const resolvedPlan = this.getTodayResolvedPlan(data);
     const basePlan = this.getTodayPlan();
+    this.updateNotificationCountFromData(data);
 
     return resolvedPlan.map((mission, index) => {
       const originalMission = basePlan[index] ?? mission;
@@ -110,6 +116,22 @@ export class DailyEventsService {
     if (!user) return this.getDefaultDailyEventsData();
 
     return this.getTodayData(user.uid);
+  }
+
+  async syncTodayDataForCurrentUser(): Promise<void> {
+    const user = await firstValueFrom(this.auth.user$);
+
+    if (!user) {
+      this.dailyNotificationCountSubject.next(0);
+      return;
+    }
+
+    const data = await this.getTodayData(user.uid);
+    this.updateNotificationCountFromData(data);
+  }
+
+  async refreshNotificationCount(): Promise<void> {
+    await this.syncTodayDataForCurrentUser();
   }
 
   isWheelFreeSpinAvailable(data: DailyEventsData | null): boolean {
@@ -173,6 +195,8 @@ export class DailyEventsService {
       },
       { merge: true },
     );
+
+    this.dailyNotificationCountSubject.next(0);
   }
 
   async trackDailyRewardCheck(): Promise<void> {
@@ -219,8 +243,9 @@ export class DailyEventsService {
     if (!user) return null;
 
     const userRef = doc(this.firestore, `users/${user.uid}`);
+    let updatedDailyEvents: DailyEventsData | null = null;
 
-    return runTransaction(this.firestore, async (transaction) => {
+    const replacement = await runTransaction(this.firestore, async (transaction) => {
       const snapshot = await transaction.get(userRef);
       const data = snapshot.exists() ? snapshot.data() : {};
       const dailyEvents = this.normalizeDailyEventsData(data['dailyEvents']);
@@ -279,8 +304,16 @@ export class DailyEventsService {
         { merge: true },
       );
 
+      updatedDailyEvents = dailyEvents;
+
       return replacement;
     });
+
+    if (updatedDailyEvents) {
+      this.updateNotificationCountFromData(updatedDailyEvents);
+    }
+
+    return replacement;
   }
 
   async trackMissionProgress(
@@ -293,6 +326,7 @@ export class DailyEventsService {
     if (!user) return;
 
     const userRef = doc(this.firestore, `users/${user.uid}`);
+    let updatedDailyEvents: DailyEventsData | null = null;
 
     await runTransaction(this.firestore, async (transaction) => {
       const snapshot = await transaction.get(userRef);
@@ -318,7 +352,13 @@ export class DailyEventsService {
         },
         { merge: true },
       );
+
+      updatedDailyEvents = dailyEvents;
     });
+
+    if (updatedDailyEvents) {
+      this.updateNotificationCountFromData(updatedDailyEvents);
+    }
   }
 
   async claimMissionReward(missionId: string): Promise<number> {
@@ -328,7 +368,9 @@ export class DailyEventsService {
 
     const userRef = doc(this.firestore, `users/${user.uid}`);
 
-    return runTransaction(this.firestore, async (transaction) => {
+    let updatedDailyEvents: DailyEventsData | null = null;
+
+    const rewardCoins = await runTransaction(this.firestore, async (transaction) => {
       const snapshot = await transaction.get(userRef);
 
       if (!snapshot.exists()) return 0;
@@ -348,6 +390,7 @@ export class DailyEventsService {
       }
 
       dailyEvents.missionClaims[mission.id] = true;
+      updatedDailyEvents = dailyEvents;
 
       transaction.update(userRef, {
         dailyEvents,
@@ -356,6 +399,12 @@ export class DailyEventsService {
 
       return mission.rewardCoins;
     });
+
+    if (updatedDailyEvents) {
+      this.updateNotificationCountFromData(updatedDailyEvents);
+    }
+
+    return rewardCoins;
   }
 
   async spinWheel(useAdSpin: boolean): Promise<DailyWheelRewardResult | null> {
@@ -369,6 +418,7 @@ export class DailyEventsService {
     const userRef = doc(this.firestore, `users/${user.uid}`);
     let selectedReward = this.getWeightedWheelReward();
     let result: DailyWheelRewardResult | null = null;
+    let updatedDailyEvents: DailyEventsData | null = null;
 
     await runTransaction(this.firestore, async (transaction) => {
       const snapshot = await transaction.get(userRef);
@@ -424,6 +474,7 @@ export class DailyEventsService {
         (dailyEvents.metrics.wheelSpins ?? 0) + 1,
         dailyEvents,
       );
+      updatedDailyEvents = dailyEvents;
 
       const updates: UpdateData<DocumentData> = {
         dailyEvents,
@@ -463,6 +514,10 @@ export class DailyEventsService {
         };
       }
     });
+
+    if (updatedDailyEvents) {
+      this.updateNotificationCountFromData(updatedDailyEvents);
+    }
 
     return result;
   }
@@ -512,6 +567,7 @@ export class DailyEventsService {
     if (!user) return { rewardCoins: 0, alreadyClaimed: true };
 
     const userRef = doc(this.firestore, `users/${user.uid}`);
+    let updatedDailyEvents: DailyEventsData | null = null;
 
     return runTransaction(this.firestore, async (transaction) => {
       const snapshot = await transaction.get(userRef);
@@ -541,6 +597,7 @@ export class DailyEventsService {
       if (helpsUsed === 0) {
         dailyEvents.metrics.dailyChallengeNoHelp = 1;
       }
+      updatedDailyEvents = dailyEvents;
 
       dailyEvents.dailyChallenge.completedDate = this.todayKey;
       dailyEvents.dailyChallenge.completedAt = serverTimestamp();
@@ -567,6 +624,10 @@ export class DailyEventsService {
         rewardCoins: alreadyClaimed ? 0 : this.dailyChallengeCoinsReward,
         alreadyClaimed,
       };
+    }).finally(() => {
+      if (updatedDailyEvents) {
+        this.updateNotificationCountFromData(updatedDailyEvents);
+      }
     });
   }
 
@@ -612,9 +673,16 @@ export class DailyEventsService {
       | Partial<DailyEventsData>
       | undefined;
     const dailyEvents = this.normalizeDailyEventsData(data['dailyEvents']);
+    const expiredExistingDay =
+      !!rawDailyEvents?.dateKey && dailyEvents.dateKey !== rawDailyEvents.dateKey;
 
     if (dailyEvents.dateKey !== rawDailyEvents?.dateKey) {
       await setDoc(userRef, { dailyEvents }, { merge: true });
+
+      if (expiredExistingDay) {
+        this.updateNotificationCountFromData(dailyEvents);
+        this.dayChangedSubject.next();
+      }
     }
 
     return dailyEvents;
@@ -637,6 +705,8 @@ export class DailyEventsService {
     await updateDoc(userRef, {
       'dailyEvents.metrics.adsWatched': increment(1),
     });
+
+    await this.refreshNotificationCount();
   }
 
   private async waitForRewardedAdProgress(): Promise<void> {
@@ -821,6 +891,21 @@ export class DailyEventsService {
     const baseline = dailyEvents.missionProgressBaselines[mission.id] ?? 0;
 
     return Math.max(0, rawProgress - baseline);
+  }
+
+  private updateNotificationCountFromData(dailyEvents: DailyEventsData): void {
+    const claimableCount = this.getTodayResolvedPlan(dailyEvents).filter(
+      (mission) => {
+        const progress = this.getMissionProgress(dailyEvents, mission);
+
+        return (
+          progress >= mission.target &&
+          dailyEvents.missionClaims[mission.id] !== true
+        );
+      },
+    ).length;
+
+    this.dailyNotificationCountSubject.next(claimableCount);
   }
 
   private getRandomLockedBaseAvatar(unlockedAvatarIds: string[]) {

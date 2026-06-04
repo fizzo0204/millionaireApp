@@ -76,10 +76,12 @@ export class DailyRewardAutoOpenService implements OnDestroy {
     });
 
     this.scheduleNextMidnightCheck();
+    void this.dailyEventsService.syncTodayDataForCurrentUser();
     void this.checkAndOpen({ delayMs: 600 });
   }
 
   notifyAppBecameActive(): void {
+    void this.dailyEventsService.syncTodayDataForCurrentUser();
     void this.checkAndOpen({ delayMs: 350 });
   }
 
@@ -94,6 +96,11 @@ export class DailyRewardAutoOpenService implements OnDestroy {
     }
 
     if (this.isBlockedRoute(this.router.url)) {
+      this.pendingCheck = true;
+      return false;
+    }
+
+    if (await this.tutorialService.shouldOpenHomeTutorialForCurrentUser()) {
       this.pendingCheck = true;
       return false;
     }
@@ -181,6 +188,7 @@ export class DailyRewardAutoOpenService implements OnDestroy {
 
     this.midnightTimer = setTimeout(() => {
       this.scheduleNextMidnightCheck();
+      void this.dailyEventsService.syncTodayDataForCurrentUser();
       void this.checkAndOpen({ ignoreSessionGuard: true });
     }, nextMidnight.getTime() - now.getTime());
   }

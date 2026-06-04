@@ -62,6 +62,19 @@ export class TutorialService {
     return this.stateSubject.value;
   }
 
+  async shouldOpenHomeTutorialForCurrentUser(): Promise<boolean> {
+    if (!this.router.url.startsWith('/home')) return false;
+    if (this.stateSubject.value.visible) return true;
+
+    const user = await this.waitForUser();
+
+    if (!user) return false;
+
+    const onboarding = await this.getOnboardingState(user.uid);
+
+    return !onboarding.completed && !onboarding.skipped;
+  }
+
   async openHomeTutorialIfNeeded(): Promise<boolean> {
     await this.wait(TUTORIAL_CONFIG.homeOpenDelayMs);
 

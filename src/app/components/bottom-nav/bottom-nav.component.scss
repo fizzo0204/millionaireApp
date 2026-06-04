@@ -14,6 +14,7 @@
 }
 
 .nav-item {
+  position: relative;
   height: 56px;
   padding: 0;
   border: 0;
@@ -33,10 +34,45 @@
   cursor: pointer;
 }
 
+.nav-badge {
+  position: absolute;
+  top: 7px;
+  right: 16px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #04111f;
+  background: linear-gradient(180deg, #ffea00, #ffc400);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  font-size: 0.58rem;
+  line-height: 1;
+  font-weight: 1000;
+  box-shadow:
+    0 0 12px rgba(255, 234, 0, 0.45),
+    0 4px 8px rgba(0, 0, 0, 0.24);
+  animation: navBadgePop 260ms cubic-bezier(0.22, 1.35, 0.36, 1);
+}
+
 .nav-item ion-icon {
   display: block;
   font-size: 1.45rem;
   color: currentColor;
+}
+
+@keyframes navBadgePop {
+  from {
+    opacity: 0;
+    transform: scale(0.45);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .nav-item.active {

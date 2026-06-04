@@ -16,6 +16,13 @@
     (click)="setActiveTab('eventi')"
   >
     <ion-icon name="sparkles-outline"></ion-icon>
+    @if (dailyNotificationCount$ | async; as dailyNotificationCount) {
+      @if (dailyNotificationCount > 0) {
+        <span class="nav-badge">
+          {{ dailyNotificationCount > 9 ? '9+' : dailyNotificationCount }}
+        </span>
+      }
+    }
     <span>Eventi</span>
   </button>
 
