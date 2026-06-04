@@ -97,7 +97,7 @@
               <button
                 type="button"
                 class="mission-claim"
-                [disabled]="missionClaimLoadingId !== null"
+                [disabled]="missionClaimLoadingId === mission.id"
                 (click)="claimMission(mission)"
               >
                 @if (missionClaimLoadingId === mission.id) {
