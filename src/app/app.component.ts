@@ -17,10 +17,12 @@ import { AdsService } from './services/ads.service';
 import { GameLoaderComponent } from './components/game-loader/game-loader.component';
 import { LevelUpModalComponent } from './components/level-up-modal/level-up-modal.component';
 import { TutorialOverlayComponent } from './components/tutorial-overlay/tutorial-overlay.component';
+import { AchievementToastComponent } from './components/achievement-toast/achievement-toast.component';
 import { LevelUpModalService } from './services/level-up-modal.service';
 import { DailyEventsService } from './services/daily-events.service';
 import { DailyRewardAutoOpenService } from './services/daily-reward-auto-open.service';
 import { AssetPreloadService } from './services/asset-preload.service';
+import { AchievementToastService } from './services/achievement-toast.service';
 import { NavigationTab } from './models/navigation.model';
 import { APP_CONFIG } from 'src/app/config/app.config';
 import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
@@ -36,6 +38,7 @@ import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
     GameLoaderComponent,
     LevelUpModalComponent,
     TutorialOverlayComponent,
+    AchievementToastComponent,
   ],
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],
@@ -72,6 +75,7 @@ export class AppComponent implements OnDestroy {
     private dailyEventsService: DailyEventsService,
     private dailyRewardAutoOpen: DailyRewardAutoOpenService,
     private assetPreload: AssetPreloadService,
+    private achievementToast: AchievementToastService,
     private router: Router,
   ) {
     void this.dailyEventsService;
@@ -89,6 +93,7 @@ export class AppComponent implements OnDestroy {
     this.showAppLoader = false;
     this.assetPreload.preloadPriorityImages();
     this.dailyRewardAutoOpen.start();
+    this.achievementToast.start();
     this.syncBannerVisibility();
   }
 
@@ -283,6 +288,7 @@ export class AppComponent implements OnDestroy {
   ngOnDestroy() {
     this.routerSub?.unsubscribe();
     this.levelSub?.unsubscribe();
+    this.achievementToast.stop();
     this.appStateListener?.remove();
   }
 }

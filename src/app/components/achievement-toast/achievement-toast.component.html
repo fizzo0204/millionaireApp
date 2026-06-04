@@ -1,0 +1,16 @@
+@if (toast$ | async; as toast) {
+  <div
+    class="achievement-toast"
+    [class.leaving]="!toast.visible"
+    role="status"
+    aria-live="polite"
+  >
+    <div class="achievement-icon">{{ toast.icon }}</div>
+
+    <div class="achievement-copy">
+      <span>Hai sbloccato il trofeo</span>
+      <strong>{{ toast.title }}</strong>
+      <p>{{ toast.description }}</p>
+    </div>
+  </div>
+}
