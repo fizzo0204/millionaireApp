@@ -17,6 +17,7 @@ import { AvatarModel } from 'src/app/models/avatar.model';
 import { DAILY_REWARD_CONFIG } from 'src/app/config/daily-reward.config';
 import { AuthService } from 'src/app/services/auth.service';
 import { UserStatsService } from 'src/app/services/user-stats.service';
+import { User } from 'firebase/auth';
 
 @Injectable({
   providedIn: 'root',
@@ -148,6 +149,8 @@ export class DailyRewardService {
       return true;
     }
 
+    await this.ensureRemoteProfile(user);
+
     const claimedDailyReward = await this.userStatsService.claimDailyReward(
       user.uid,
       todayKey,
@@ -186,6 +189,8 @@ export class DailyRewardService {
 
     if (!user) return false;
 
+    await this.ensureRemoteProfile(user);
+
     if (
       (!rewardPayload.coins || rewardPayload.coins <= 0) &&
       (!rewardPayload.xp || rewardPayload.xp <= 0)
@@ -222,6 +227,8 @@ export class DailyRewardService {
 
     if (!user) return;
 
+    await this.ensureRemoteProfile(user);
+
     await this.userStatsService.updateDailyRewardData(user.uid, updatedData);
   }
 
@@ -240,6 +247,8 @@ export class DailyRewardService {
       return;
     }
 
+    await this.ensureRemoteProfile(user);
+
     await this.userStatsService.unlockDailyAvatar(user.uid, avatar.id);
   }
 
@@ -250,6 +259,8 @@ export class DailyRewardService {
       this.loadLocalFallback();
       return;
     }
+
+    await this.ensureRemoteProfile(user);
 
     await this.refreshRemoteCache(user.uid);
   }
@@ -289,6 +300,8 @@ export class DailyRewardService {
       return;
     }
 
+    await this.ensureRemoteProfile(user);
+
     await this.userStatsService.updateDailyRewardData(user.uid, updatedData);
   }
 
@@ -303,6 +316,8 @@ export class DailyRewardService {
     localStorage.removeItem(this.unlockedAvatarsKey);
 
     if (!user) return;
+
+    await this.ensureRemoteProfile(user);
 
     await this.userStatsService.updateAvatarData(user.uid, {
       unlockedAvatarIds: [],
@@ -332,7 +347,13 @@ export class DailyRewardService {
       return;
     }
 
+    await this.ensureRemoteProfile(user);
+
     await this.userStatsService.saveSelectedAvatar(user.uid, avatarId);
+  }
+
+  private async ensureRemoteProfile(user: User): Promise<void> {
+    await this.userStatsService.ensureUserProfile(user);
   }
 
   private listenToUser(): void {

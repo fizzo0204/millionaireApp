@@ -4,6 +4,8 @@ import { provideRouter } from '@angular/router';
 
 import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
 import { provideFirestore, getFirestore } from '@angular/fire/firestore';
+import { provideAuth, getAuth } from '@angular/fire/auth';
+import { LogLevel, setLogLevel } from '@angular/fire';
 
 import { AppComponent } from './app/app.component';
 import { routes } from './app/app-routes';
@@ -41,6 +43,7 @@ import { defineCustomElements as pwaElements } from '@ionic/pwa-elements/loader'
 
 ionicElements(window);
 pwaElements(window);
+setLogLevel(LogLevel.SILENT);
 
 bootstrapApplication(AppComponent, {
   providers: [
@@ -51,6 +54,7 @@ bootstrapApplication(AppComponent, {
     provideRouter(routes),
 
     provideFirebaseApp(() => initializeApp(environment.firebase)),
+    provideAuth(() => getAuth()),
     provideFirestore(() => getFirestore()),
   ],
 })

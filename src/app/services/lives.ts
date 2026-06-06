@@ -1,4 +1,9 @@
-import { Injectable, inject } from '@angular/core';
+import {
+  EnvironmentInjector,
+  Injectable,
+  inject,
+  runInInjectionContext,
+} from '@angular/core';
 import { BehaviorSubject, interval, Subscription, firstValueFrom } from 'rxjs';
 import {
   Firestore,
@@ -19,6 +24,7 @@ import { AppUserProfile } from '../models/user-stats.model';
 })
 export class LivesService {
   private firestore = inject(Firestore);
+  private injector = inject(EnvironmentInjector);
   private auth = inject(AuthService);
 
   private userSub?: Subscription;
@@ -52,7 +58,7 @@ export class LivesService {
       // L'ospite anonimo usa lo stesso documento Firestore degli account collegati.
       const userRef = doc(this.firestore, `users/${user.uid}`);
 
-      this.livesDocSub = docData(userRef).subscribe((profile) => {
+      this.livesDocSub = this.runFirestore(() => docData(userRef)).subscribe((profile) => {
         const userProfile = profile as AppUserProfile | undefined;
         const lives = userProfile?.stats?.lives ?? LIVES_CONFIG.maxLives;
         this.livesSubject.next(lives);
@@ -74,7 +80,7 @@ export class LivesService {
 
     const userRef = doc(this.firestore, `users/${user.uid}`);
 
-    return runTransaction(this.firestore, async (transaction) => {
+    return this.runFirestore(() => runTransaction(this.firestore, async (transaction) => {
       const snapshot = await transaction.get(userRef);
 
       if (!snapshot.exists()) return false;
@@ -98,7 +104,7 @@ export class LivesService {
 
       transaction.update(userRef, updates);
       return true;
-    });
+    }));
   }
 
   async addLife(amount: number = 1) {
@@ -121,7 +127,7 @@ export class LivesService {
       updates[LIVES_CONFIG.firestorePaths.lastLifeUpdate] = serverTimestamp();
     }
 
-    await updateDoc(userRef, updates);
+    await this.runFirestore(() => updateDoc(userRef, updates));
   }
 
   private startCountdown() {
@@ -173,10 +179,10 @@ export class LivesService {
               lastUpdateTime + recoveredLives * LIVES_CONFIG.recoveryTime,
             );
 
-      await updateDoc(userRef, {
+      await this.runFirestore(() => updateDoc(userRef, {
         [LIVES_CONFIG.firestorePaths.lives]: updatedLives,
         [LIVES_CONFIG.firestorePaths.lastLifeUpdate]: newLastUpdate,
-      });
+      }));
     } finally {
       this.isRecoveringLives = false;
     }
@@ -234,5 +240,9 @@ export class LivesService {
     }
 
     return null;
+  }
+
+  private runFirestore<T>(operation: () => T): T {
+    return runInInjectionContext(this.injector, operation);
   }
 }

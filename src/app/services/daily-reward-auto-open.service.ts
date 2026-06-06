@@ -100,7 +100,7 @@ export class DailyRewardAutoOpenService implements OnDestroy {
       return false;
     }
 
-    if (await this.tutorialService.shouldOpenHomeTutorialForCurrentUser()) {
+    if (await this.tutorialService.isTutorialPendingForCurrentUser()) {
       this.pendingCheck = true;
       return false;
     }

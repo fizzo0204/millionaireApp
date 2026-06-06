@@ -546,82 +546,93 @@ export class QuizPage implements OnInit, OnDestroy {
     const user = await firstValueFrom(this.auth.user$);
 
     if (user) {
-      void this.dailyEventsService
-        .trackNormalQuizPlayed()
-        .catch(() => undefined);
+      try {
+        await this.dailyEventsService.trackNormalQuizPlayed();
+      } catch (error) {
+        console.warn('Daily event quiz played non salvato:', error);
+      }
 
       if (allQuestionsCorrect) {
-        void this.dailyEventsService
-          .trackNormalQuizWon()
-          .catch(() => undefined);
+        try {
+          await this.dailyEventsService.trackNormalQuizWon();
+        } catch (error) {
+          console.warn('Daily event quiz won non salvato:', error);
+        }
       }
 
       if (allQuestionsCorrect && !this.levelAlreadyCompleted) {
-        /*
-         * Queste operazioni non dipendono una dall'altra: le salviamo in
-         * parallelo per mostrare prima la modale di livello sbloccato.
-         */
-        await Promise.all([
-          this.userStatsService.recordQuizResult(
+        try {
+          await this.userStatsService.recordQuizResult(
             user.uid,
             this.correctAnswers,
             this.questions.length,
-          ),
-          this.userStatsService.recordQuizHistory(
-            user.uid,
-            this.categoryId,
-            this.difficultyId,
-            this.correctAnswers,
-            this.questions.length,
-          ),
-          this.progressService.completeLevel(
+          );
+
+          await this.progressService.completeLevel(
             user.uid,
             this.categoryId,
             this.difficultyId,
             this.levelNumber,
-          ),
-        ]);
+          );
 
-        this.levelAlreadyCompleted = true;
-
-        void this.dailyEventsService
-          .trackNormalLevelCompleted()
-          .catch(() => undefined);
-
-        if (this.isLastLevelInDifficulty()) {
-          const completedLevelNumbers =
-            await this.progressService.getCompletedLevelNumbers(
+          try {
+            await this.userStatsService.recordQuizHistory(
               user.uid,
               this.categoryId,
               this.difficultyId,
+              this.correctAnswers,
+              this.questions.length,
             );
-          const completedLevels = new Set(completedLevelNumbers);
-          completedLevels.add(this.levelNumber);
-
-          const difficultyCompleted =
-            this.difficultyLevelNumbers.length > 0 &&
-            this.difficultyLevelNumbers.every((levelNumber) =>
-              completedLevels.has(levelNumber),
-            );
-
-          if (difficultyCompleted) {
-            await this.progressService.completeUserDifficulty(
-              user.uid,
-              this.categoryId,
-              this.difficultyId,
-            );
+          } catch (error) {
+            console.warn('Storico quiz non salvato:', error);
           }
+
+          try {
+            await this.dailyEventsService.trackNormalLevelCompleted();
+          } catch (error) {
+            console.warn('Daily event livello completato non salvato:', error);
+          }
+
+          this.levelAlreadyCompleted = true;
+
+          if (this.isLastLevelInDifficulty()) {
+            const completedLevelNumbers =
+              await this.progressService.getCompletedLevelNumbers(
+                user.uid,
+                this.categoryId,
+                this.difficultyId,
+              );
+
+            const completedLevels = new Set(completedLevelNumbers);
+            completedLevels.add(this.levelNumber);
+
+            const difficultyCompleted =
+              this.difficultyLevelNumbers.length > 0 &&
+              this.difficultyLevelNumbers.every((levelNumber) =>
+                completedLevels.has(levelNumber),
+              );
+
+            if (difficultyCompleted) {
+              await this.progressService.completeUserDifficulty(
+                user.uid,
+                this.categoryId,
+                this.difficultyId,
+              );
+            }
+          }
+
+          this.rewardXp =
+            this.correctAnswers * USER_STATS_CONFIG.xpPerCorrectAnswer;
+          this.rewardDoubled = false;
+          this.rewardDoubleLoading = false;
+          this.rewardMessage = `Hai completato il livello ${this.displayLevelNumber}!`;
+          this.rewardUnlockedMessage = this.getRewardUnlockedMessage();
+          this.showRewardModal = true;
+
+          return;
+        } catch (error) {
+          console.error('Errore completamento quiz:', error);
         }
-
-        this.rewardXp =
-          this.correctAnswers * USER_STATS_CONFIG.xpPerCorrectAnswer;
-        this.rewardDoubled = false;
-        this.rewardDoubleLoading = false;
-        this.rewardMessage = `Hai completato il livello ${this.displayLevelNumber}!`;
-        this.rewardUnlockedMessage = this.getRewardUnlockedMessage();
-        this.showRewardModal = true;
-
-        return;
       }
     }
 

@@ -1,4 +1,9 @@
-import { Injectable, inject } from '@angular/core';
+import {
+  EnvironmentInjector,
+  Injectable,
+  inject,
+  runInInjectionContext,
+} from '@angular/core';
 import {
   Firestore,
   doc,
@@ -20,6 +25,7 @@ import { QuestionsService } from './questions.service';
 })
 export class ProgressService {
   private firestore = inject(Firestore);
+  private injector = inject(EnvironmentInjector);
   private questionsService = inject(QuestionsService);
   private readonly difficultyOrder: DifficultyId[] = [
     'easy',
@@ -64,7 +70,7 @@ export class ProgressService {
       levelNumber,
     );
 
-    const snapshot = await getDoc(levelRef);
+    const snapshot = await this.runFirestore(() => getDoc(levelRef));
 
     return snapshot.exists();
   }
@@ -82,7 +88,7 @@ export class ProgressService {
       levelNumber,
     );
 
-    await setDoc(
+    await this.runFirestore(() => setDoc(
       levelRef,
       {
         categoryId,
@@ -91,7 +97,7 @@ export class ProgressService {
         completedAt: serverTimestamp(),
       },
       { merge: true },
-    );
+    ));
   }
 
   async isDifficultyFullyCompleted(
@@ -135,7 +141,7 @@ export class ProgressService {
     categoryId: string,
   ): Promise<UserCategoryProgress> {
     const progressRef = this.getUserCategoryProgressRef(uid, categoryId);
-    const snapshot = await getDoc(progressRef);
+    const snapshot = await this.runFirestore(() => getDoc(progressRef));
 
     if (!snapshot.exists()) {
       return {
@@ -159,13 +165,13 @@ export class ProgressService {
 
     const progressRef = this.getUserCategoryProgressRef(uid, categoryId);
 
-    await setDoc(
+    await this.runFirestore(() => setDoc(
       progressRef,
       {
         completedDifficulties,
       },
       { merge: true },
-    );
+    ));
   }
 
   isDifficultyUnlockedFromProgress(
@@ -191,7 +197,7 @@ export class ProgressService {
       this.firestore,
       `users/${uid}/completedLevels`,
     );
-    const snapshot = await getDocs(levelsRef);
+    const snapshot = await this.runFirestore(() => getDocs(levelsRef));
 
     return snapshot.docs
       .map((docSnap) => docSnap.data() as CompletedLevelProgress)
@@ -217,7 +223,7 @@ export class ProgressService {
       this.firestore,
       `users/${uid}/completedLevels`,
     );
-    const snapshot = await getDocs(levelsRef);
+    const snapshot = await this.runFirestore(() => getDocs(levelsRef));
 
     for (const docSnap of snapshot.docs) {
       const data = docSnap.data() as CompletedLevelProgress;
@@ -232,5 +238,9 @@ export class ProgressService {
     }
 
     return completedByDifficulty;
+  }
+
+  private runFirestore<T>(operation: () => T): T {
+    return runInInjectionContext(this.injector, operation);
   }
 }

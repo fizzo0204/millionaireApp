@@ -1,4 +1,8 @@
-import { Injectable } from '@angular/core';
+import {
+  EnvironmentInjector,
+  Injectable,
+  runInInjectionContext,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { User } from 'firebase/auth';
 import {
@@ -6,10 +10,11 @@ import {
   DocumentData,
   UpdateData,
   doc,
-  increment,
+  getDoc,
   runTransaction,
   serverTimestamp,
   setDoc,
+  updateDoc,
 } from '@angular/fire/firestore';
 import {
   BehaviorSubject,
@@ -52,6 +57,7 @@ export class TutorialService {
   constructor(
     private auth: AuthService,
     private firestore: Firestore,
+    private injector: EnvironmentInjector,
     private router: Router,
     private dailyRewardService: DailyRewardService,
     private ui: UiService,
@@ -62,17 +68,43 @@ export class TutorialService {
     return this.stateSubject.value;
   }
 
-  async shouldOpenHomeTutorialForCurrentUser(): Promise<boolean> {
-    if (!this.router.url.startsWith('/home')) return false;
-    if (this.stateSubject.value.visible) return true;
-
+  async isTutorialPendingForCurrentUser(): Promise<boolean> {
     const user = await this.waitForUser();
 
     if (!user) return false;
 
-    const onboarding = await this.getOnboardingState(user.uid);
+    /*
+     * Se il profilo Firestore e stato eliminato per un test/reset ma Firebase
+     * Auth ha ancora la sessione, ricreiamo prima il documento completo.
+     * Cosi il tutorial non prova mai a salvare su un profilo parziale.
+     */
+    const onboardingSnapshot = await this.readOnboardingState(user.uid);
+
+    if (!onboardingSnapshot.profileExists) {
+      this.clearLocalFlags(user.uid);
+      await this.userStatsService.ensureUserProfile(user);
+      const recreatedOnboarding = await this.readOnboardingState(user.uid);
+
+      return (
+        !recreatedOnboarding.state.completed &&
+        !recreatedOnboarding.state.skipped
+      );
+    }
+
+    const onboarding = onboardingSnapshot.state;
+
+    if (!onboarding.completed && !onboarding.skipped) {
+      this.clearLocalFlags(user.uid);
+    }
 
     return !onboarding.completed && !onboarding.skipped;
+  }
+
+  async shouldOpenHomeTutorialForCurrentUser(): Promise<boolean> {
+    if (!this.router.url.startsWith('/home')) return false;
+    if (this.stateSubject.value.visible) return true;
+
+    return this.isTutorialPendingForCurrentUser();
   }
 
   async openHomeTutorialIfNeeded(): Promise<boolean> {
@@ -85,7 +117,16 @@ export class TutorialService {
 
     if (!user) return false;
 
-    const onboarding = await this.getOnboardingState(user.uid);
+    const onboardingSnapshot = await this.readOnboardingState(user.uid);
+    let onboarding = onboardingSnapshot.state;
+
+    if (!onboardingSnapshot.profileExists) {
+      this.clearLocalFlags(user.uid);
+      await this.userStatsService.ensureUserProfile(user);
+      onboarding = (await this.readOnboardingState(user.uid)).state;
+    } else if (!onboarding.completed && !onboarding.skipped) {
+      this.clearLocalFlags(user.uid);
+    }
 
     if (onboarding.completed || onboarding.skipped) return false;
 
@@ -95,6 +136,11 @@ export class TutorialService {
 
   async openManualTutorial(): Promise<void> {
     const user = await this.waitForUser();
+
+    if (user) {
+      await this.userStatsService.ensureUserProfile(user);
+    }
+
     const onboarding = user
       ? await this.getOnboardingState(user.uid)
       : {
@@ -114,6 +160,7 @@ export class TutorialService {
      * e permette di testare di nuovo la ricompensa finale.
      */
     if (user) {
+      await this.userStatsService.ensureUserProfile(user);
       await this.resetTutorialStateForDebug(user.uid);
     }
 
@@ -147,13 +194,25 @@ export class TutorialService {
 
     if (current.loading) return;
 
-    const user = await this.waitForUser();
+    let uid: string | null = null;
 
-    if (user) {
-      await this.markSkipped(user.uid);
+    try {
+      const user = await this.waitForUser();
+
+      if (user) {
+        uid = user.uid;
+        await this.userStatsService.ensureUserProfile(user);
+        await this.markSkipped(user.uid);
+      }
+    } catch (error) {
+      console.warn('Tutorial saltato senza salvataggio remoto:', error);
+
+      if (uid) {
+        this.setLocalFlag(uid, 'skipped');
+      }
+    } finally {
+      this.close();
     }
-
-    this.close();
   }
 
   async completeTutorial(): Promise<void> {
@@ -172,6 +231,7 @@ export class TutorialService {
       let rewardClaimed = current.rewardClaimed;
 
       if (user) {
+        await this.userStatsService.ensureUserProfile(user);
         const result = await this.markCompletedAndClaimReward(user.uid);
         rewardGranted = result.rewardGranted;
         rewardClaimed = result.rewardClaimed;
@@ -231,6 +291,17 @@ export class TutorialService {
     skipped: boolean;
     rewardClaimed: boolean;
   }> {
+    return (await this.readOnboardingState(uid)).state;
+  }
+
+  private async readOnboardingState(uid: string): Promise<{
+    profileExists: boolean;
+    state: {
+      completed: boolean;
+      skipped: boolean;
+      rewardClaimed: boolean;
+    };
+  }> {
     const profile = await firstValueFrom(
       this.userStatsService.getUserProfile(uid).pipe(take(1)),
     );
@@ -239,34 +310,52 @@ export class TutorialService {
 
     if (onboarding) {
       return {
-        completed: onboarding.tutorialCompleted === true,
-        skipped: onboarding.tutorialSkipped === true,
-        rewardClaimed: onboarding.tutorialRewardClaimed === true,
+        profileExists: true,
+        state: {
+          completed: onboarding.tutorialCompleted === true,
+          skipped: onboarding.tutorialSkipped === true,
+          rewardClaimed: onboarding.tutorialRewardClaimed === true,
+        },
       };
     }
 
     return {
-      completed: this.getLocalFlag(uid, 'completed'),
-      skipped: this.getLocalFlag(uid, 'skipped'),
-      rewardClaimed: this.getLocalFlag(uid, 'reward_claimed'),
+      profileExists: Boolean(profile),
+      state: {
+        completed: false,
+        skipped: false,
+        rewardClaimed: false,
+      },
     };
   }
 
   private async markSkipped(uid: string): Promise<void> {
-    this.setLocalFlag(uid, 'skipped');
-
     const userRef = doc(this.firestore, `users/${uid}`);
+    const snapshot = await this.runFirestore(() => getDoc(userRef));
+    const payload = {
+      'onboarding.tutorialSkipped': true,
+      'onboarding.tutorialSkippedAt': serverTimestamp(),
+      'onboarding.tutorialCompleted': false,
+    };
 
-    await setDoc(
-      userRef,
-      {
-        onboarding: {
-          tutorialSkipped: true,
-          tutorialSkippedAt: serverTimestamp(),
+    if (snapshot.exists()) {
+      await this.runFirestore(() => updateDoc(userRef, payload));
+    } else {
+      await this.runFirestore(() => setDoc(
+        userRef,
+        {
+          onboarding: {
+            tutorialCompleted: false,
+            tutorialRewardClaimed: false,
+            tutorialSkipped: true,
+            tutorialSkippedAt: serverTimestamp(),
+          },
         },
-      },
-      { merge: true },
-    );
+        { merge: true },
+      ));
+    }
+
+    this.setLocalFlag(uid, 'skipped');
   }
 
   private async resetTutorialStateForDebug(uid: string): Promise<void> {
@@ -274,7 +363,7 @@ export class TutorialService {
 
     const userRef = doc(this.firestore, `users/${uid}`);
 
-    await setDoc(
+    await this.runFirestore(() => setDoc(
       userRef,
       {
         onboarding: {
@@ -286,7 +375,7 @@ export class TutorialService {
         },
       },
       { merge: true },
-    );
+    ));
   }
 
   private async markCompletedAndClaimReward(uid: string): Promise<{
@@ -296,12 +385,13 @@ export class TutorialService {
     const userRef = doc(this.firestore, `users/${uid}`);
     let rewardGranted = false;
 
-    await runTransaction(this.firestore, async (transaction) => {
+    await this.runFirestore(() => runTransaction(this.firestore, async (transaction) => {
       const snapshot = await transaction.get(userRef);
       const data = snapshot.exists() ? snapshot.data() : {};
       const onboarding = (data['onboarding'] ?? {}) as Record<string, unknown>;
       const rewardAlreadyClaimed =
         onboarding['tutorialRewardClaimed'] === true;
+      const stats = data['stats'] as { coins?: number } | undefined;
       const avatar = data['avatar'] as
         | { selectedAvatar?: string; unlockedAvatarIds?: string[] }
         | undefined;
@@ -322,7 +412,9 @@ export class TutorialService {
 
       if (rewardGranted) {
         updates['onboarding.tutorialRewardClaimed'] = true;
-        updates['stats.coins'] = increment(TUTORIAL_CONFIG.rewardCoins);
+        updates['stats.coins'] =
+          (stats?.coins ?? this.userStatsService.defaultStats.coins) +
+          TUTORIAL_CONFIG.rewardCoins;
       }
 
       if (rewardGranted || !avatarAlreadyUnlocked) {
@@ -337,35 +429,10 @@ export class TutorialService {
         }
       }
 
-      if (snapshot.exists()) {
-        transaction.update(userRef, updates);
-        return;
-      }
+      if (!snapshot.exists()) return;
 
-      transaction.set(
-        userRef,
-        {
-          onboarding: {
-            tutorialCompleted: true,
-            tutorialCompletedAt: serverTimestamp(),
-            tutorialSkipped: false,
-            tutorialRewardClaimed: rewardGranted,
-          },
-          stats: rewardGranted
-            ? {
-                coins: increment(TUTORIAL_CONFIG.rewardCoins),
-              }
-            : {},
-          avatar: rewardGranted
-            ? {
-                selectedAvatar: TUTORIAL_CONFIG.rewardAvatarId,
-                unlockedAvatarIds: [TUTORIAL_CONFIG.rewardAvatarId],
-              }
-            : {},
-        },
-        { merge: true },
-      );
-    });
+      transaction.update(userRef, updates);
+    }));
 
     this.setLocalFlag(uid, 'completed');
     this.setLocalFlag(uid, 'reward_claimed');
@@ -398,5 +465,9 @@ export class TutorialService {
 
   private wait(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private runFirestore<T>(operation: () => T): T {
+    return runInInjectionContext(this.injector, operation);
   }
 }

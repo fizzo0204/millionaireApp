@@ -1,4 +1,9 @@
-import { Injectable, inject } from '@angular/core';
+import {
+  EnvironmentInjector,
+  Injectable,
+  inject,
+  runInInjectionContext,
+} from '@angular/core';
 import {
   Firestore,
   doc,
@@ -52,6 +57,7 @@ import { ARCADE_CONFIG } from 'src/app/config/arcade.config';
 })
 export class UserStatsService {
   private firestore = inject(Firestore);
+  private injector = inject(EnvironmentInjector);
 
   readonly progressSubcollectionNames = [
     'completedLevels',
@@ -132,24 +138,26 @@ export class UserStatsService {
      * "ospite giocabile" e potra essere collegato piu avanti a Google/Facebook.
      */
     const userRef = doc(this.firestore, `users/${user.uid}`);
-    const snapshot = await getDoc(userRef);
+    const snapshot = await this.runFirestore(() => getDoc(userRef));
     const authProfile = this.getDefaultAuthProfile(user);
 
     if (!snapshot.exists()) {
-      await setDoc(userRef, {
-        uid: user.uid,
-        displayName: user.displayName,
-        email: user.email,
-        photoURL: user.photoURL,
-        createdAt: serverTimestamp(),
-        lastLoginAt: serverTimestamp(),
-        stats: this.defaultStats,
-        dailyReward: this.defaultDailyReward,
-        avatar: this.defaultAvatar,
-        onboarding: this.defaultOnboarding,
-        arcade: this.defaultArcade,
-        auth: authProfile,
-      });
+      await this.runFirestore(() =>
+        setDoc(userRef, {
+          uid: user.uid,
+          displayName: user.displayName,
+          email: user.email,
+          photoURL: user.photoURL,
+          createdAt: serverTimestamp(),
+          lastLoginAt: serverTimestamp(),
+          stats: this.defaultStats,
+          dailyReward: this.defaultDailyReward,
+          avatar: this.defaultAvatar,
+          onboarding: this.defaultOnboarding,
+          arcade: this.defaultArcade,
+          auth: authProfile,
+        }),
+      );
 
       return;
     }
@@ -216,7 +224,7 @@ export class UserStatsService {
       updates['auth.loginRewardClaimed'] = false;
     }
 
-    await updateDoc(userRef, updates);
+    await this.runFirestore(() => updateDoc(userRef, updates));
   }
 
   async mergeCurrentProgressIntoLinkedAccount(uid: string): Promise<void> {
@@ -241,7 +249,7 @@ export class UserStatsService {
      * anonimo ma Play Games, anche se providerData arrivasse incompleto.
      */
     const userRef = doc(this.firestore, `users/${uid}`);
-    const snapshot = await getDoc(userRef);
+    const snapshot = await this.runFirestore(() => getDoc(userRef));
     const data = snapshot.exists() ? snapshot.data() : {};
     const auth = (data['auth'] ?? {}) as Partial<UserAuthProfile>;
     const providerIds = Array.from(
@@ -263,22 +271,24 @@ export class UserStatsService {
       profileUpdates['photoURL'] = profile.photoURL;
     }
 
-    await setDoc(
-      userRef,
-      {
-        ...profileUpdates,
-        auth: {
-          providerIds,
-          createdFromProviderId:
-            auth.createdFromProviderId === AUTH_CONFIG.providers.anonymous ||
-            !auth.createdFromProviderId
-              ? AUTH_CONFIG.providers.playGames
-              : auth.createdFromProviderId,
-          loginRewardClaimed: auth.loginRewardClaimed ?? false,
-          lastMergeCheckedAt: serverTimestamp(),
+    await this.runFirestore(() =>
+      setDoc(
+        userRef,
+        {
+          ...profileUpdates,
+          auth: {
+            providerIds,
+            createdFromProviderId:
+              auth.createdFromProviderId === AUTH_CONFIG.providers.anonymous ||
+              !auth.createdFromProviderId
+                ? AUTH_CONFIG.providers.playGames
+                : auth.createdFromProviderId,
+            loginRewardClaimed: auth.loginRewardClaimed ?? false,
+            lastMergeCheckedAt: serverTimestamp(),
+          },
         },
-      },
-      { merge: true },
+        { merge: true },
+      ),
     );
   }
 
@@ -361,7 +371,7 @@ export class UserStatsService {
      * possiamo copiare questi dati sul nuovo UID senza perdere monete o reward.
      */
     const userRef = doc(this.firestore, `users/${uid}`);
-    const snapshot = await getDoc(userRef);
+    const snapshot = await this.runFirestore(() => getDoc(userRef));
     const subcollections: UserProfileMigrationSnapshot['subcollections'] = {};
 
     for (const collectionName of this.progressSubcollectionNames) {
@@ -369,7 +379,9 @@ export class UserStatsService {
         this.firestore,
         `users/${uid}/${collectionName}`,
       );
-      const collectionSnapshot = await getDocs(collectionRef);
+      const collectionSnapshot = await this.runFirestore(() =>
+        getDocs(collectionRef),
+      );
 
       subcollections[collectionName] = collectionSnapshot.docs.map(
         (document) => ({
@@ -405,59 +417,62 @@ export class UserStatsService {
     const sourceCreatedFromProviderId =
       sourceAuth.createdFromProviderId ?? AUTH_CONFIG.providers.anonymous;
 
-    await setDoc(
-      userRef,
-      {
-        ...sourceProfile,
-        uid: user.uid,
-        displayName:
-          user.displayName ??
-          (sourceProfile['displayName'] as string | null | undefined) ??
-          null,
-        email: user.email,
-        photoURL:
-          user.photoURL ??
-          (sourceProfile['photoURL'] as string | null | undefined) ??
-          null,
-        createdAt: sourceProfile['createdAt'] ?? serverTimestamp(),
-        lastLoginAt: serverTimestamp(),
-        stats: {
-          ...this.defaultStats,
-          ...((sourceProfile['stats'] as Partial<UserStats> | undefined) ?? {}),
+    await this.runFirestore(() =>
+      setDoc(
+        userRef,
+        {
+          ...sourceProfile,
+          uid: user.uid,
+          displayName:
+            user.displayName ??
+            (sourceProfile['displayName'] as string | null | undefined) ??
+            null,
+          email: user.email,
+          photoURL:
+            user.photoURL ??
+            (sourceProfile['photoURL'] as string | null | undefined) ??
+            null,
+          createdAt: sourceProfile['createdAt'] ?? serverTimestamp(),
+          lastLoginAt: serverTimestamp(),
+          stats: {
+            ...this.defaultStats,
+            ...((sourceProfile['stats'] as Partial<UserStats> | undefined) ??
+              {}),
+          },
+          dailyReward: {
+            ...this.defaultDailyReward,
+            ...((sourceProfile['dailyReward'] as
+              | Partial<UserDailyRewardData>
+              | undefined) ?? {}),
+          },
+          avatar: {
+            ...this.defaultAvatar,
+            ...((sourceProfile['avatar'] as
+              | Partial<UserAvatarData>
+              | undefined) ?? {}),
+          },
+          arcade: {
+            ...this.defaultArcade,
+            ...((sourceProfile['arcade'] as
+              | Partial<UserArcadeData>
+              | undefined) ?? {}),
+          },
+          auth: {
+            ...sourceAuth,
+            providerIds: authProfile.providerIds,
+            createdFromProviderId: sourceCreatedFromProviderId,
+            loginRewardClaimed: sourceAuth.loginRewardClaimed ?? false,
+            lastMergeCheckedAt: serverTimestamp(),
+            migratedFromUid: snapshot.uid,
+            migratedFromProviderId: sourceCreatedFromProviderId,
+            ...(sourceCreatedFromProviderId === AUTH_CONFIG.providers.anonymous
+              ? { migratedFromAnonymousUid: snapshot.uid }
+              : {}),
+            migratedAt: serverTimestamp(),
+          },
         },
-        dailyReward: {
-          ...this.defaultDailyReward,
-          ...((sourceProfile['dailyReward'] as
-            | Partial<UserDailyRewardData>
-            | undefined) ?? {}),
-        },
-        avatar: {
-          ...this.defaultAvatar,
-          ...((sourceProfile['avatar'] as
-            | Partial<UserAvatarData>
-            | undefined) ?? {}),
-        },
-        arcade: {
-          ...this.defaultArcade,
-          ...((sourceProfile['arcade'] as
-            | Partial<UserArcadeData>
-            | undefined) ?? {}),
-        },
-        auth: {
-          ...sourceAuth,
-          providerIds: authProfile.providerIds,
-          createdFromProviderId: sourceCreatedFromProviderId,
-          loginRewardClaimed: sourceAuth.loginRewardClaimed ?? false,
-          lastMergeCheckedAt: serverTimestamp(),
-          migratedFromUid: snapshot.uid,
-          migratedFromProviderId: sourceCreatedFromProviderId,
-          ...(sourceCreatedFromProviderId === AUTH_CONFIG.providers.anonymous
-            ? { migratedFromAnonymousUid: snapshot.uid }
-            : {}),
-          migratedAt: serverTimestamp(),
-        },
-      },
-      { merge: true },
+        { merge: true },
+      ),
     );
 
     for (const [collectionName, documents] of Object.entries(
@@ -469,7 +484,9 @@ export class UserStatsService {
           `users/${user.uid}/${collectionName}/${documentSnapshot.id}`,
         );
 
-        await setDoc(targetRef, documentSnapshot.data, { merge: true });
+        await this.runFirestore(() =>
+          setDoc(targetRef, documentSnapshot.data, { merge: true }),
+        );
       }
     }
   }
@@ -477,38 +494,42 @@ export class UserStatsService {
   private async ensureProfileMigrationMarkers(uid: string): Promise<void> {
     const userRef = doc(this.firestore, `users/${uid}`);
 
-    await setDoc(
-      userRef,
-      {
-        auth: {
-          lastMergeCheckedAt: serverTimestamp(),
+    await this.runFirestore(() =>
+      setDoc(
+        userRef,
+        {
+          auth: {
+            lastMergeCheckedAt: serverTimestamp(),
+          },
         },
-      },
-      { merge: true },
+        { merge: true },
+      ),
     );
   }
 
   getUserProfile(uid: string): Observable<AppUserProfile | undefined> {
-    const userRef = doc(this.firestore, `users/${uid}`);
+    return this.runFirestore(() => {
+      const userRef = doc(this.firestore, `users/${uid}`);
 
-    return (docData(userRef) as Observable<AppUserProfile | undefined>).pipe(
-      map((profile) => {
-        if (!profile?.stats) return profile;
+      return (docData(userRef) as Observable<AppUserProfile | undefined>).pipe(
+        map((profile) => {
+          if (!profile?.stats) return profile;
 
-        return {
-          ...profile,
-          stats: {
-            ...profile.stats,
-            level: getLevelFromXp(profile.stats.xp),
-          },
-        };
-      }),
-    );
+          return {
+            ...profile,
+            stats: {
+              ...profile.stats,
+              level: getLevelFromXp(profile.stats.xp),
+            },
+          };
+        }),
+      );
+    });
   }
 
   async getArcadeData(uid: string): Promise<UserArcadeData> {
     const userRef = doc(this.firestore, `users/${uid}`);
-    const snapshot = await getDoc(userRef);
+    const snapshot = await this.runFirestore(() => getDoc(userRef));
 
     if (!snapshot.exists()) {
       return this.defaultArcade;
@@ -518,9 +539,11 @@ export class UserStatsService {
     const arcade = data['arcade'] as Partial<UserArcadeData> | undefined;
 
     if (!arcade) {
-      await updateDoc(userRef, {
-        arcade: this.defaultArcade,
-      });
+      await this.runFirestore(() =>
+        updateDoc(userRef, {
+          arcade: this.defaultArcade,
+        }),
+      );
 
       return this.defaultArcade;
     }
@@ -537,83 +560,103 @@ export class UserStatsService {
     rewardCoins: number,
     rewardXp: number,
   ): Promise<UserArcadeData | null> {
-    /*
-     * Arcade e una scalata persistente: quando superi il livello corrente,
-     * spostiamo in avanti il cursore e salviamo il record raggiunto.
-     * Se arriva una richiesta vecchia o duplicata, non assegniamo premi.
-     */
     const userRef = doc(this.firestore, `users/${uid}`);
+
     const safeCompletedLevel = Math.max(
       1,
-      Math.min(
-        ARCADE_CONFIG.maxTrackedLevel,
-        Math.floor(completedArcadeLevel),
-      ),
+      Math.min(ARCADE_CONFIG.maxTrackedLevel, Math.floor(completedArcadeLevel)),
     );
 
-    return runTransaction(this.firestore, async (transaction) => {
-      const snapshot = await transaction.get(userRef);
+    return this.runFirestore(() =>
+      runTransaction(this.firestore, async (transaction) => {
+        const snapshot = await transaction.get(userRef);
 
-      if (!snapshot.exists()) return null;
+        if (!snapshot.exists()) return null;
 
-      const data = snapshot.data();
-      const arcade = {
-        ...this.defaultArcade,
-        ...(data['arcade'] as Partial<UserArcadeData> | undefined),
-      };
+        const data = snapshot.data();
 
-      if (arcade.currentLevel !== safeCompletedLevel) {
-        return null;
-      }
+        const arcade = {
+          ...this.defaultArcade,
+          ...(data['arcade'] as Partial<UserArcadeData> | undefined),
+        };
 
-      const nextLevel = Math.min(
-        safeCompletedLevel + 1,
-        ARCADE_CONFIG.maxTrackedLevel,
-      );
-      const currentXp =
-        typeof data['stats']?.xp === 'number'
-          ? data['stats'].xp
-          : this.defaultStats.xp;
-      const updatedXp = currentXp + rewardXp;
-      const updatedLevel = getLevelFromXp(updatedXp);
+        if (arcade.currentLevel !== safeCompletedLevel) {
+          return null;
+        }
 
-      const updatedArcade: UserArcadeData = {
-        currentLevel: nextLevel,
-        bestLevel: Math.max(arcade.bestLevel ?? 1, nextLevel),
-        totalLevelsCompleted: (arcade.totalLevelsCompleted ?? 0) + 1,
-        lastPlayedAt: new Date(),
-        lastCompletedAt: new Date(),
-      };
+        const stats = data['stats'] ?? {};
 
-      transaction.update(userRef, {
-        'arcade.currentLevel': updatedArcade.currentLevel,
-        'arcade.bestLevel': updatedArcade.bestLevel,
-        'arcade.totalLevelsCompleted': increment(1),
-        'arcade.lastPlayedAt': serverTimestamp(),
-        'arcade.lastCompletedAt': serverTimestamp(),
-        'stats.correctAnswers': increment(1),
-        'stats.coins': increment(rewardCoins),
-        'stats.xp': increment(rewardXp),
-        'stats.level': updatedLevel,
-        'stats.lastQuizPlayedAt': serverTimestamp(),
-      });
+        const nextLevel = Math.min(
+          safeCompletedLevel + 1,
+          ARCADE_CONFIG.maxTrackedLevel,
+        );
 
-      return updatedArcade;
-    });
+        const currentXp =
+          typeof stats?.xp === 'number' ? stats.xp : this.defaultStats.xp;
+
+        const currentCorrectAnswers =
+          typeof stats?.correctAnswers === 'number'
+            ? stats.correctAnswers
+            : this.defaultStats.correctAnswers;
+
+        const currentCoins =
+          typeof stats?.coins === 'number'
+            ? stats.coins
+            : this.defaultStats.coins;
+
+        const updatedXp = currentXp + rewardXp;
+        const updatedLevel = getLevelFromXp(updatedXp);
+
+        const updatedArcade: UserArcadeData = {
+          currentLevel: nextLevel,
+          bestLevel: Math.max(arcade.bestLevel ?? 1, nextLevel),
+          totalLevelsCompleted: (arcade.totalLevelsCompleted ?? 0) + 1,
+          lastPlayedAt: new Date(),
+          lastCompletedAt: new Date(),
+        };
+
+        transaction.update(userRef, {
+          'arcade.currentLevel': updatedArcade.currentLevel,
+          'arcade.bestLevel': updatedArcade.bestLevel,
+          'arcade.totalLevelsCompleted': updatedArcade.totalLevelsCompleted,
+          'arcade.lastPlayedAt': serverTimestamp(),
+          'arcade.lastCompletedAt': serverTimestamp(),
+          'stats.correctAnswers': currentCorrectAnswers + 1,
+          'stats.coins': currentCoins + rewardCoins,
+          'stats.xp': updatedXp,
+          'stats.level': updatedLevel,
+          'stats.lastQuizPlayedAt': serverTimestamp(),
+        });
+
+        return updatedArcade;
+      }),
+    );
   }
 
   async recordArcadeMistake(uid: string): Promise<void> {
-    /*
-     * L'errore in Arcade non azzera la scalata: registra solo la risposta
-     * sbagliata e lascia il livello corrente invariato.
-     */
     const userRef = doc(this.firestore, `users/${uid}`);
 
-    await updateDoc(userRef, {
-      'stats.wrongAnswers': increment(1),
-      'stats.lastQuizPlayedAt': serverTimestamp(),
-      'arcade.lastPlayedAt': serverTimestamp(),
-    });
+    await this.runFirestore(() =>
+      runTransaction(this.firestore, async (transaction) => {
+        const snapshot = await transaction.get(userRef);
+
+        if (!snapshot.exists()) return;
+
+        const data = snapshot.data();
+        const stats = data['stats'] ?? {};
+
+        const currentWrongAnswers =
+          typeof stats?.wrongAnswers === 'number'
+            ? stats.wrongAnswers
+            : this.defaultStats.wrongAnswers;
+
+        transaction.update(userRef, {
+          'stats.wrongAnswers': currentWrongAnswers + 1,
+          'stats.lastQuizPlayedAt': serverTimestamp(),
+          'arcade.lastPlayedAt': serverTimestamp(),
+        });
+      }),
+    );
   }
 
   async userProfileExists(uid: string): Promise<boolean> {
@@ -622,15 +665,17 @@ export class UserStatsService {
      * anche quando Firestore non ha piu il suo profilo. In quel caso lo
      * trattiamo come primo avvio e proviamo Play Games prima di ricrearlo.
      */
-    const userRef = doc(this.firestore, `users/${uid}`);
-    const snapshot = await getDoc(userRef);
+    const snapshot = await this.runFirestore(async () => {
+      const userRef = doc(this.firestore, `users/${uid}`);
+      return getDoc(userRef);
+    });
 
     return snapshot.exists();
   }
 
   async getDailyRewardData(uid: string): Promise<UserDailyRewardData> {
     const userRef = doc(this.firestore, `users/${uid}`);
-    const snapshot = await getDoc(userRef);
+    const snapshot = await this.runFirestore(() => getDoc(userRef));
 
     if (!snapshot.exists()) {
       return this.defaultDailyReward;
@@ -640,9 +685,11 @@ export class UserStatsService {
     const dailyReward = data['dailyReward'] as Partial<UserDailyRewardData>;
 
     if (!dailyReward) {
-      await updateDoc(userRef, {
-        dailyReward: this.defaultDailyReward,
-      });
+      await this.runFirestore(() =>
+        updateDoc(userRef, {
+          dailyReward: this.defaultDailyReward,
+        }),
+      );
 
       return this.defaultDailyReward;
     }
@@ -665,7 +712,7 @@ export class UserStatsService {
 
     const userRef = doc(this.firestore, `users/${uid}`);
 
-    await updateDoc(userRef, updatePayload);
+    await this.runFirestore(() => updateDoc(userRef, updatePayload));
   }
 
   async claimDailyReward(
@@ -677,92 +724,95 @@ export class UserStatsService {
   ): Promise<UserDailyRewardData | null> {
     const userRef = doc(this.firestore, `users/${uid}`);
 
-    return runTransaction(this.firestore, async (transaction) => {
-      const snapshot = await transaction.get(userRef);
+    return this.runFirestore(() =>
+      runTransaction(this.firestore, async (transaction) => {
+        const snapshot = await transaction.get(userRef);
 
-      if (!snapshot.exists()) return null;
+        if (!snapshot.exists()) return null;
 
-      const data = snapshot.data();
-      const dailyReward = {
-        ...this.defaultDailyReward,
-        ...(data['dailyReward'] as Partial<UserDailyRewardData> | undefined),
-      };
+        const data = snapshot.data();
+        const dailyReward = {
+          ...this.defaultDailyReward,
+          ...(data['dailyReward'] as Partial<UserDailyRewardData> | undefined),
+        };
 
-      if (dailyReward.lastClaimDate === todayKey) {
-        return null;
-      }
-
-      const currentDay = Math.min(
-        Math.max(dailyReward.currentDay ?? 1, 1),
-        maxRewardDay,
-      );
-
-      if (
-        currentDay !== expectedRewardDay ||
-        rewardPayload.rewardDay !== expectedRewardDay
-      ) {
-        return null;
-      }
-
-      const nextDay = currentDay >= maxRewardDay ? 1 : currentDay + 1;
-
-      const updatedDailyReward: UserDailyRewardData = {
-        currentDay: nextDay,
-        lastClaimDate: todayKey,
-        lastClaimedAt: new Date(),
-        claimedToday: true,
-      };
-
-      const updates: UpdateData<DocumentData> = {
-        'dailyReward.currentDay': updatedDailyReward.currentDay,
-        'dailyReward.lastClaimDate': updatedDailyReward.lastClaimDate,
-        'dailyReward.lastClaimedAt': serverTimestamp(),
-        'dailyReward.claimedToday': updatedDailyReward.claimedToday,
-      };
-
-      if (rewardPayload.coins && rewardPayload.coins > 0) {
-        const currentCoins =
-          typeof data['stats']?.coins === 'number'
-            ? data['stats'].coins
-            : this.defaultStats.coins;
-
-        updates['stats.coins'] = currentCoins + rewardPayload.coins;
-      }
-
-      if (rewardPayload.xp && rewardPayload.xp > 0) {
-        const currentXp =
-          typeof data['stats']?.xp === 'number'
-            ? data['stats'].xp
-            : this.defaultStats.xp;
-
-        const updatedXp = currentXp + rewardPayload.xp;
-        const updatedLevel = getLevelFromXp(updatedXp);
-
-        updates['stats.xp'] = updatedXp;
-        updates['stats.level'] = updatedLevel;
-      }
-
-      if (rewardPayload.avatarId) {
-        const avatar = data['avatar'] as Partial<UserAvatarData> | undefined;
-        const unlockedAvatarIds = Array.isArray(avatar?.unlockedAvatarIds)
-          ? avatar.unlockedAvatarIds
-          : [];
-
-        updates['avatar.unlockedAvatarIds'] = unlockedAvatarIds.includes(
-          rewardPayload.avatarId,
-        )
-          ? unlockedAvatarIds
-          : [...unlockedAvatarIds, rewardPayload.avatarId];
-
-        if (!avatar?.selectedAvatar) {
-          updates['avatar.selectedAvatar'] = this.defaultAvatar.selectedAvatar;
+        if (dailyReward.lastClaimDate === todayKey) {
+          return null;
         }
-      }
 
-      transaction.update(userRef, updates);
+        const currentDay = Math.min(
+          Math.max(dailyReward.currentDay ?? 1, 1),
+          maxRewardDay,
+        );
 
-      return updatedDailyReward;
-    });
+        if (
+          currentDay !== expectedRewardDay ||
+          rewardPayload.rewardDay !== expectedRewardDay
+        ) {
+          return null;
+        }
+
+        const nextDay = currentDay >= maxRewardDay ? 1 : currentDay + 1;
+
+        const updatedDailyReward: UserDailyRewardData = {
+          currentDay: nextDay,
+          lastClaimDate: todayKey,
+          lastClaimedAt: new Date(),
+          claimedToday: true,
+        };
+
+        const updates: UpdateData<DocumentData> = {
+          'dailyReward.currentDay': updatedDailyReward.currentDay,
+          'dailyReward.lastClaimDate': updatedDailyReward.lastClaimDate,
+          'dailyReward.lastClaimedAt': serverTimestamp(),
+          'dailyReward.claimedToday': updatedDailyReward.claimedToday,
+        };
+
+        if (rewardPayload.coins && rewardPayload.coins > 0) {
+          const currentCoins =
+            typeof data['stats']?.coins === 'number'
+              ? data['stats'].coins
+              : this.defaultStats.coins;
+
+          updates['stats.coins'] = currentCoins + rewardPayload.coins;
+        }
+
+        if (rewardPayload.xp && rewardPayload.xp > 0) {
+          const currentXp =
+            typeof data['stats']?.xp === 'number'
+              ? data['stats'].xp
+              : this.defaultStats.xp;
+
+          const updatedXp = currentXp + rewardPayload.xp;
+          const updatedLevel = getLevelFromXp(updatedXp);
+
+          updates['stats.xp'] = updatedXp;
+          updates['stats.level'] = updatedLevel;
+        }
+
+        if (rewardPayload.avatarId) {
+          const avatar = data['avatar'] as Partial<UserAvatarData> | undefined;
+          const unlockedAvatarIds = Array.isArray(avatar?.unlockedAvatarIds)
+            ? avatar.unlockedAvatarIds
+            : [];
+
+          updates['avatar.unlockedAvatarIds'] = unlockedAvatarIds.includes(
+            rewardPayload.avatarId,
+          )
+            ? unlockedAvatarIds
+            : [...unlockedAvatarIds, rewardPayload.avatarId];
+
+          if (!avatar?.selectedAvatar) {
+            updates['avatar.selectedAvatar'] =
+              this.defaultAvatar.selectedAvatar;
+          }
+        }
+
+        transaction.update(userRef, updates);
+
+        return updatedDailyReward;
+      }),
+    );
   }
 
   async applyDailyRewardBonus(
@@ -771,42 +821,48 @@ export class UserStatsService {
   ): Promise<boolean> {
     const userRef = doc(this.firestore, `users/${uid}`);
 
-    return runTransaction(this.firestore, async (transaction) => {
-      const snapshot = await transaction.get(userRef);
+    return this.runFirestore(() =>
+      runTransaction(this.firestore, async (transaction) => {
+        const snapshot = await transaction.get(userRef);
 
-      if (!snapshot.exists()) return false;
+        if (!snapshot.exists()) return false;
 
-      const data = snapshot.data();
-      const updates: UpdateData<DocumentData> = {};
-
-      if (rewardPayload.coins && rewardPayload.coins > 0) {
-        updates['stats.coins'] = increment(rewardPayload.coins);
-      }
-
-      if (rewardPayload.xp && rewardPayload.xp > 0) {
+        const data = snapshot.data();
+        const updates: UpdateData<DocumentData> = {};
+        const stats = data['stats'] ?? {};
+        const currentCoins =
+          typeof stats?.coins === 'number'
+            ? stats.coins
+            : this.defaultStats.coins;
         const currentXp =
-          typeof data['stats']?.xp === 'number'
-            ? data['stats'].xp
-            : this.defaultStats.xp;
+          typeof stats?.xp === 'number' ? stats.xp : this.defaultStats.xp;
 
-        const updatedXp = currentXp + rewardPayload.xp;
-        const updatedLevel = getLevelFromXp(updatedXp);
+        if (rewardPayload.coins && rewardPayload.coins > 0) {
+          updates['stats.coins'] = currentCoins + rewardPayload.coins;
+        }
 
-        updates['stats.xp'] = increment(rewardPayload.xp);
-        updates['stats.level'] = updatedLevel;
-      }
+        if (rewardPayload.xp && rewardPayload.xp > 0) {
+          const updatedXp = currentXp + rewardPayload.xp;
+          const updatedLevel = getLevelFromXp(updatedXp);
 
-      if (Object.keys(updates).length === 0) return false;
+          updates['stats.xp'] = updatedXp;
+          updates['stats.level'] = updatedLevel;
+        }
 
-      transaction.update(userRef, updates);
+        if (Object.keys(updates).length === 0) return false;
 
-      return true;
-    });
+        transaction.update(userRef, updates);
+
+        return true;
+      }),
+    );
   }
 
   async getAvatarData(uid: string): Promise<UserAvatarData> {
     const userRef = doc(this.firestore, `users/${uid}`);
-    const snapshot = await getDoc(userRef);
+    const snapshot = await this.runFirestore(async () => {
+      return getDoc(userRef);
+    });
 
     if (!snapshot.exists()) {
       return this.defaultAvatar;
@@ -828,9 +884,11 @@ export class UserStatsService {
     };
 
     if (!data['avatar']) {
-      await updateDoc(userRef, {
-        avatar,
-      });
+      await this.runFirestore(() =>
+        updateDoc(userRef, {
+          avatar,
+        }),
+      );
     }
 
     return avatar;
@@ -857,9 +915,11 @@ export class UserStatsService {
   async saveNickname(uid: string, nickname: string): Promise<void> {
     const userRef = doc(this.firestore, `users/${uid}`);
 
-    await updateDoc(userRef, {
-      nickname,
-    });
+    await this.runFirestore(() =>
+      updateDoc(userRef, {
+        nickname,
+      }),
+    );
   }
 
   async updateAvatarData(
@@ -874,7 +934,7 @@ export class UserStatsService {
 
     const userRef = doc(this.firestore, `users/${uid}`);
 
-    await updateDoc(userRef, updatePayload);
+    await this.runFirestore(() => updateDoc(userRef, updatePayload));
   }
 
   private getStartOfToday(): Date {
@@ -895,56 +955,73 @@ export class UserStatsService {
     correctAnswers: number,
     totalQuestions: number,
   ): Promise<void> {
-    const userRef = doc(this.firestore, `users/${uid}`);
+    await this.runFirestore(() =>
+      runTransaction(this.firestore, async (transaction) => {
+        const userRef = doc(this.firestore, `users/${uid}`);
+        const snapshot = await transaction.get(userRef);
 
-    await runTransaction(this.firestore, async (transaction) => {
-      const snapshot = await transaction.get(userRef);
+        if (!snapshot.exists()) return;
 
-      if (!snapshot.exists()) return;
+        const data = snapshot.data();
+        const stats = data['stats'];
 
-      const data = snapshot.data();
-      const stats = data['stats'];
+        const currentBestScore = stats?.bestScore ?? 0;
+        const currentXp = stats?.xp ?? 0;
+        const currentQuizPlayed =
+          typeof stats?.quizPlayed === 'number' ? stats.quizPlayed : 0;
+        const currentCorrectAnswers =
+          typeof stats?.correctAnswers === 'number' ? stats.correctAnswers : 0;
+        const currentWrongAnswers =
+          typeof stats?.wrongAnswers === 'number' ? stats.wrongAnswers : 0;
+        const currentStreakDays = stats?.streakDays ?? 0;
+        const lastQuizPlayedAt = stats?.lastQuizPlayedAt;
+        const todayStart = this.getStartOfToday();
+        const yesterdayStart = this.getStartOfYesterday();
 
-      const currentBestScore = stats?.bestScore ?? 0;
-      const currentXp = stats?.xp ?? 0;
-      const currentStreakDays = stats?.streakDays ?? 0;
-      const lastQuizPlayedAt = stats?.lastQuizPlayedAt;
-      const todayStart = this.getStartOfToday();
-      const yesterdayStart = this.getStartOfYesterday();
+        let updatedStreakDays = currentStreakDays;
 
-      let updatedStreakDays = currentStreakDays;
-
-      if (!lastQuizPlayedAt?.toDate) {
-        updatedStreakDays = 1;
-      } else {
-        const lastPlayedDate = lastQuizPlayedAt.toDate();
-        lastPlayedDate.setHours(0, 0, 0, 0);
-
-        if (lastPlayedDate.getTime() === todayStart.getTime()) {
-          updatedStreakDays = currentStreakDays;
-        } else if (lastPlayedDate.getTime() === yesterdayStart.getTime()) {
-          updatedStreakDays = currentStreakDays + 1;
-        } else {
+        if (!lastQuizPlayedAt?.toDate) {
           updatedStreakDays = 1;
+        } else {
+          const lastPlayedDate = lastQuizPlayedAt.toDate();
+          lastPlayedDate.setHours(0, 0, 0, 0);
+
+          if (lastPlayedDate.getTime() === todayStart.getTime()) {
+            updatedStreakDays = currentStreakDays;
+          } else if (lastPlayedDate.getTime() === yesterdayStart.getTime()) {
+            updatedStreakDays = currentStreakDays + 1;
+          } else {
+            updatedStreakDays = 1;
+          }
         }
-      }
 
-      const xpEarned = correctAnswers * USER_STATS_CONFIG.xpPerCorrectAnswer;
-      const updatedXp = currentXp + xpEarned;
+        const xpEarned = correctAnswers * USER_STATS_CONFIG.xpPerCorrectAnswer;
+        const updatedXp = currentXp + xpEarned;
+        const wrongAnswers = Math.max(0, totalQuestions - correctAnswers);
 
-      const updatedLevel = getLevelFromXp(updatedXp);
+        const updatedLevel = getLevelFromXp(updatedXp);
 
-      transaction.update(userRef, {
-        'stats.quizPlayed': increment(1),
-        'stats.correctAnswers': increment(correctAnswers),
-        'stats.wrongAnswers': increment(totalQuestions - correctAnswers),
-        'stats.xp': increment(xpEarned),
-        'stats.level': updatedLevel,
-        'stats.bestScore': Math.max(currentBestScore, correctAnswers),
-        'stats.streakDays': updatedStreakDays,
-        'stats.lastQuizPlayedAt': serverTimestamp(),
-      });
-    });
+        /*
+         * Qui evitiamo increment() e serverTimestamp(): siamo gia dentro una
+         * transaction e possiamo salvare i valori finali. In questo modo le
+         * Firestore Rules riescono a validare davvero la transizione del quiz.
+         */
+        transaction.update(userRef, {
+          'stats.quizPlayed': currentQuizPlayed + 1,
+          'stats.correctAnswers': currentCorrectAnswers + correctAnswers,
+          'stats.wrongAnswers': currentWrongAnswers + wrongAnswers,
+          'stats.xp': updatedXp,
+          'stats.level': updatedLevel,
+          'stats.bestScore': Math.max(currentBestScore, correctAnswers),
+          'stats.streakDays': updatedStreakDays,
+          'stats.lastQuizPlayedAt': new Date(),
+        });
+      }),
+    );
+  }
+
+  private runFirestore<T>(operation: () => T): T {
+    return runInInjectionContext(this.injector, operation);
   }
 
   async recordQuizHistory(
@@ -956,13 +1033,15 @@ export class UserStatsService {
   ): Promise<void> {
     const historyRef = collection(this.firestore, `users/${uid}/quizHistory`);
 
-    await addDoc(historyRef, {
-      categoryId,
-      difficultyId,
-      correctAnswers,
-      totalQuestions,
-      playedAt: serverTimestamp(),
-    });
+    await this.runFirestore(() =>
+      addDoc(historyRef, {
+        categoryId,
+        difficultyId,
+        correctAnswers,
+        totalQuestions,
+        playedAt: serverTimestamp(),
+      }),
+    );
   }
 
   getRecentQuizHistory(
@@ -977,33 +1056,37 @@ export class UserStatsService {
       limit(maxResults),
     );
 
-    return collectionData(historyQuery, {
-      idField: 'id',
-    }) as Observable<QuizHistoryItem[]>;
+    return this.runFirestore(() =>
+      collectionData(historyQuery, {
+        idField: 'id',
+      }),
+    ) as Observable<QuizHistoryItem[]>;
   }
 
   async addXp(uid: string, amount: number): Promise<void> {
     const userRef = doc(this.firestore, `users/${uid}`);
 
-    await runTransaction(this.firestore, async (transaction) => {
-      const snapshot = await transaction.get(userRef);
+    await this.runFirestore(() =>
+      runTransaction(this.firestore, async (transaction) => {
+        const snapshot = await transaction.get(userRef);
 
-      if (!snapshot.exists()) return;
+        if (!snapshot.exists()) return;
 
-      const data = snapshot.data();
-      const currentXp =
-        typeof data['stats']?.xp === 'number'
-          ? data['stats'].xp
-          : this.defaultStats.xp;
+        const data = snapshot.data();
+        const currentXp =
+          typeof data['stats']?.xp === 'number'
+            ? data['stats'].xp
+            : this.defaultStats.xp;
 
-      const updatedXp = currentXp + amount;
-      const updatedLevel = getLevelFromXp(updatedXp);
+        const updatedXp = currentXp + amount;
+        const updatedLevel = getLevelFromXp(updatedXp);
 
-      transaction.update(userRef, {
-        'stats.xp': increment(amount),
-        'stats.level': updatedLevel,
-      });
-    });
+        transaction.update(userRef, {
+          'stats.xp': updatedXp,
+          'stats.level': updatedLevel,
+        });
+      }),
+    );
   }
 
   async claimLevelUpCoinsReward(
@@ -1016,45 +1099,52 @@ export class UserStatsService {
 
     const userRef = doc(this.firestore, `users/${uid}`);
 
-    return runTransaction(this.firestore, async (transaction) => {
-      const snapshot = await transaction.get(userRef);
+    return this.runFirestore(() =>
+      runTransaction(this.firestore, async (transaction) => {
+        const snapshot = await transaction.get(userRef);
 
-      if (!snapshot.exists()) return 0;
+        if (!snapshot.exists()) return 0;
 
-      const data = snapshot.data();
-      const stats = data['stats'];
-      const lastClaimedLevel =
-        typeof stats?.levelRewardLastClaimedLevel === 'number'
-          ? stats.levelRewardLastClaimedLevel
-          : previousLevel;
-      const rewardFromLevel = Math.max(lastClaimedLevel, previousLevel);
-      const levelsToReward = Math.max(0, currentLevel - rewardFromLevel);
+        const data = snapshot.data();
+        const stats = data['stats'];
+        const currentCoins =
+          typeof stats?.coins === 'number'
+            ? stats.coins
+            : this.defaultStats.coins;
+        const lastClaimedLevel =
+          typeof stats?.levelRewardLastClaimedLevel === 'number'
+            ? stats.levelRewardLastClaimedLevel
+            : previousLevel;
+        const rewardFromLevel = Math.max(lastClaimedLevel, previousLevel);
+        const levelsToReward = Math.max(0, currentLevel - rewardFromLevel);
 
-      if (levelsToReward <= 0) {
+        if (levelsToReward <= 0) {
+          transaction.update(userRef, {
+            'stats.levelRewardLastClaimedLevel': Math.max(
+              lastClaimedLevel,
+              currentLevel,
+            ),
+          });
+
+          return 0;
+        }
+
+        const coinsReward =
+          levelsToReward * USER_STATS_CONFIG.levelUpCoinsReward;
+        const doubledCoinsReward = coinsReward * 2;
+        const safeCoinsReward =
+          requestedCoinsReward >= doubledCoinsReward
+            ? doubledCoinsReward
+            : coinsReward;
+
         transaction.update(userRef, {
-          'stats.levelRewardLastClaimedLevel': Math.max(
-            lastClaimedLevel,
-            currentLevel,
-          ),
+          'stats.coins': currentCoins + safeCoinsReward,
+          'stats.levelRewardLastClaimedLevel': currentLevel,
         });
 
-        return 0;
-      }
-
-      const coinsReward = levelsToReward * USER_STATS_CONFIG.levelUpCoinsReward;
-      const doubledCoinsReward = coinsReward * 2;
-      const safeCoinsReward =
-        requestedCoinsReward >= doubledCoinsReward
-          ? doubledCoinsReward
-          : coinsReward;
-
-      transaction.update(userRef, {
-        'stats.coins': increment(safeCoinsReward),
-        'stats.levelRewardLastClaimedLevel': currentLevel,
-      });
-
-      return safeCoinsReward;
-    });
+        return safeCoinsReward;
+      }),
+    );
   }
 
   async deleteUserProfileData(uid: string): Promise<void> {
@@ -1066,14 +1156,14 @@ export class UserStatsService {
         `users/${uid}/${collectionName}`,
       );
 
-      const snapshot = await getDocs(collectionRef);
+      const snapshot = await this.runFirestore(() => getDocs(collectionRef));
 
       for (const document of snapshot.docs) {
-        await deleteDoc(document.ref);
+        await this.runFirestore(() => deleteDoc(document.ref));
       }
     }
 
-    await deleteDoc(userRef);
+    await this.runFirestore(() => deleteDoc(userRef));
   }
 
   async resetUserDebugData(uid: string): Promise<void> {
@@ -1085,25 +1175,27 @@ export class UserStatsService {
         `users/${uid}/${collectionName}`,
       );
 
-      const snapshot = await getDocs(collectionRef);
+      const snapshot = await this.runFirestore(() => getDocs(collectionRef));
 
       for (const document of snapshot.docs) {
-        await deleteDoc(document.ref);
+        await this.runFirestore(() => deleteDoc(document.ref));
       }
     }
 
-    await updateDoc(userRef, {
-      stats: {
-        ...this.defaultStats,
-        lastLifeUpdate: null,
-      },
-      dailyReward: this.defaultDailyReward,
-      avatar: this.defaultAvatar,
-      onboarding: this.defaultOnboarding,
-      arcade: this.defaultArcade,
-      dailyEvents: deleteField(),
-      nickname: deleteField(),
-    });
+    await this.runFirestore(() =>
+      updateDoc(userRef, {
+        stats: {
+          ...this.defaultStats,
+          lastLifeUpdate: null,
+        },
+        dailyReward: this.defaultDailyReward,
+        avatar: this.defaultAvatar,
+        onboarding: this.defaultOnboarding,
+        arcade: this.defaultArcade,
+        dailyEvents: deleteField(),
+        nickname: deleteField(),
+      }),
+    );
   }
 
   async resetArcadeDebugData(uid: string): Promise<void> {
@@ -1113,9 +1205,10 @@ export class UserStatsService {
      */
     const userRef = doc(this.firestore, `users/${uid}`);
 
-    await updateDoc(userRef, {
-      arcade: this.defaultArcade,
-    });
+    await this.runFirestore(() =>
+      updateDoc(userRef, {
+        arcade: this.defaultArcade,
+      }),
+    );
   }
-
 }

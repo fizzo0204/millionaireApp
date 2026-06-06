@@ -144,7 +144,7 @@
     </div>
 
     <div class="answers-list">
-      @for (answer of currentQuestion.answers; track answer; let i = $index) {
+      @for (answer of currentQuestion.answers; track i; let i = $index) {
       <button
         class="answer-card"
         type="button"

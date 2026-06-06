@@ -1,15 +1,17 @@
-import { Injectable, inject } from '@angular/core';
+import {
+  EnvironmentInjector,
+  Injectable,
+  inject,
+  runInInjectionContext,
+} from '@angular/core';
 import {
   Firestore,
   DocumentData,
   UpdateData,
   doc,
   getDoc,
-  increment,
   runTransaction,
-  serverTimestamp,
   setDoc,
-  updateDoc,
 } from '@angular/fire/firestore';
 import { BehaviorSubject, Subject, firstValueFrom } from 'rxjs';
 import {
@@ -38,6 +40,7 @@ import { UserStatsService } from './user-stats.service';
 })
 export class DailyEventsService {
   private firestore = inject(Firestore);
+  private injector = inject(EnvironmentInjector);
   private auth = inject(AuthService);
   private ads = inject(AdsService);
   private userStatsService = inject(UserStatsService);
@@ -188,13 +191,13 @@ export class DailyEventsService {
 
     const userRef = doc(this.firestore, `users/${user.uid}`);
 
-    await setDoc(
+    await this.runFirestore(() => setDoc(
       userRef,
       {
         dailyEvents: this.getDefaultDailyEventsData(),
       },
       { merge: true },
-    );
+    ));
 
     this.dailyNotificationCountSubject.next(0);
   }
@@ -245,7 +248,7 @@ export class DailyEventsService {
     const userRef = doc(this.firestore, `users/${user.uid}`);
     let updatedDailyEvents: DailyEventsData | null = null;
 
-    const replacement = await runTransaction(this.firestore, async (transaction) => {
+    const replacement = await this.runFirestore(() => runTransaction(this.firestore, async (transaction) => {
       const snapshot = await transaction.get(userRef);
       const data = snapshot.exists() ? snapshot.data() : {};
       const dailyEvents = this.normalizeDailyEventsData(data['dailyEvents']);
@@ -307,7 +310,7 @@ export class DailyEventsService {
       updatedDailyEvents = dailyEvents;
 
       return replacement;
-    });
+    }));
 
     if (updatedDailyEvents) {
       this.updateNotificationCountFromData(updatedDailyEvents);
@@ -328,7 +331,7 @@ export class DailyEventsService {
     const userRef = doc(this.firestore, `users/${user.uid}`);
     let updatedDailyEvents: DailyEventsData | null = null;
 
-    await runTransaction(this.firestore, async (transaction) => {
+    await this.runFirestore(() => runTransaction(this.firestore, async (transaction) => {
       const snapshot = await transaction.get(userRef);
       const data = snapshot.exists() ? snapshot.data() : {};
       const dailyEvents = this.normalizeDailyEventsData(data['dailyEvents']);
@@ -354,7 +357,7 @@ export class DailyEventsService {
       );
 
       updatedDailyEvents = dailyEvents;
-    });
+    }));
 
     if (updatedDailyEvents) {
       this.updateNotificationCountFromData(updatedDailyEvents);
@@ -370,7 +373,7 @@ export class DailyEventsService {
 
     let updatedDailyEvents: DailyEventsData | null = null;
 
-    const rewardCoins = await runTransaction(this.firestore, async (transaction) => {
+    const rewardCoins = await this.runFirestore(() => runTransaction(this.firestore, async (transaction) => {
       const snapshot = await transaction.get(userRef);
 
       if (!snapshot.exists()) return 0;
@@ -389,16 +392,22 @@ export class DailyEventsService {
         return 0;
       }
 
+      const stats = data['stats'] ?? {};
+      const currentCoins =
+        typeof stats?.coins === 'number'
+          ? stats.coins
+          : this.userStatsService.defaultStats.coins;
+
       dailyEvents.missionClaims[mission.id] = true;
       updatedDailyEvents = dailyEvents;
 
       transaction.update(userRef, {
         dailyEvents,
-        'stats.coins': increment(mission.rewardCoins),
+        'stats.coins': currentCoins + mission.rewardCoins,
       });
 
       return mission.rewardCoins;
-    });
+    }));
 
     if (updatedDailyEvents) {
       this.updateNotificationCountFromData(updatedDailyEvents);
@@ -420,12 +429,21 @@ export class DailyEventsService {
     let result: DailyWheelRewardResult | null = null;
     let updatedDailyEvents: DailyEventsData | null = null;
 
-    await runTransaction(this.firestore, async (transaction) => {
+    await this.runFirestore(() => runTransaction(this.firestore, async (transaction) => {
       const snapshot = await transaction.get(userRef);
 
       if (!snapshot.exists()) return;
 
       const data = snapshot.data();
+      const stats = data['stats'] ?? {};
+      const currentCoins =
+        typeof stats?.coins === 'number'
+          ? stats.coins
+          : this.userStatsService.defaultStats.coins;
+      const currentXp =
+        typeof stats?.xp === 'number'
+          ? stats.xp
+          : this.userStatsService.defaultStats.xp;
       const dailyEvents = this.normalizeDailyEventsData(data['dailyEvents']);
       const freeSpinAvailable = this.isWheelFreeSpinAvailable(dailyEvents);
 
@@ -466,7 +484,7 @@ export class DailyEventsService {
         ? this.todayKey
         : dailyEvents.wheel.freeSpinDate;
       dailyEvents.wheel.lastFreeSpinAt = freeSpinAvailable
-        ? serverTimestamp()
+        ? new Date()
         : (dailyEvents.wheel.lastFreeSpinAt ?? null);
       dailyEvents.wheel.spinsToday += 1;
       dailyEvents.metrics.wheelSpins = this.capMetricProgress(
@@ -481,17 +499,13 @@ export class DailyEventsService {
       };
 
       if (selectedReward.type === 'coins' && amount) {
-        updates['stats.coins'] = increment(amount);
+        updates['stats.coins'] = currentCoins + amount;
       }
 
       if (selectedReward.type === 'xp' && amount) {
-        const currentXp =
-          typeof data['stats']?.xp === 'number'
-            ? data['stats'].xp
-            : this.userStatsService.defaultStats.xp;
         const updatedXp = currentXp + amount;
 
-        updates['stats.xp'] = increment(amount);
+        updates['stats.xp'] = updatedXp;
         updates['stats.level'] = getLevelFromXp(updatedXp);
       }
 
@@ -513,7 +527,7 @@ export class DailyEventsService {
           amount,
         };
       }
-    });
+    }));
 
     if (updatedDailyEvents) {
       this.updateNotificationCountFromData(updatedDailyEvents);
@@ -529,6 +543,7 @@ export class DailyEventsService {
     if (wheelReward.reward.type === 'baseAvatar') return null;
 
     const user = await firstValueFrom(this.auth.user$);
+    const rewardAmount = wheelReward.amount;
 
     if (!user) return null;
 
@@ -537,23 +552,35 @@ export class DailyEventsService {
     if (wheelReward.reward.type === 'coins') {
       const userRef = doc(this.firestore, `users/${user.uid}`);
 
-      await updateDoc(userRef, {
-        'stats.coins': increment(wheelReward.amount),
-      });
+      await this.runFirestore(() => runTransaction(this.firestore, async (transaction) => {
+        const snapshot = await transaction.get(userRef);
+
+        if (!snapshot.exists()) return;
+
+        const stats = snapshot.data()['stats'] ?? {};
+        const currentCoins =
+          typeof stats?.coins === 'number'
+            ? stats.coins
+            : this.userStatsService.defaultStats.coins;
+
+        transaction.update(userRef, {
+          'stats.coins': currentCoins + rewardAmount,
+        });
+      }));
     }
 
     if (wheelReward.reward.type === 'xp') {
-      await this.userStatsService.addXp(user.uid, wheelReward.amount);
+      await this.userStatsService.addXp(user.uid, rewardAmount);
     }
 
     return {
       ...wheelReward,
       doubled: true,
-      amount: wheelReward.amount * 2,
+      amount: rewardAmount * 2,
       label:
         wheelReward.reward.type === 'coins'
-          ? `+${wheelReward.amount * 2} TurtleCoins`
-          : `+${wheelReward.amount * 2} XP`,
+          ? `+${rewardAmount * 2} TurtleCoins`
+          : `+${rewardAmount * 2} XP`,
     };
   }
 
@@ -569,7 +596,7 @@ export class DailyEventsService {
     const userRef = doc(this.firestore, `users/${user.uid}`);
     let updatedDailyEvents: DailyEventsData | null = null;
 
-    return runTransaction(this.firestore, async (transaction) => {
+    return this.runFirestore(() => runTransaction(this.firestore, async (transaction) => {
       const snapshot = await transaction.get(userRef);
 
       if (!snapshot.exists()) {
@@ -577,6 +604,11 @@ export class DailyEventsService {
       }
 
       const data = snapshot.data();
+      const stats = data['stats'] ?? {};
+      const currentCoins =
+        typeof stats?.coins === 'number'
+          ? stats.coins
+          : this.userStatsService.defaultStats.coins;
       const dailyEvents = this.normalizeDailyEventsData(data['dailyEvents']);
       const alreadyClaimed = !this.isDailyChallengeAvailable(dailyEvents);
 
@@ -600,7 +632,7 @@ export class DailyEventsService {
       updatedDailyEvents = dailyEvents;
 
       dailyEvents.dailyChallenge.completedDate = this.todayKey;
-      dailyEvents.dailyChallenge.completedAt = serverTimestamp();
+      dailyEvents.dailyChallenge.completedAt = new Date();
       dailyEvents.dailyChallenge.bestCorrectToday = Math.max(
         dailyEvents.dailyChallenge.bestCorrectToday ?? 0,
         correctAnswers,
@@ -608,14 +640,14 @@ export class DailyEventsService {
 
       const updates: UpdateData<DocumentData> = {
         dailyEvents,
-        'stats.lastQuizPlayedAt': serverTimestamp(),
+        'stats.lastQuizPlayedAt': new Date(),
       };
 
       if (!alreadyClaimed) {
         dailyEvents.dailyChallenge.rewardClaimedDate = this.todayKey;
-        dailyEvents.dailyChallenge.rewardClaimedAt = serverTimestamp();
+        dailyEvents.dailyChallenge.rewardClaimedAt = new Date();
         updates['dailyEvents'] = dailyEvents;
-        updates['stats.coins'] = increment(this.dailyChallengeCoinsReward);
+        updates['stats.coins'] = currentCoins + this.dailyChallengeCoinsReward;
       }
 
       transaction.update(userRef, updates);
@@ -624,7 +656,7 @@ export class DailyEventsService {
         rewardCoins: alreadyClaimed ? 0 : this.dailyChallengeCoinsReward,
         alreadyClaimed,
       };
-    }).finally(() => {
+    })).finally(() => {
       if (updatedDailyEvents) {
         this.updateNotificationCountFromData(updatedDailyEvents);
       }
@@ -640,12 +672,17 @@ export class DailyEventsService {
 
     const userRef = doc(this.firestore, `users/${user.uid}`);
 
-    return runTransaction(this.firestore, async (transaction) => {
+    return this.runFirestore(() => runTransaction(this.firestore, async (transaction) => {
       const snapshot = await transaction.get(userRef);
 
       if (!snapshot.exists()) return 0;
 
       const data = snapshot.data();
+      const stats = data['stats'] ?? {};
+      const currentCoins =
+        typeof stats?.coins === 'number'
+          ? stats.coins
+          : this.userStatsService.defaultStats.coins;
       const dailyEvents = this.normalizeDailyEventsData(data['dailyEvents']);
       const canDouble =
         dailyEvents.dailyChallenge.rewardClaimedDate === this.todayKey &&
@@ -654,20 +691,20 @@ export class DailyEventsService {
       if (!canDouble) return 0;
 
       dailyEvents.dailyChallenge.rewardDoubledDate = this.todayKey;
-      dailyEvents.dailyChallenge.rewardDoubledAt = serverTimestamp();
+      dailyEvents.dailyChallenge.rewardDoubledAt = new Date();
 
       transaction.update(userRef, {
         dailyEvents,
-        'stats.coins': increment(this.dailyChallengeCoinsReward),
+        'stats.coins': currentCoins + this.dailyChallengeCoinsReward,
       });
 
       return this.dailyChallengeCoinsReward;
-    });
+    }));
   }
 
   private async getTodayData(uid: string): Promise<DailyEventsData> {
     const userRef = doc(this.firestore, `users/${uid}`);
-    const snapshot = await getDoc(userRef);
+    const snapshot = await this.runFirestore(() => getDoc(userRef));
     const data = snapshot.exists() ? snapshot.data() : {};
     const rawDailyEvents = data['dailyEvents'] as
       | Partial<DailyEventsData>
@@ -677,7 +714,7 @@ export class DailyEventsService {
       !!rawDailyEvents?.dateKey && dailyEvents.dateKey !== rawDailyEvents.dateKey;
 
     if (dailyEvents.dateKey !== rawDailyEvents?.dateKey) {
-      await setDoc(userRef, { dailyEvents }, { merge: true });
+      await this.runFirestore(() => setDoc(userRef, { dailyEvents }, { merge: true }));
 
       if (expiredExistingDay) {
         this.updateNotificationCountFromData(dailyEvents);
@@ -697,14 +734,19 @@ export class DailyEventsService {
 
     const userRef = doc(this.firestore, `users/${user.uid}`);
 
-    /*
-     * Per il video usiamo un update atomico semplice, non una transazione:
-     * il video spesso viene seguito subito da un altro premio e cosi evitiamo
-     * collisioni sullo stesso documento utente.
-     */
-    await updateDoc(userRef, {
-      'dailyEvents.metrics.adsWatched': increment(1),
-    });
+    await this.runFirestore(() => runTransaction(this.firestore, async (transaction) => {
+      const snapshot = await transaction.get(userRef);
+      const data = snapshot.exists() ? snapshot.data() : {};
+      const dailyEvents = this.normalizeDailyEventsData(data['dailyEvents']);
+
+      dailyEvents.metrics.adsWatched = this.capMetricProgress(
+        'adsWatched',
+        (dailyEvents.metrics.adsWatched ?? 0) + 1,
+        dailyEvents,
+      );
+
+      transaction.set(userRef, { dailyEvents }, { merge: true });
+    }));
 
     await this.refreshNotificationCount();
   }
@@ -964,5 +1006,9 @@ export class DailyEventsService {
     }
 
     return null;
+  }
+
+  private runFirestore<T>(operation: () => T): T {
+    return runInInjectionContext(this.injector, operation);
   }
 }

@@ -1,11 +1,15 @@
-import { Injectable, inject } from '@angular/core';
+import {
+  EnvironmentInjector,
+  Injectable,
+  inject,
+  runInInjectionContext,
+} from '@angular/core';
 import { BehaviorSubject, Subscription, firstValueFrom } from 'rxjs';
 import {
   Firestore,
   doc,
   docData,
-  updateDoc,
-  increment,
+  runTransaction,
 } from '@angular/fire/firestore';
 import { AuthService } from './auth.service';
 import { AppUserProfile } from '../models/user-stats.model';
@@ -16,6 +20,7 @@ import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
 })
 export class CoinsService {
   private firestore = inject(Firestore);
+  private injector = inject(EnvironmentInjector);
   private auth = inject(AuthService);
 
   private userSub?: Subscription;
@@ -40,7 +45,7 @@ export class CoinsService {
       // L'utente anonimo e un ospite giocabile: leggiamo le sue monete da Firestore.
       const userRef = doc(this.firestore, `users/${user.uid}`);
 
-      this.coinsSub = docData(userRef).subscribe((profile) => {
+      this.coinsSub = this.runFirestore(() => docData(userRef)).subscribe((profile) => {
         const userProfile = profile as AppUserProfile | undefined;
         const coins =
           userProfile?.stats?.coins ?? USER_STATS_CONFIG.defaultCoins;
@@ -62,9 +67,21 @@ export class CoinsService {
 
     const userRef = doc(this.firestore, `users/${user.uid}`);
 
-    await updateDoc(userRef, {
-      'stats.coins': increment(amount),
-    });
+    await this.runFirestore(() => runTransaction(this.firestore, async (transaction) => {
+      const snapshot = await transaction.get(userRef);
+
+      if (!snapshot.exists()) return;
+
+      const stats = snapshot.data()['stats'] ?? {};
+      const currentCoins =
+        typeof stats?.coins === 'number'
+          ? stats.coins
+          : USER_STATS_CONFIG.defaultCoins;
+
+      transaction.update(userRef, {
+        'stats.coins': currentCoins + amount,
+      });
+    }));
   }
 
   // Controlla se può spendere
@@ -82,10 +99,30 @@ export class CoinsService {
 
     const userRef = doc(this.firestore, `users/${user.uid}`);
 
-    await updateDoc(userRef, {
-      'stats.coins': increment(-amount),
-    });
+    const spent = await this.runFirestore(() => runTransaction(this.firestore, async (transaction) => {
+      const snapshot = await transaction.get(userRef);
 
-    return true;
+      if (!snapshot.exists()) return false;
+
+      const stats = snapshot.data()['stats'] ?? {};
+      const currentCoins =
+        typeof stats?.coins === 'number'
+          ? stats.coins
+          : USER_STATS_CONFIG.defaultCoins;
+
+      if (currentCoins < amount) return false;
+
+      transaction.update(userRef, {
+        'stats.coins': currentCoins - amount,
+      });
+
+      return true;
+    }));
+
+    return spent;
+  }
+
+  private runFirestore<T>(operation: () => T): T {
+    return runInInjectionContext(this.injector, operation);
   }
 }

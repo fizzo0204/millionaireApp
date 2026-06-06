@@ -244,6 +244,10 @@ export class AppComponent implements OnDestroy {
       cleanUrl.startsWith(route),
     );
 
+    if (!this.hideBottomNav) {
+      this.ui.showBottomNavForInnerPage();
+    }
+
     if (cleanUrl.startsWith('/shop')) {
       this.activeTab = 'negozio';
       return;
