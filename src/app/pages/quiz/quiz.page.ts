@@ -24,7 +24,6 @@ import { DailyEventsService } from 'src/app/services/daily-events.service';
 import { DAILY_EVENTS_CONFIG } from 'src/app/config/daily-events.config';
 import { ARCADE_CONFIG } from 'src/app/config/arcade.config';
 import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
-import { QuizScalataService } from 'src/app/services/quiz-scalata.service';
 
 @Component({
   selector: 'app-quiz',
@@ -47,7 +46,6 @@ export class QuizPage implements OnInit, OnDestroy {
   private audioService = inject(AudioService);
   private dailyEventsService = inject(DailyEventsService);
   private navigation = inject(NavigationTransitionService);
-  private quizScalataService = inject(QuizScalataService);
 
   private appStateListener?: PluginListenerHandle;
 
@@ -240,22 +238,29 @@ export class QuizPage implements OnInit, OnDestroy {
     );
   }
 
-  // Recupera la domanda della Scalata tramite il service dedicato e aggiorna le etichette della UI.
   private async getArcadeQuestion(): Promise<QuestionModel[]> {
-    const risultato = await this.quizScalataService.recuperaDomandaScalata();
+    const user = await firstValueFrom(this.auth.user$);
+    const arcade = user
+      ? await this.userStatsService.getArcadeData(user.uid)
+      : this.userStatsService.defaultArcade;
 
-    this.displayLevelNumber = risultato.numeroLivelloVisualizzato;
-    this.totalLevels = risultato.totaleLivelli;
+    const selection = await this.questionsService.getArcadeQuestionForLevel(
+      arcade.currentLevel,
+    );
 
-    if (!risultato.domanda) {
+    if (!selection) {
+      this.displayLevelNumber = arcade.currentLevel;
+      this.totalLevels = await this.questionsService.getArcadeTotalLevels();
       return [];
     }
 
-    this.difficultyId = risultato.idDifficolta;
-    this.levelNumber = risultato.numeroLivello;
-    this.difficultyTitle = this.getDifficultyTitle(risultato.idDifficolta);
+    this.displayLevelNumber = selection.arcadeLevel;
+    this.totalLevels = selection.totalLevels;
+    this.difficultyId = selection.difficultyId;
+    this.levelNumber = selection.levelNumber;
+    this.difficultyTitle = this.getDifficultyTitle(selection.difficultyId);
 
-    return [risultato.domanda];
+    return [selection.question];
   }
 
   private wait(ms: number): Promise<void> {
@@ -320,18 +325,15 @@ export class QuizPage implements OnInit, OnDestroy {
     this.totalLevels = DAILY_EVENTS_CONFIG.dailyChallengeQuestionCount;
   }
 
-  // Imposta le etichette iniziali della modalità Scalata usando il service dedicato.
   private async setupArcadeLabels() {
-    const etichette = await this.quizScalataService.configuraEtichetteScalata();
-
-    this.categoryId = etichette.idCategoria;
-    this.categoryTitle = etichette.titoloCategoria;
-    this.categoryIcon = etichette.iconaCategoria;
-    this.difficultyId = etichette.idDifficolta;
-    this.difficultyTitle = etichette.titoloDifficolta;
-    this.levelNumber = etichette.numeroLivello;
-    this.displayLevelNumber = etichette.numeroLivelloVisualizzato;
-    this.totalLevels = etichette.totaleLivelli;
+    this.categoryId = 'arcade';
+    this.categoryTitle = 'Scalata';
+    this.categoryIcon = '⚡';
+    this.difficultyId = 'easy';
+    this.difficultyTitle = 'Progressiva';
+    this.levelNumber = 1;
+    this.displayLevelNumber = 1;
+    this.totalLevels = await this.questionsService.getArcadeTotalLevels();
   }
 
   private getDifficultyTitle(difficultyId: DifficultyId): string {
@@ -846,9 +848,14 @@ export class QuizPage implements OnInit, OnDestroy {
     void this.navigation.navigateByUrl('/events/challenge');
   }
 
-  // Nella Scalata registra l'errore, consuma una vita e torna alla mappa.
   private async loseArcadeLifeAndExit() {
-    await this.quizScalataService.registraErroreScalata();
+    const user = await firstValueFrom(this.auth.user$);
+
+    if (user) {
+      await this.userStatsService.recordArcadeMistake(user.uid);
+    }
+
+    await this.livesService.spendLife();
 
     this.markCurrentQuestionAsWrong();
     this.showWrongModal = false;
@@ -899,19 +906,29 @@ export class QuizPage implements OnInit, OnDestroy {
     }
   }
 
-  // Registra il completamento del livello Scalata e prepara premi/transizione.
   private async finishArcadeLevel() {
-    const risultato = await this.quizScalataService.concludiLivelloScalata(
-      this.displayLevelNumber,
-    );
+    const user = await firstValueFrom(this.auth.user$);
 
-    if (!risultato.success || !risultato.reward || !risultato.prossimoLivello) {
+    if (!user) {
       this.navigatingAway = true;
       this.goToExitPage();
       return;
     }
 
-    const reward = risultato.reward;
+    const reward = this.getArcadeReward(this.displayLevelNumber);
+    const updatedArcade =
+      await this.userStatsService.recordArcadeLevelCompleted(
+        user.uid,
+        this.displayLevelNumber,
+        reward.totalCoins,
+        reward.totalXp,
+      );
+
+    if (!updatedArcade) {
+      this.navigatingAway = true;
+      this.goToExitPage();
+      return;
+    }
 
     this.arcadeRewardCoins = reward.baseCoins;
     this.arcadeRewardXp = reward.baseXp;
@@ -921,13 +938,20 @@ export class QuizPage implements OnInit, OnDestroy {
 
     await this.playArcadeTransition(
       this.displayLevelNumber,
-      risultato.prossimoLivello,
+      updatedArcade.currentLevel,
       !reward.hasBonus,
     );
 
     if (reward.hasBonus) {
       this.showArcadeChestRewardModal = true;
+      return;
     }
+
+    /*
+     * Nei livelli normali della Scalata non carichiamo subito la domanda
+     * successiva: lasciamo scegliere al giocatore se continuare o tornare
+     * alla mappa.
+     */
   }
 
   async continueAfterArcadeTransition() {
@@ -952,6 +976,30 @@ export class QuizPage implements OnInit, OnDestroy {
     this.showArcadeChestRewardModal = false;
     this.navigatingAway = true;
     this.goToExitPage();
+  }
+
+  private getArcadeReward(arcadeLevel: number): {
+    baseCoins: number;
+    baseXp: number;
+    bonusCoins: number;
+    bonusXp: number;
+    totalCoins: number;
+    totalXp: number;
+    hasBonus: boolean;
+  } {
+    const hasBonus = arcadeLevel % ARCADE_CONFIG.bonusEveryLevels === 0;
+    const bonusCoins = hasBonus ? ARCADE_CONFIG.bonusCoins : 0;
+    const bonusXp = hasBonus ? ARCADE_CONFIG.bonusXp : 0;
+
+    return {
+      baseCoins: ARCADE_CONFIG.baseCoinsPerLevel,
+      baseXp: ARCADE_CONFIG.baseXpPerLevel,
+      bonusCoins,
+      bonusXp,
+      totalCoins: ARCADE_CONFIG.baseCoinsPerLevel + bonusCoins,
+      totalXp: ARCADE_CONFIG.baseXpPerLevel + bonusXp,
+      hasBonus,
+    };
   }
 
   private async playArcadeTransition(
