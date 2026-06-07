@@ -1,27 +1,14 @@
 import { Injectable, inject } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
-import { DifficultyId } from 'src/app/models/difficulty.model';
+import { User } from 'firebase/auth';
 import { QuestionModel } from 'src/app/models/question.model';
+import { DifficultyId } from 'src/app/models/difficulty.model';
 import { ARCADE_CONFIG } from 'src/app/config/arcade.config';
-import { AuthService } from 'src/app/services/auth.service';
-import { LivesService } from 'src/app/services/lives';
 import { QuestionsService } from 'src/app/services/questions.service';
 import { UserStatsService } from 'src/app/services/user-stats.service';
 
-export interface EtichetteScalataQuiz {
-  idCategoria: string;
-  titoloCategoria: string;
-  iconaCategoria: string;
-  idDifficolta: DifficultyId;
-  titoloDifficolta: string;
-  numeroLivello: number;
-  numeroLivelloVisualizzato: number;
-  totaleLivelli: number;
-}
-
-export interface RisultatoDomandaScalataQuiz {
-  domanda: QuestionModel | null;
-  numeroLivelloVisualizzato: number;
+export interface DomandaScalataQuiz {
+  domanda: QuestionModel;
+  livelloScalata: number;
   totaleLivelli: number;
   idDifficolta: DifficultyId;
   numeroLivello: number;
@@ -37,38 +24,22 @@ export interface PremioScalataQuiz {
   hasBonus: boolean;
 }
 
-export interface RisultatoConclusioneScalataQuiz {
-  success: boolean;
-  prossimoLivello?: number;
-  reward?: PremioScalataQuiz;
+export interface RisultatoCompletamentoScalata {
+  livelloSuccessivo: number;
+  premio: PremioScalataQuiz;
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class QuizScalataService {
-  private auth = inject(AuthService);
-  private livesService = inject(LivesService);
   private questionsService = inject(QuestionsService);
   private userStatsService = inject(UserStatsService);
 
-  // Prepara le etichette iniziali della modalità Scalata.
-  async configuraEtichetteScalata(): Promise<EtichetteScalataQuiz> {
-    return {
-      idCategoria: 'arcade',
-      titoloCategoria: 'Scalata',
-      iconaCategoria: '⚡',
-      idDifficolta: 'easy',
-      titoloDifficolta: 'Progressiva',
-      numeroLivello: 1,
-      numeroLivelloVisualizzato: 1,
-      totaleLivelli: await this.questionsService.getArcadeTotalLevels(),
-    };
-  }
-
   // Recupera la domanda corretta per il livello corrente della Scalata.
-  async recuperaDomandaScalata(): Promise<RisultatoDomandaScalataQuiz> {
-    const user = await firstValueFrom(this.auth.user$);
+  async recuperaDomandaScalata(
+    user: User | null,
+  ): Promise<DomandaScalataQuiz | null> {
     const arcade = user
       ? await this.userStatsService.getArcadeData(user.uid)
       : this.userStatsService.defaultArcade;
@@ -77,68 +48,54 @@ export class QuizScalataService {
       arcade.currentLevel,
     );
 
-    if (!selection) {
-      return {
-        domanda: null,
-        numeroLivelloVisualizzato: arcade.currentLevel,
-        totaleLivelli: await this.questionsService.getArcadeTotalLevels(),
-        idDifficolta: 'easy',
-        numeroLivello: 1,
-      };
-    }
+    if (!selection) return null;
 
     return {
       domanda: selection.question,
-      numeroLivelloVisualizzato: selection.arcadeLevel,
+      livelloScalata: selection.arcadeLevel,
       totaleLivelli: selection.totalLevels,
       idDifficolta: selection.difficultyId,
       numeroLivello: selection.levelNumber,
     };
   }
 
-  // Registra un errore nella Scalata e consuma una vita.
-  async registraErroreScalata(): Promise<void> {
-    const user = await firstValueFrom(this.auth.user$);
-
-    if (user) {
-      await this.userStatsService.recordArcadeMistake(user.uid);
-    }
-
-    await this.livesService.spendLife();
+  // Restituisce il numero totale di livelli configurati per la Scalata.
+  async recuperaTotaleLivelliScalata(): Promise<number> {
+    return await this.questionsService.getArcadeTotalLevels();
   }
 
-  // Registra il completamento del livello Scalata e restituisce premio e livello successivo.
-  async concludiLivelloScalata(
-    numeroLivelloVisualizzato: number,
-  ): Promise<RisultatoConclusioneScalataQuiz> {
-    const user = await firstValueFrom(this.auth.user$);
+  // Registra un errore nella Scalata, usato quando il giocatore perde o abbandona il livello.
+  async registraErroreScalata(user: User | null): Promise<void> {
+    if (!user) return;
+    await this.userStatsService.recordArcadeMistake(user.uid);
+  }
 
-    if (!user) {
-      return { success: false };
-    }
+  // Completa un livello della Scalata e restituisce premio e livello successivo.
+  async completaLivelloScalata(
+    user: User | null,
+    livelloScalata: number,
+  ): Promise<RisultatoCompletamentoScalata | null> {
+    if (!user) return null;
 
-    const reward = this.calcolaPremioScalata(numeroLivelloVisualizzato);
+    const premio = this.calcolaPremioScalata(livelloScalata);
     const updatedArcade =
       await this.userStatsService.recordArcadeLevelCompleted(
         user.uid,
-        numeroLivelloVisualizzato,
-        reward.totalCoins,
-        reward.totalXp,
+        livelloScalata,
+        premio.totalCoins,
+        premio.totalXp,
       );
 
-    if (!updatedArcade) {
-      return { success: false };
-    }
+    if (!updatedArcade) return null;
 
     return {
-      success: true,
-      prossimoLivello: updatedArcade.currentLevel,
-      reward,
+      livelloSuccessivo: updatedArcade.currentLevel,
+      premio,
     };
   }
 
-  // Calcola monete, XP e bonus forziere della Scalata.
-  private calcolaPremioScalata(arcadeLevel: number): PremioScalataQuiz {
+  // Calcola premio base e bonus forziere della Scalata.
+  calcolaPremioScalata(arcadeLevel: number): PremioScalataQuiz {
     const hasBonus = arcadeLevel % ARCADE_CONFIG.bonusEveryLevels === 0;
     const bonusCoins = hasBonus ? ARCADE_CONFIG.bonusCoins : 0;
     const bonusXp = hasBonus ? ARCADE_CONFIG.bonusXp : 0;

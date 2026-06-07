@@ -10,7 +10,6 @@ import { QuestionsService } from 'src/app/services/questions.service';
 import { QuestionModel } from 'src/app/models/question.model';
 import { CoinsService } from 'src/app/services/coins.service';
 import { LivesService } from 'src/app/services/lives';
-import { AdsService } from 'src/app/services/ads.service';
 import { GameLoaderComponent } from 'src/app/components/game-loader/game-loader.component';
 import { AuthService } from 'src/app/services/auth.service';
 import { firstValueFrom } from 'rxjs';
@@ -24,6 +23,10 @@ import { DailyEventsService } from 'src/app/services/daily-events.service';
 import { DAILY_EVENTS_CONFIG } from 'src/app/config/daily-events.config';
 import { ARCADE_CONFIG } from 'src/app/config/arcade.config';
 import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
+import { QuizAiutiTimerService } from 'src/app/services/quiz-aiuti-timer.service';
+import { QuizCompletamentoService } from 'src/app/services/quiz-completamento.service';
+import { QuizVideoRewardService } from 'src/app/services/quiz-video-reward.service';
+import { QuizScalataService } from 'src/app/services/quiz-scalata.service';
 
 @Component({
   selector: 'app-quiz',
@@ -38,7 +41,6 @@ export class QuizPage implements OnInit, OnDestroy {
   private questionsService = inject(QuestionsService);
   private coinsService = inject(CoinsService);
   private livesService = inject(LivesService);
-  private ads = inject(AdsService);
   private progressService = inject(ProgressService);
   private userStatsService = inject(UserStatsService);
   private auth = inject(AuthService);
@@ -46,6 +48,10 @@ export class QuizPage implements OnInit, OnDestroy {
   private audioService = inject(AudioService);
   private dailyEventsService = inject(DailyEventsService);
   private navigation = inject(NavigationTransitionService);
+  private quizAiutiTimerService = inject(QuizAiutiTimerService);
+  private quizCompletamentoService = inject(QuizCompletamentoService);
+  private quizVideoRewardService = inject(QuizVideoRewardService);
+  private quizScalataService = inject(QuizScalataService);
 
   private appStateListener?: PluginListenerHandle;
 
@@ -112,7 +118,6 @@ export class QuizPage implements OnInit, OnDestroy {
   coins$ = this.coinsService.coins$;
   lives$ = this.livesService.lives$;
 
-  private timer?: ReturnType<typeof setInterval>;
   private trackedDailyQuestionIndexes = new Set<number>();
 
   helps: HelpModel[] = [...HELPS];
@@ -240,27 +245,27 @@ export class QuizPage implements OnInit, OnDestroy {
 
   private async getArcadeQuestion(): Promise<QuestionModel[]> {
     const user = await firstValueFrom(this.auth.user$);
-    const arcade = user
-      ? await this.userStatsService.getArcadeData(user.uid)
-      : this.userStatsService.defaultArcade;
-
-    const selection = await this.questionsService.getArcadeQuestionForLevel(
-      arcade.currentLevel,
-    );
+    const selection =
+      await this.quizScalataService.recuperaDomandaScalata(user);
 
     if (!selection) {
+      const arcade = user
+        ? await this.userStatsService.getArcadeData(user.uid)
+        : this.userStatsService.defaultArcade;
+
       this.displayLevelNumber = arcade.currentLevel;
-      this.totalLevels = await this.questionsService.getArcadeTotalLevels();
+      this.totalLevels =
+        await this.quizScalataService.recuperaTotaleLivelliScalata();
       return [];
     }
 
-    this.displayLevelNumber = selection.arcadeLevel;
-    this.totalLevels = selection.totalLevels;
-    this.difficultyId = selection.difficultyId;
-    this.levelNumber = selection.levelNumber;
-    this.difficultyTitle = this.getDifficultyTitle(selection.difficultyId);
+    this.displayLevelNumber = selection.livelloScalata;
+    this.totalLevels = selection.totaleLivelli;
+    this.difficultyId = selection.idDifficolta;
+    this.levelNumber = selection.numeroLivello;
+    this.difficultyTitle = this.getDifficultyTitle(selection.idDifficolta);
 
-    return [selection.question];
+    return [selection.domanda];
   }
 
   private wait(ms: number): Promise<void> {
@@ -385,7 +390,10 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   get timerPercent(): number {
-    return (this.timeLeft / this.maxTime) * 100;
+    return this.quizAiutiTimerService.calcolaPercentualeTimer(
+      this.timeLeft,
+      this.maxTime,
+    );
   }
 
   get answerLetters() {
@@ -452,69 +460,48 @@ export class QuizPage implements OnInit, OnDestroy {
 
   async useHelp(helpId: HelpId) {
     this.haptics.light();
-    if (
-      this.usedHelps.includes(helpId) ||
-      this.answered ||
-      this.showTimeModal ||
-      this.showExitModal
-    ) {
-      return;
-    }
 
-    const help = this.helps.find((item) => item.id === helpId);
-    if (!help) return;
+    const risultato = await this.quizAiutiTimerService.usaAiuto({
+      idAiuto: helpId,
+      aiutiDisponibili: this.helps,
+      aiutiUsati: this.usedHelps,
+      domandaCorrente: this.currentQuestion,
+      haRisposto: this.answered,
+      mostraModaleTempo: this.showTimeModal,
+      mostraModaleUscita: this.showExitModal,
+      animazioneAiutoAttiva: !!this.helpAnimation,
+      modalitaSfidaGiornaliera: this.dailyChallengeMode,
+      modalitaScalata: this.arcadeMode,
+      idCategoria: this.categoryId,
+      idDifficolta: this.difficultyId,
+      numeroLivello: this.levelNumber,
+      numeroLivelloScalata: this.displayLevelNumber,
+      eseguiAnimazione: () => this.playHelpAnimation(helpId),
+    });
 
-    if (!this.coinsService.canAfford(help.cost)) {
-      this.neededCoins = help.cost;
+    if (risultato.esito === 'monete_insufficienti') {
+      this.neededCoins = risultato.costoRichiesto ?? 0;
       this.stopTimer();
       this.showCoinsModal = true;
       return;
     }
 
-    const spent = await this.coinsService.spendCoins(help.cost);
-    if (!spent) return;
+    if (risultato.esito !== 'ok') return;
 
     this.usedHelps.push(helpId);
 
-    if (this.dailyChallengeMode) {
-      void this.dailyEventsService.trackDailyChallengeHelp();
-    } else if (!this.arcadeMode) {
-      void this.dailyEventsService.trackNormalHelpUsed();
+    if (risultato.risposteDaNascondere) {
+      this.hiddenAnswers = risultato.risposteDaNascondere;
     }
 
-    await this.playHelpAnimation(helpId);
-
-    if (helpId === 'fifty') {
-      this.applyFiftyFifty();
-    }
-
-    if (helpId === 'switch') {
-      await this.switchQuestion();
-    }
-
-    if (helpId === 'audience') {
+    if (risultato.percentualiPubblico) {
       this.showAudienceHint = true;
-      this.generateAudienceHint();
+      this.audiencePercentages = risultato.percentualiPubblico;
     }
-  }
 
-  applyFiftyFifty() {
-    const question = this.currentQuestion;
-    if (!question) return;
-
-    const wrongIndexes = question.answers
-      .map((_, index: number) => index)
-      .filter((index: number) => index !== question.correctIndex);
-
-    this.hiddenAnswers = wrongIndexes.slice(0, 2);
-  }
-
-  generateAudienceHint() {
-    const question = this.currentQuestion;
-    if (!question) return;
-
-    this.audiencePercentages = [12, 18, 24, 16];
-    this.audiencePercentages[question.correctIndex] = 50;
+    if (risultato.nuovaDomanda) {
+      this.applicaNuovaDomanda(risultato.nuovaDomanda);
+    }
   }
 
   async nextQuestion() {
@@ -539,101 +526,29 @@ export class QuizPage implements OnInit, OnDestroy {
       return;
     }
 
-    const allQuestionsCorrect =
-      this.questions.length > 0 &&
-      this.correctAnswers === this.questions.length;
-
     const user = await firstValueFrom(this.auth.user$);
+    const risultato = await this.quizCompletamentoService.completaQuizNormale({
+      user,
+      categoryId: this.categoryId,
+      difficultyId: this.difficultyId,
+      levelNumber: this.levelNumber,
+      displayLevelNumber: this.displayLevelNumber,
+      correctAnswers: this.correctAnswers,
+      totalQuestions: this.questions.length,
+      levelAlreadyCompleted: this.levelAlreadyCompleted,
+      difficultyLevelNumbers: this.difficultyLevelNumbers,
+    });
 
-    if (user) {
-      try {
-        await this.dailyEventsService.trackNormalQuizPlayed();
-      } catch (error) {
-        console.warn('Daily event quiz played non salvato:', error);
-      }
+    this.levelAlreadyCompleted = risultato.levelAlreadyCompleted;
 
-      if (allQuestionsCorrect) {
-        try {
-          await this.dailyEventsService.trackNormalQuizWon();
-        } catch (error) {
-          console.warn('Daily event quiz won non salvato:', error);
-        }
-      }
-
-      if (allQuestionsCorrect && !this.levelAlreadyCompleted) {
-        try {
-          await this.userStatsService.recordQuizResult(
-            user.uid,
-            this.correctAnswers,
-            this.questions.length,
-          );
-
-          await this.progressService.completeLevel(
-            user.uid,
-            this.categoryId,
-            this.difficultyId,
-            this.levelNumber,
-          );
-
-          try {
-            await this.userStatsService.recordQuizHistory(
-              user.uid,
-              this.categoryId,
-              this.difficultyId,
-              this.correctAnswers,
-              this.questions.length,
-            );
-          } catch (error) {
-            console.warn('Storico quiz non salvato:', error);
-          }
-
-          try {
-            await this.dailyEventsService.trackNormalLevelCompleted();
-          } catch (error) {
-            console.warn('Daily event livello completato non salvato:', error);
-          }
-
-          this.levelAlreadyCompleted = true;
-
-          if (this.isLastLevelInDifficulty()) {
-            const completedLevelNumbers =
-              await this.progressService.getCompletedLevelNumbers(
-                user.uid,
-                this.categoryId,
-                this.difficultyId,
-              );
-
-            const completedLevels = new Set(completedLevelNumbers);
-            completedLevels.add(this.levelNumber);
-
-            const difficultyCompleted =
-              this.difficultyLevelNumbers.length > 0 &&
-              this.difficultyLevelNumbers.every((levelNumber) =>
-                completedLevels.has(levelNumber),
-              );
-
-            if (difficultyCompleted) {
-              await this.progressService.completeUserDifficulty(
-                user.uid,
-                this.categoryId,
-                this.difficultyId,
-              );
-            }
-          }
-
-          this.rewardXp =
-            this.correctAnswers * USER_STATS_CONFIG.xpPerCorrectAnswer;
-          this.rewardDoubled = false;
-          this.rewardDoubleLoading = false;
-          this.rewardMessage = `Hai completato il livello ${this.displayLevelNumber}!`;
-          this.rewardUnlockedMessage = this.getRewardUnlockedMessage();
-          this.showRewardModal = true;
-
-          return;
-        } catch (error) {
-          console.error('Errore completamento quiz:', error);
-        }
-      }
+    if (risultato.completatoConPremio) {
+      this.rewardXp = risultato.rewardXp;
+      this.rewardDoubled = false;
+      this.rewardDoubleLoading = false;
+      this.rewardMessage = risultato.rewardMessage;
+      this.rewardUnlockedMessage = risultato.rewardUnlockedMessage;
+      this.showRewardModal = true;
+      return;
     }
 
     this.navigatingAway = true;
@@ -678,23 +593,23 @@ export class QuizPage implements OnInit, OnDestroy {
     this.adInProgress = true;
 
     try {
-      const reward = await this.ads.showRewardedAd();
+      const reward = await this.quizVideoRewardService.guardaVideoReward();
 
-      if (reward) {
-        this.showWrongModal = false;
+      if (!reward) return;
 
-        if (this.dailyChallengeMode) {
-          this.retryCurrentDailyChallengeQuestion();
-          return;
-        }
+      this.showWrongModal = false;
 
-        if (this.arcadeMode) {
-          await this.switchQuestion();
-          return;
-        }
-
-        await this.loadQuestions();
+      if (this.dailyChallengeMode) {
+        this.retryCurrentDailyChallengeQuestion();
+        return;
       }
+
+      if (this.arcadeMode) {
+        await this.switchQuestion();
+        return;
+      }
+
+      await this.loadQuestions();
     } finally {
       this.adInProgress = false;
     }
@@ -704,16 +619,16 @@ export class QuizPage implements OnInit, OnDestroy {
     this.adInProgress = true;
 
     try {
-      const reward = await this.ads.showRewardedAd();
+      const reward = await this.quizVideoRewardService.guardaVideoReward();
 
-      if (reward) {
-        this.showTimeModal = false;
-        this.answered = false;
-        this.isCorrect = false;
-        this.selectedAnswerIndex = null;
-        this.timeLeft = 5;
-        this.startTimer();
-      }
+      if (!reward) return;
+
+      this.showTimeModal = false;
+      this.answered = false;
+      this.isCorrect = false;
+      this.selectedAnswerIndex = null;
+      this.timeLeft = 5;
+      this.startTimer();
     } finally {
       this.adInProgress = false;
     }
@@ -741,11 +656,7 @@ export class QuizPage implements OnInit, OnDestroy {
     this.adInProgress = true;
 
     try {
-      const reward = await this.ads.showRewardedAd();
-
-      if (reward) {
-        await this.coinsService.addCoins(10);
-      }
+      await this.quizVideoRewardService.guardaVideoPerMonete(10);
 
       this.showCoinsModal = false;
       if (!this.answered && this.currentQuestion && this.timeLeft > 0) {
@@ -786,17 +697,15 @@ export class QuizPage implements OnInit, OnDestroy {
     this.adInProgress = true;
 
     try {
-      const reward = await this.ads.showRewardedAd();
-
-      if (!reward) return;
-
       const user = await firstValueFrom(this.auth.user$);
-
       if (!user) return;
 
-      const bonusXp = this.rewardXp;
+      const bonusXp = await this.quizVideoRewardService.raddoppiaXpQuizNormale(
+        user.uid,
+        this.rewardXp,
+      );
 
-      await this.userStatsService.addXp(user.uid, bonusXp);
+      if (bonusXp <= 0) return;
 
       this.rewardXp += bonusXp;
       this.rewardDoubled = true;
@@ -851,10 +760,7 @@ export class QuizPage implements OnInit, OnDestroy {
   private async loseArcadeLifeAndExit() {
     const user = await firstValueFrom(this.auth.user$);
 
-    if (user) {
-      await this.userStatsService.recordArcadeMistake(user.uid);
-    }
-
+    await this.quizScalataService.registraErroreScalata(user);
     await this.livesService.spendLife();
 
     this.markCurrentQuestionAsWrong();
@@ -882,24 +788,23 @@ export class QuizPage implements OnInit, OnDestroy {
     this.stopTimer(false);
     this.audioService.playCountdownQuiz();
 
-    this.timer = setInterval(() => {
-      this.timeLeft--;
-
-      if (this.timeLeft <= 0) {
-        this.stopTimer();
+    this.quizAiutiTimerService.avviaTimer({
+      tempoIniziale: this.timeLeft,
+      onTick: ({ tempoRimasto }) => {
+        this.timeLeft = tempoRimasto;
+      },
+      onScaduto: () => {
+        this.audioService.stopGameSound();
         this.audioService.playFinishTime();
         this.timeLeft = 0;
         this.showExitModal = false;
         this.showTimeModal = true;
-      }
-    }, 1000);
+      },
+    });
   }
 
   stopTimer(stopGameSound = true) {
-    if (this.timer) {
-      clearInterval(this.timer);
-      this.timer = undefined;
-    }
+    this.quizAiutiTimerService.fermaTimer();
 
     if (stopGameSound) {
       this.audioService.stopGameSound();
@@ -908,50 +813,32 @@ export class QuizPage implements OnInit, OnDestroy {
 
   private async finishArcadeLevel() {
     const user = await firstValueFrom(this.auth.user$);
+    const risultato = await this.quizScalataService.completaLivelloScalata(
+      user,
+      this.displayLevelNumber,
+    );
 
-    if (!user) {
+    if (!risultato) {
       this.navigatingAway = true;
       this.goToExitPage();
       return;
     }
 
-    const reward = this.getArcadeReward(this.displayLevelNumber);
-    const updatedArcade =
-      await this.userStatsService.recordArcadeLevelCompleted(
-        user.uid,
-        this.displayLevelNumber,
-        reward.totalCoins,
-        reward.totalXp,
-      );
-
-    if (!updatedArcade) {
-      this.navigatingAway = true;
-      this.goToExitPage();
-      return;
-    }
-
-    this.arcadeRewardCoins = reward.baseCoins;
-    this.arcadeRewardXp = reward.baseXp;
-    this.arcadeChestRewardCoins = reward.bonusCoins;
-    this.arcadeChestRewardXp = reward.bonusXp;
-    this.arcadeRewardHasBonus = reward.hasBonus;
+    this.arcadeRewardCoins = risultato.premio.baseCoins;
+    this.arcadeRewardXp = risultato.premio.baseXp;
+    this.arcadeChestRewardCoins = risultato.premio.bonusCoins;
+    this.arcadeChestRewardXp = risultato.premio.bonusXp;
+    this.arcadeRewardHasBonus = risultato.premio.hasBonus;
 
     await this.playArcadeTransition(
       this.displayLevelNumber,
-      updatedArcade.currentLevel,
-      !reward.hasBonus,
+      risultato.livelloSuccessivo,
+      !risultato.premio.hasBonus,
     );
 
-    if (reward.hasBonus) {
+    if (risultato.premio.hasBonus) {
       this.showArcadeChestRewardModal = true;
-      return;
     }
-
-    /*
-     * Nei livelli normali della Scalata non carichiamo subito la domanda
-     * successiva: lasciamo scegliere al giocatore se continuare o tornare
-     * alla mappa.
-     */
   }
 
   async continueAfterArcadeTransition() {
@@ -976,30 +863,6 @@ export class QuizPage implements OnInit, OnDestroy {
     this.showArcadeChestRewardModal = false;
     this.navigatingAway = true;
     this.goToExitPage();
-  }
-
-  private getArcadeReward(arcadeLevel: number): {
-    baseCoins: number;
-    baseXp: number;
-    bonusCoins: number;
-    bonusXp: number;
-    totalCoins: number;
-    totalXp: number;
-    hasBonus: boolean;
-  } {
-    const hasBonus = arcadeLevel % ARCADE_CONFIG.bonusEveryLevels === 0;
-    const bonusCoins = hasBonus ? ARCADE_CONFIG.bonusCoins : 0;
-    const bonusXp = hasBonus ? ARCADE_CONFIG.bonusXp : 0;
-
-    return {
-      baseCoins: ARCADE_CONFIG.baseCoinsPerLevel,
-      baseXp: ARCADE_CONFIG.baseXpPerLevel,
-      bonusCoins,
-      bonusXp,
-      totalCoins: ARCADE_CONFIG.baseCoinsPerLevel + bonusCoins,
-      totalXp: ARCADE_CONFIG.baseXpPerLevel + bonusXp,
-      hasBonus,
-    };
   }
 
   private async playArcadeTransition(
@@ -1075,12 +938,8 @@ export class QuizPage implements OnInit, OnDestroy {
     this.adInProgress = true;
 
     try {
-      const reward = await this.ads.showRewardedAd();
-
-      if (!reward) return;
-
       const bonusCoins =
-        await this.dailyEventsService.doubleDailyChallengeReward();
+        await this.quizVideoRewardService.raddoppiaPremioSfidaGiornaliera();
 
       if (bonusCoins <= 0) return;
 
@@ -1109,80 +968,41 @@ export class QuizPage implements OnInit, OnDestroy {
     );
   }
 
-  private getRewardUnlockedMessage(): string {
-    const currentLevelIndex = this.difficultyLevelNumbers.indexOf(
-      this.levelNumber,
-    );
-    const nextDisplayLevel = currentLevelIndex + 2;
-
-    if (
-      currentLevelIndex >= 0 &&
-      nextDisplayLevel <= this.difficultyLevelNumbers.length
-    ) {
-      return `Livello ${nextDisplayLevel} sbloccato`;
-    }
-
-    return 'Difficolta completata';
-  }
-
-  private isLastLevelInDifficulty(): boolean {
-    if (this.difficultyLevelNumbers.length === 0) return false;
-
-    return (
-      this.difficultyLevelNumbers[this.difficultyLevelNumbers.length - 1] ===
-      this.levelNumber
-    );
-  }
-
   private async switchQuestion() {
     if (this.switchingQuestion) return;
 
     this.switchingQuestion = true;
 
     try {
-      if (this.dailyChallengeMode) {
-        const [newQuestion] =
-          await this.questionsService.getRandomActiveQuestions(
-            1,
-            DAILY_EVENTS_CONFIG.dailyChallengeDifficulty,
-          );
+      const nuovaDomanda =
+        await this.quizAiutiTimerService.recuperaNuovaDomanda({
+          modalitaSfidaGiornaliera: this.dailyChallengeMode,
+          modalitaScalata: this.arcadeMode,
+          idCategoria: this.categoryId,
+          idDifficolta: this.difficultyId,
+          numeroLivello: this.levelNumber,
+          numeroLivelloScalata: this.displayLevelNumber,
+        });
 
-        if (!newQuestion) return;
+      if (!nuovaDomanda) return;
 
-        this.questions[this.currentIndex] = newQuestion;
-        this.startCurrentQuestion();
-        return;
-      }
-
-      if (this.arcadeMode) {
-        const selection = await this.questionsService.getArcadeQuestionForLevel(
-          this.displayLevelNumber,
-        );
-
-        if (!selection) return;
-
-        this.questions = [selection.question];
-        this.currentIndex = 0;
-        this.startCurrentQuestion();
-        return;
-      }
-
-      const newQuestions = await this.questionsService.getQuestions(
-        this.categoryId,
-        this.difficultyId,
-        this.levelNumber,
-        1,
-      );
-
-      if (newQuestions.length === 0) return;
-
-      this.questions = newQuestions;
-      this.currentIndex = 0;
-
-      this.startCurrentQuestion();
+      this.applicaNuovaDomanda(nuovaDomanda);
     } finally {
       this.switchingQuestion = false;
     }
+  }
+
+  // Applica una nuova domanda alla modalità corrente e riavvia lo stato della domanda.
+  private applicaNuovaDomanda(nuovaDomanda: QuestionModel) {
+    if (this.dailyChallengeMode) {
+      this.questions[this.currentIndex] = nuovaDomanda;
+      this.startCurrentQuestion();
+      return;
+    }
+
+    this.questions = [nuovaDomanda];
+    this.currentIndex = 0;
+    this.startCurrentQuestion();
   }
 
   private pauseTimer() {
