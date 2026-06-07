@@ -10,7 +10,7 @@
 
       <div class="stat-card lives-card" [class.life-pulse]="lifeRecoveredPulse">
         <div class="stat-icon">❤️</div>
-        <div class="stat-value">{{ (lives$ | async) ?? 0 }}/{{ maxLives }}</div>
+        <div class="stat-value">{{ (lives$ | async) ?? 0 }}</div>
         <div class="stat-label">Vite</div>
         @if (livesCountdown$ | async; as countdown) {
         <div class="life-timer">{{ countdown }}</div>
