@@ -100,13 +100,13 @@
 
       <div class="coins-pill">
         <img class="coin-icon" src="assets/ui/coin-turtle.webp" alt="Coins" />
-        {{ coins$ | async }}
+        {{ monete$ | async }}
       </div>
     </div>
 
     <div class="progress-section">
       <div class="progress-copy">
-        <strong>{{ testoAvanzamentoDomanda }}</strong>
+        <strong>{{ etichettaProgressoDomanda }}</strong>
       </div>
 
       <div class="timer-circle" [class.timer-danger]="tempoRimasto <= 5">
@@ -134,7 +134,7 @@
     </div>
 
     <div class="progress-bar">
-      <div class="progress-fill" [style.width.%]="percentualeAvanzamento"></div>
+      <div class="progress-fill" [style.width.%]="percentualeProgresso"></div>
     </div>
 
     <div
@@ -142,7 +142,7 @@
       [class.question-success]="haRisposto && rispostaCorretta"
     >
       @if (haRisposto && rispostaCorretta && !modalitaSfidaGiornaliera) {
-      <div class="xp-float">{{ testoPremioRispostaCorretta }}</div>
+      <div class="xp-float">{{ etichettaPremioCorretto }}</div>
       }
 
       <h1>{{ domandaCorrente.question }}</h1>
@@ -154,13 +154,13 @@
         class="answer-card"
         type="button"
         [class.hidden]="risposteNascoste.includes(i)"
-        [class.correct]="recuperaClasseRisposta(i) === 'correct'"
+        [class.correct]="classeRisposta(i) === 'correct'"
         [class.correct-pop]="
     haRisposto &&
     i === indiceRispostaSelezionata &&
     i === domandaCorrente.correctIndex
   "
-        [class.wrong]="recuperaClasseRisposta(i) === 'wrong'"
+        [class.wrong]="classeRisposta(i) === 'wrong'"
         [class.wrong-shake]="
     haRisposto &&
     i === indiceRispostaSelezionata &&
@@ -224,7 +224,7 @@
         <span>Vite</span>
 
         <div>
-          @if (lives$ | async; as lives) { @for (_ of [].constructor(lives);
+          @if (vite$ | async; as lives) { @for (_ of [].constructor(lives);
           track $index) { ❤️ } }
         </div>
       </div>
@@ -325,11 +325,7 @@
 
       <div class="wrong-actions">
         @if (modalitaSfidaGiornaliera) {
-        <button
-          class="ad-btn"
-          type="button"
-          (click)="guardaVideoPerTempoExtra()"
-        >
+        <button class="ad-btn" type="button" (click)="guardaVideoPerPiuTempo()">
           Guarda video e ottieni +5s
         </button>
 
@@ -345,11 +341,7 @@
           Torna agli eventi
         </button>
         } @else if (modalitaScalata) {
-        <button
-          class="ad-btn"
-          type="button"
-          (click)="guardaVideoPerTempoExtra()"
-        >
+        <button class="ad-btn" type="button" (click)="guardaVideoPerPiuTempo()">
           ▶ Guarda video e ottieni +5s
         </button>
 
@@ -361,11 +353,7 @@
           Perdi una vita e torna alla scalata
         </button>
         } @else {
-        <button
-          class="ad-btn"
-          type="button"
-          (click)="guardaVideoPerTempoExtra()"
-        >
+        <button class="ad-btn" type="button" (click)="guardaVideoPerPiuTempo()">
           ▶ Guarda pubblicità e ottieni +5s
         </button>
 

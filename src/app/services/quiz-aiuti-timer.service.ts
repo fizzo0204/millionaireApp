@@ -165,6 +165,47 @@ export class QuizAiutiTimerService {
     return nuoveDomande[0] ?? null;
   }
 
+  // Calcola la percentuale grafica del timer circolare.
+  calcolaPercentualeTimer(tempoRimasto: number, durataTotale: number): number {
+    if (durataTotale <= 0) return 0;
+    return Math.max(0, Math.min(100, (tempoRimasto / durataTotale) * 100));
+  }
+
+  // Avvia il countdown e comunica al componente ogni aggiornamento del tempo.
+  avviaTimer(params: {
+    tempoIniziale: number;
+    onTick: (stato: StatoTimerQuiz) => void;
+    onScaduto: () => void;
+  }): void {
+    this.fermaTimer();
+
+    let tempoRimasto = params.tempoIniziale;
+
+    this.timer = setInterval(() => {
+      tempoRimasto--;
+
+      const timerScaduto = tempoRimasto <= 0;
+
+      params.onTick({
+        tempoRimasto: Math.max(0, tempoRimasto),
+        timerScaduto,
+      });
+
+      if (timerScaduto) {
+        this.fermaTimer();
+        params.onScaduto();
+      }
+    }, 1000);
+  }
+
+  // Ferma il countdown attivo, se presente.
+  fermaTimer(): void {
+    if (!this.timer) return;
+
+    clearInterval(this.timer);
+    this.timer = undefined;
+  }
+
   // Controlla se in questo momento l'utente può usare un aiuto.
   private puoUsareAiuto(params: ParametriUsoAiutoQuiz): boolean {
     return (
@@ -202,51 +243,5 @@ export class QuizAiutiTimerService {
     const percentuali = [12, 18, 24, 16];
     percentuali[domanda.correctIndex] = 50;
     return percentuali;
-  }
-
-  // Calcola la percentuale grafica del timer circolare.
-  calcolaPercentualeTimer(tempoRimasto: number, durataTotale: number): number {
-    if (durataTotale <= 0) return 0;
-    return Math.max(0, Math.min(100, (tempoRimasto / durataTotale) * 100));
-  }
-
-  // Avvia il countdown e chiama onTick ogni secondo.
-  avviaTimer(params: {
-    tempoIniziale: number;
-    onTick: (stato: StatoTimerQuiz) => void;
-    onScaduto: () => void;
-  }): void {
-    this.fermaTimer();
-
-    let tempoRimasto = params.tempoIniziale;
-
-    this.timer = setInterval(() => {
-      tempoRimasto--;
-
-      const timerScaduto = tempoRimasto <= 0;
-
-      params.onTick({
-        tempoRimasto: Math.max(0, tempoRimasto),
-        timerScaduto,
-      });
-
-      if (timerScaduto) {
-        this.fermaTimer();
-        params.onScaduto();
-      }
-    }, 1000);
-  }
-
-  // Ferma il countdown attivo, se presente.
-  fermaTimer(): void {
-    if (!this.timer) return;
-
-    clearInterval(this.timer);
-    this.timer = undefined;
-  }
-
-  // Indica se c'è un timer attualmente attivo.
-  timerAttivo(): boolean {
-    return !!this.timer;
   }
 }
