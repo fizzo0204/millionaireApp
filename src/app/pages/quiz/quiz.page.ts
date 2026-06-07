@@ -10,7 +10,6 @@ import { QuestionsService } from 'src/app/services/questions.service';
 import { QuestionModel } from 'src/app/models/question.model';
 import { CoinsService } from 'src/app/services/coins.service';
 import { LivesService } from 'src/app/services/lives';
-import { AdsService } from 'src/app/services/ads.service';
 import { GameLoaderComponent } from 'src/app/components/game-loader/game-loader.component';
 import { AuthService } from 'src/app/services/auth.service';
 import { firstValueFrom } from 'rxjs';
@@ -25,6 +24,8 @@ import { DAILY_EVENTS_CONFIG } from 'src/app/config/daily-events.config';
 import { ARCADE_CONFIG } from 'src/app/config/arcade.config';
 import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 import { QuizAiutiTimerService } from 'src/app/services/quiz-aiuti-timer.service';
+import { QuizCompletamentoService } from 'src/app/services/quiz-completamento.service';
+import { QuizVideoRewardService } from 'src/app/services/quiz-video-reward.service';
 
 @Component({
   selector: 'app-quiz',
@@ -39,7 +40,6 @@ export class QuizPage implements OnInit, OnDestroy {
   private questionsService = inject(QuestionsService);
   private coinsService = inject(CoinsService);
   private livesService = inject(LivesService);
-  private ads = inject(AdsService);
   private progressService = inject(ProgressService);
   private userStatsService = inject(UserStatsService);
   private auth = inject(AuthService);
@@ -48,197 +48,207 @@ export class QuizPage implements OnInit, OnDestroy {
   private dailyEventsService = inject(DailyEventsService);
   private navigation = inject(NavigationTransitionService);
   private quizAiutiTimerService = inject(QuizAiutiTimerService);
+  private quizCompletamentoService = inject(QuizCompletamentoService);
+  private quizVideoRewardService = inject(QuizVideoRewardService);
 
   private appStateListener?: PluginListenerHandle;
 
   private adInProgress = false;
   private lifeLostForLeaving = false;
   private navigatingAway = false;
-  levelAlreadyCompleted = false;
-  rewardDoubleLoading = false;
-  rewardDoubled = false;
-  dailyChallengeMode = false;
-  arcadeMode = false;
-  dailyChallengeRewardCoins = 0;
-  dailyChallengeRewardAlreadyClaimed = false;
-  arcadeRewardCoins = 0;
-  arcadeRewardXp = 0;
-  arcadeChestRewardCoins = 0;
-  arcadeChestRewardXp = 0;
-  arcadeRewardHasBonus = false;
-  arcadeTransitionVisible = false;
-  arcadeTransitionReady = false;
-  arcadeTransitionFrom = 1;
-  arcadeTransitionTo = 2;
-  showArcadeChestRewardModal = false;
+  livelloGiaCompletato = false;
+  raddoppioPremioInCaricamento = false;
+  premioRaddoppiato = false;
+  modalitaSfidaGiornaliera = false;
+  modalitaScalata = false;
+  premioMoneteSfidaGiornaliera = 0;
+  premioSfidaGiornalieraGiaRiscosso = false;
+  premioMoneteScalata = 0;
+  premioXpScalata = 0;
+  premioMoneteForziereScalata = 0;
+  premioXpForziereScalata = 0;
+  premioScalataHaBonus = false;
+  transizioneScalataVisibile = false;
+  transizioneScalataPronta = false;
+  transizioneScalataDa = 1;
+  transizioneScalataA = 2;
+  mostraModaleForziereScalata = false;
 
-  difficultyId: DifficultyId = 'easy';
-  categoryTitle = 'Quiz';
-  categoryIcon = '❓';
-  difficultyTitle = 'Easy';
-  categoryId = '';
-  rewardMessage = '';
-  rewardUnlockedMessage = '';
+  idDifficolta: DifficultyId = 'easy';
+  titoloCategoria = 'Quiz';
+  iconaCategoria = '❓';
+  titoloDifficolta = 'Easy';
+  idCategoria = '';
+  messaggioPremio = '';
+  messaggioSbloccoPremio = '';
 
-  timeLeft = 15;
-  readonly maxTime = 15;
-  audiencePercentages = [15, 20, 50, 15];
-  levelNumber = 1;
-  displayLevelNumber = 1;
-  totalLevels = 0;
-  difficultyLevelNumbers: number[] = [];
-  currentIndex = 0;
-  correctAnswers = 0;
-  wrongAnswers = 0;
-  rewardXp = 0;
-  readonly xpPerQuestion = USER_STATS_CONFIG.xpPerCorrectAnswer;
-  neededCoins = 0;
-  selectedAnswerIndex: number | null = null;
-  hiddenAnswers: number[] = [];
+  tempoRimasto = 15;
+  readonly tempoMassimo = 15;
+  percentualiPubblico = [15, 20, 50, 15];
+  numeroLivello = 1;
+  numeroLivelloVisualizzato = 1;
+  totaleLivelli = 0;
+  numeriLivelliDifficolta: number[] = [];
+  indiceCorrente = 0;
+  risposteCorrette = 0;
+  risposteSbagliate = 0;
+  premioXp = 0;
+  readonly xpPerDomanda = USER_STATS_CONFIG.xpPerCorrectAnswer;
+  moneteNecessarie = 0;
+  indiceRispostaSelezionata: number | null = null;
+  risposteNascoste: number[] = [];
 
-  questions: QuestionModel[] = [];
-  usedHelps: HelpId[] = [];
-  helpAnimation: HelpId | null = null;
+  domande: QuestionModel[] = [];
+  aiutiUsati: HelpId[] = [];
+  animazioneAiuto: HelpId | null = null;
 
-  loading = true;
-  answered = false;
-  isCorrect = false;
-  showWrongModal = false;
-  showTimeModal = false;
-  showCoinsModal = false;
-  showAudienceHint = false;
-  showExitModal = false;
-  showRewardModal = false;
-  switchingQuestion = false;
+  caricamento = true;
+  haRisposto = false;
+  rispostaCorretta = false;
+  mostraModaleErrore = false;
+  mostraModaleTempo = false;
+  mostraModaleMonete = false;
+  mostraSuggerimentoPubblico = false;
+  mostraModaleUscita = false;
+  mostraModalePremio = false;
+  cambioDomandaInCorso = false;
 
-  coins$ = this.coinsService.coins$;
-  lives$ = this.livesService.lives$;
+  monete$ = this.coinsService.coins$;
+  vite$ = this.livesService.lives$;
+
   private trackedDailyQuestionIndexes = new Set<number>();
 
-  helps: HelpModel[] = [...HELPS];
+  aiuti: HelpModel[] = [...HELPS];
 
+  // Inizializza la pagina scegliendo la modalità corretta e caricando la prima domanda.
   async ngOnInit() {
     this.audioService.suspendMusicForGame();
 
     const cleanUrl = this.router.url.split('?')[0];
 
-    this.dailyChallengeMode = cleanUrl.startsWith('/daily-challenge');
-    this.arcadeMode = cleanUrl.startsWith('/arcade/play');
+    this.modalitaSfidaGiornaliera = cleanUrl.startsWith('/daily-challenge');
+    this.modalitaScalata = cleanUrl.startsWith('/arcade/play');
 
-    if (this.dailyChallengeMode) {
-      this.setupDailyChallengeLabels();
+    if (this.modalitaSfidaGiornaliera) {
+      this.configuraEtichetteSfidaGiornaliera();
       await this.dailyEventsService.trackDailyChallengeStarted();
-    } else if (this.arcadeMode) {
-      await this.setupArcadeLabels();
+    } else if (this.modalitaScalata) {
+      await this.configuraEtichetteScalata();
     } else {
-      this.categoryId = this.route.snapshot.paramMap.get('categoryId') || '';
-      this.difficultyId =
+      this.idCategoria = this.route.snapshot.paramMap.get('categoryId') || '';
+      this.idDifficolta =
         (this.route.snapshot.paramMap.get('difficultyId') as DifficultyId) ||
         'easy';
-      this.levelNumber = Number(
+      this.numeroLivello = Number(
         this.route.snapshot.paramMap.get('levelNumber') || 1,
       );
 
-      this.setupLabels();
-      await this.setupLevelProgress();
+      this.configuraEtichette();
+      await this.configuraProgressoLivello();
     }
 
     await this.listenToAppState();
-    await this.loadQuestions();
+    await this.caricaDomande();
   }
 
+  // Quando la pagina rientra in vista, sospende la musica generale del gioco.
   ionViewWillEnter() {
     this.audioService.suspendMusicForGame();
   }
 
-  private async setupLevelProgress() {
+  // Recupera i livelli disponibili e controlla se il livello attuale è già stato completato.
+  private async configuraProgressoLivello() {
     const user = await firstValueFrom(this.auth.user$);
 
-    const [difficultyLevelNumbers, levelAlreadyCompleted] = await Promise.all([
+    const [numeriLivelliDifficolta, livelloGiaCompletato] = await Promise.all([
       this.questionsService.getDifficultyLevelNumbers(
-        this.categoryId,
-        this.difficultyId,
+        this.idCategoria,
+        this.idDifficolta,
       ),
       user
         ? this.progressService.isLevelCompleted(
             user.uid,
-            this.categoryId,
-            this.difficultyId,
-            this.levelNumber,
+            this.idCategoria,
+            this.idDifficolta,
+            this.numeroLivello,
           )
         : Promise.resolve(false),
     ]);
 
-    this.difficultyLevelNumbers = difficultyLevelNumbers;
-    this.levelAlreadyCompleted = levelAlreadyCompleted;
+    this.numeriLivelliDifficolta = numeriLivelliDifficolta;
+    this.livelloGiaCompletato = livelloGiaCompletato;
 
-    const currentLevelIndex = this.difficultyLevelNumbers.indexOf(
-      this.levelNumber,
+    const currentLevelIndex = this.numeriLivelliDifficolta.indexOf(
+      this.numeroLivello,
     );
 
-    this.totalLevels = this.difficultyLevelNumbers.length;
-    this.displayLevelNumber =
-      currentLevelIndex >= 0 ? currentLevelIndex + 1 : this.levelNumber;
+    this.totaleLivelli = this.numeriLivelliDifficolta.length;
+    this.numeroLivelloVisualizzato =
+      currentLevelIndex >= 0 ? currentLevelIndex + 1 : this.numeroLivello;
   }
 
+  // Quando si lascia la pagina, ferma timer e suoni del quiz.
   ionViewWillLeave() {
-    this.stopTimer();
+    this.fermaTimer();
     void this.audioService.resumeMusicAfterGame();
   }
 
-  async loadQuestions() {
-    this.loading = true;
+  // Carica le domande della modalità corrente e prepara lo stato iniziale del quiz.
+  async caricaDomande() {
+    this.caricamento = true;
 
-    const questionsPromise = this.getQuestionsForCurrentMode();
-    const minLoaderMs = this.arcadeMode
+    const questionsPromise = this.recuperaDomandeModalitaCorrente();
+    const minLoaderMs = this.modalitaScalata
       ? 360
-      : this.dailyChallengeMode
+      : this.modalitaSfidaGiornaliera
         ? 520
         : 650;
 
-    const [questions] = await Promise.all([
+    const [domande] = await Promise.all([
       questionsPromise,
       this.wait(minLoaderMs),
     ]);
 
-    this.questions = questions;
+    this.domande = domande;
     this.trackedDailyQuestionIndexes.clear();
 
-    this.loading = false;
+    this.caricamento = false;
 
-    this.currentIndex = 0;
-    this.correctAnswers = 0;
-    this.wrongAnswers = 0;
+    this.indiceCorrente = 0;
+    this.risposteCorrette = 0;
+    this.risposteSbagliate = 0;
 
-    if (this.questions.length === 0) {
-      this.stopTimer();
+    if (this.domande.length === 0) {
+      this.fermaTimer();
       return;
     }
 
-    this.startCurrentQuestion();
+    this.avviaDomandaCorrente();
   }
 
-  private async getQuestionsForCurrentMode(): Promise<QuestionModel[]> {
-    if (this.dailyChallengeMode) {
+  // Decide da quale sorgente prendere le domande in base alla modalità attiva.
+  private async recuperaDomandeModalitaCorrente(): Promise<QuestionModel[]> {
+    if (this.modalitaSfidaGiornaliera) {
       return this.questionsService.getRandomActiveQuestions(
         DAILY_EVENTS_CONFIG.dailyChallengeQuestionCount,
         DAILY_EVENTS_CONFIG.dailyChallengeDifficulty,
       );
     }
 
-    if (this.arcadeMode) {
-      return this.getArcadeQuestion();
+    if (this.modalitaScalata) {
+      return this.recuperaDomandaScalata();
     }
 
     return this.questionsService.getQuestions(
-      this.categoryId,
-      this.difficultyId,
-      this.levelNumber,
+      this.idCategoria,
+      this.idDifficolta,
+      this.numeroLivello,
       1,
     );
   }
 
-  private async getArcadeQuestion(): Promise<QuestionModel[]> {
+  // Recupera una singola domanda adatta al livello corrente della Scalata.
+  private async recuperaDomandaScalata(): Promise<QuestionModel[]> {
     const user = await firstValueFrom(this.auth.user$);
     const arcade = user
       ? await this.userStatsService.getArcadeData(user.uid)
@@ -249,24 +259,28 @@ export class QuizPage implements OnInit, OnDestroy {
     );
 
     if (!selection) {
-      this.displayLevelNumber = arcade.currentLevel;
-      this.totalLevels = await this.questionsService.getArcadeTotalLevels();
+      this.numeroLivelloVisualizzato = arcade.currentLevel;
+      this.totaleLivelli = await this.questionsService.getArcadeTotalLevels();
       return [];
     }
 
-    this.displayLevelNumber = selection.arcadeLevel;
-    this.totalLevels = selection.totalLevels;
-    this.difficultyId = selection.difficultyId;
-    this.levelNumber = selection.levelNumber;
-    this.difficultyTitle = this.getDifficultyTitle(selection.difficultyId);
+    this.numeroLivelloVisualizzato = selection.arcadeLevel;
+    this.totaleLivelli = selection.totalLevels;
+    this.idDifficolta = selection.difficultyId;
+    this.numeroLivello = selection.levelNumber;
+    this.titoloDifficolta = this.recuperaTitoloDifficolta(
+      selection.difficultyId,
+    );
 
     return [selection.question];
   }
 
+  // Piccola attesa usata per animazioni e loader.
   private wait(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  // Ascolta quando l’app va in background per gestire eventuali abbandoni.
   private async listenToAppState() {
     this.appStateListener = await CapacitorApp.addListener(
       'appStateChange',
@@ -278,14 +292,15 @@ export class QuizPage implements OnInit, OnDestroy {
     );
   }
 
+  // Se l’utente esce dall’app durante una domanda attiva, applica la penalità prevista.
   private async handleAppBackgrounded() {
     if (this.adInProgress) return;
     if (this.lifeLostForLeaving) return;
     if (this.navigatingAway) return;
-    if (this.loading || !this.currentQuestion) return;
+    if (this.caricamento || !this.domandaCorrente) return;
 
     const isInsideActiveQuestion =
-      !this.answered || this.showTimeModal || this.showExitModal;
+      !this.haRisposto || this.mostraModaleTempo || this.mostraModaleUscita;
 
     if (!isInsideActiveQuestion) return;
 
@@ -294,11 +309,12 @@ export class QuizPage implements OnInit, OnDestroy {
 
     await this.livesService.spendLife();
 
-    this.stopTimer();
-    this.goToExitPage();
+    this.fermaTimer();
+    this.vaiAllaPaginaDiUscita();
   }
 
-  setupLabels() {
+  // Imposta titolo, icona e difficoltà per il quiz normale.
+  configuraEtichette() {
     const categories: Record<string, { title: string; icon: string }> = {
       sport: { title: 'Sport', icon: '⚽' },
       cinema: { title: 'Cinema', icon: '🎬' },
@@ -310,33 +326,36 @@ export class QuizPage implements OnInit, OnDestroy {
       altro: { title: 'Altro', icon: '⭐' },
     };
 
-    this.categoryTitle = categories[this.categoryId]?.title || 'Quiz';
-    this.categoryIcon = categories[this.categoryId]?.icon || '❓';
-    this.difficultyTitle = this.getDifficultyTitle(this.difficultyId);
+    this.titoloCategoria = categories[this.idCategoria]?.title || 'Quiz';
+    this.iconaCategoria = categories[this.idCategoria]?.icon || '❓';
+    this.titoloDifficolta = this.recuperaTitoloDifficolta(this.idDifficolta);
   }
 
-  setupDailyChallengeLabels() {
-    this.categoryId = 'daily';
-    this.categoryTitle = 'Sfida Daily';
-    this.categoryIcon = '';
-    this.difficultyTitle = 'Random';
-    this.levelNumber = 1;
-    this.displayLevelNumber = 1;
-    this.totalLevels = DAILY_EVENTS_CONFIG.dailyChallengeQuestionCount;
+  // Imposta le etichette e i contatori della Sfida Daily.
+  configuraEtichetteSfidaGiornaliera() {
+    this.idCategoria = 'daily';
+    this.titoloCategoria = 'Sfida Daily';
+    this.iconaCategoria = '';
+    this.titoloDifficolta = 'Random';
+    this.numeroLivello = 1;
+    this.numeroLivelloVisualizzato = 1;
+    this.totaleLivelli = DAILY_EVENTS_CONFIG.dailyChallengeQuestionCount;
   }
 
-  private async setupArcadeLabels() {
-    this.categoryId = 'arcade';
-    this.categoryTitle = 'Scalata';
-    this.categoryIcon = '⚡';
-    this.difficultyId = 'easy';
-    this.difficultyTitle = 'Progressiva';
-    this.levelNumber = 1;
-    this.displayLevelNumber = 1;
-    this.totalLevels = await this.questionsService.getArcadeTotalLevels();
+  // Imposta le etichette e i contatori della modalità Scalata.
+  private async configuraEtichetteScalata() {
+    this.idCategoria = 'arcade';
+    this.titoloCategoria = 'Scalata';
+    this.iconaCategoria = '⚡';
+    this.idDifficolta = 'easy';
+    this.titoloDifficolta = 'Progressiva';
+    this.numeroLivello = 1;
+    this.numeroLivelloVisualizzato = 1;
+    this.totaleLivelli = await this.questionsService.getArcadeTotalLevels();
   }
 
-  private getDifficultyTitle(difficultyId: DifficultyId): string {
+  // Converte l’id difficoltà nel testo mostrato a schermo.
+  private recuperaTitoloDifficolta(idDifficolta: DifficultyId): string {
     const difficulties: Record<DifficultyId, string> = {
       easy: 'Easy',
       medium: 'Medium',
@@ -344,504 +363,474 @@ export class QuizPage implements OnInit, OnDestroy {
       extreme: 'Extreme',
     };
 
-    return difficulties[difficultyId] || 'Easy';
+    return difficulties[idDifficolta] || 'Easy';
   }
 
-  get currentQuestion(): QuestionModel | null {
-    return this.questions[this.currentIndex] || null;
+  // Restituisce la domanda attualmente visualizzata.
+  get domandaCorrente(): QuestionModel | null {
+    return this.domande[this.indiceCorrente] || null;
   }
 
-  get progressPercent(): number {
-    if (!this.questions.length) return 0;
+  // Calcola la percentuale della barra di progresso.
+  get percentualeProgresso(): number {
+    if (!this.domande.length) return 0;
 
-    if (this.arcadeMode) {
+    if (this.modalitaScalata) {
       const stepInBonus =
-        ((this.displayLevelNumber - 1) % ARCADE_CONFIG.bonusEveryLevels) + 1;
+        ((this.numeroLivelloVisualizzato - 1) %
+          ARCADE_CONFIG.bonusEveryLevels) +
+        1;
 
       return (stepInBonus / ARCADE_CONFIG.bonusEveryLevels) * 100;
     }
 
-    return ((this.currentIndex + 1) / this.questions.length) * 100;
+    return ((this.indiceCorrente + 1) / this.domande.length) * 100;
   }
 
-  get questionProgressLabel(): string {
-    if (this.arcadeMode) {
-      return `Livello Scalata ${this.displayLevelNumber}/${this.totalLevels}`;
+  // Testo mostrato sopra la barra di progresso.
+  get etichettaProgressoDomanda(): string {
+    if (this.modalitaScalata) {
+      return `Livello Scalata ${this.numeroLivelloVisualizzato}/${this.totaleLivelli}`;
     }
 
-    if (this.dailyChallengeMode) {
-      return `Domanda ${this.currentIndex + 1}/${this.questions.length}`;
+    if (this.modalitaSfidaGiornaliera) {
+      return `Domanda ${this.indiceCorrente + 1}/${this.domande.length}`;
     }
 
-    return `Domanda ${this.displayLevelNumber}/${this.totalLevels}`;
+    return `Domanda ${this.numeroLivelloVisualizzato}/${this.totaleLivelli}`;
   }
 
-  get correctRewardLabel(): string {
-    if (this.arcadeMode) {
+  // Testo del piccolo premio mostrato dopo una risposta corretta.
+  get etichettaPremioCorretto(): string {
+    if (this.modalitaScalata) {
       return `+${ARCADE_CONFIG.baseXpPerLevel} XP +${ARCADE_CONFIG.baseCoinsPerLevel}`;
     }
 
-    return `+${this.xpPerQuestion} XP`;
+    return `+${this.xpPerDomanda} XP`;
   }
 
-  // Calcola la percentuale del cerchio del timer.
-  get timerPercent(): number {
+  // Calcola la percentuale del timer circolare.
+  get percentualeTimer(): number {
     return this.quizAiutiTimerService.calcolaPercentualeTimer(
-      this.timeLeft,
-      this.maxTime,
+      this.tempoRimasto,
+      this.tempoMassimo,
     );
   }
 
-  get answerLetters() {
+  // Lettere visualizzate accanto alle risposte.
+  get lettereRisposte() {
     return ['A', 'B', 'C', 'D'];
   }
 
-  selectAnswer(index: number) {
+  // Gestisce il tap su una risposta e decide se è corretta o sbagliata.
+  selezionaRisposta(index: number) {
     if (
-      this.answered ||
-      this.hiddenAnswers.includes(index) ||
-      this.showExitModal ||
-      this.showTimeModal
+      this.haRisposto ||
+      this.risposteNascoste.includes(index) ||
+      this.mostraModaleUscita ||
+      this.mostraModaleTempo
     ) {
       return;
     }
 
-    const question = this.currentQuestion;
+    const question = this.domandaCorrente;
     if (!question) return;
 
-    this.selectedAnswerIndex = index;
-    this.answered = true;
-    this.isCorrect = index === question.correctIndex;
+    this.indiceRispostaSelezionata = index;
+    this.haRisposto = true;
+    this.rispostaCorretta = index === question.correctIndex;
 
-    this.stopTimer();
+    this.fermaTimer();
 
-    if (this.isCorrect) {
-      this.correctAnswers++;
+    if (this.rispostaCorretta) {
+      this.risposteCorrette++;
       this.haptics.success();
       this.audioService.playCorrectQuiz();
 
-      if (this.dailyChallengeMode) {
+      if (this.modalitaSfidaGiornaliera) {
         void this.dailyEventsService.trackDailyChallengeCorrect();
       }
 
       setTimeout(() => {
-        this.nextQuestion();
+        this.prossimaDomanda();
       }, 700);
 
       return;
     }
 
-    this.wrongAnswers++;
+    this.risposteSbagliate++;
     this.haptics.error();
     this.audioService.playErrorQuiz();
 
     setTimeout(() => {
-      this.showWrongModal = true;
+      this.mostraModaleErrore = true;
     }, 450);
   }
 
-  getAnswerClass(index: number): string {
-    const question = this.currentQuestion;
+  // Restituisce la classe grafica della risposta dopo la selezione.
+  classeRisposta(index: number): string {
+    const question = this.domandaCorrente;
 
-    if (!this.answered || !question) return '';
+    if (!this.haRisposto || !question) return '';
 
     if (index === question.correctIndex) return 'correct';
 
-    if (index === this.selectedAnswerIndex && !this.isCorrect) {
+    if (index === this.indiceRispostaSelezionata && !this.rispostaCorretta) {
       return 'wrong';
     }
 
     return '';
   }
 
-  // Gestisce l'acquisto e l'applicazione di un aiuto.
-  async useHelp(helpId: HelpId) {
+  // Gestisce l’acquisto e l’applicazione di un aiuto usando il service dedicato.
+  async usaAiuto(helpId: HelpId) {
     this.haptics.light();
 
     const risultato = await this.quizAiutiTimerService.usaAiuto({
       idAiuto: helpId,
-      aiutiDisponibili: this.helps,
-      aiutiUsati: this.usedHelps,
-      domandaCorrente: this.currentQuestion,
-      haRisposto: this.answered,
-      mostraModaleTempo: this.showTimeModal,
-      mostraModaleUscita: this.showExitModal,
-      animazioneAiutoAttiva: !!this.helpAnimation,
-      modalitaSfidaGiornaliera: this.dailyChallengeMode,
-      modalitaScalata: this.arcadeMode,
-      idCategoria: this.categoryId,
-      idDifficolta: this.difficultyId,
-      numeroLivello: this.levelNumber,
-      numeroLivelloScalata: this.displayLevelNumber,
-      eseguiAnimazione: () => this.playHelpAnimation(helpId),
+      aiutiDisponibili: this.aiuti,
+      aiutiUsati: this.aiutiUsati,
+      domandaCorrente: this.domandaCorrente,
+      haRisposto: this.haRisposto,
+      mostraModaleTempo: this.mostraModaleTempo,
+      mostraModaleUscita: this.mostraModaleUscita,
+      animazioneAiutoAttiva: !!this.animazioneAiuto,
+      modalitaSfidaGiornaliera: this.modalitaSfidaGiornaliera,
+      modalitaScalata: this.modalitaScalata,
+      idCategoria: this.idCategoria,
+      idDifficolta: this.idDifficolta,
+      numeroLivello: this.numeroLivello,
+      numeroLivelloScalata: this.numeroLivelloVisualizzato,
+      eseguiAnimazione: () => this.riproduciAnimazioneAiuto(helpId),
     });
 
     if (risultato.esito === 'monete_insufficienti') {
-      this.neededCoins = risultato.costoRichiesto ?? 0;
-      this.stopTimer();
-      this.showCoinsModal = true;
+      this.moneteNecessarie = risultato.costoRichiesto ?? 0;
+      this.fermaTimer();
+      this.mostraModaleMonete = true;
       return;
     }
 
-    if (risultato.esito !== 'ok') {
+    if (
+      risultato.esito === 'pagamento_fallito' ||
+      risultato.esito === 'bloccato' ||
+      risultato.esito === 'aiuto_non_trovato' ||
+      risultato.esito === 'domanda_non_trovata'
+    ) {
       return;
     }
 
-    this.usedHelps.push(helpId);
+    this.aiutiUsati.push(helpId);
 
     if (risultato.risposteDaNascondere) {
-      this.hiddenAnswers = risultato.risposteDaNascondere;
+      this.risposteNascoste = risultato.risposteDaNascondere;
     }
 
     if (risultato.percentualiPubblico) {
-      this.audiencePercentages = risultato.percentualiPubblico;
-      this.showAudienceHint = true;
+      this.percentualiPubblico = risultato.percentualiPubblico;
+      this.mostraSuggerimentoPubblico = true;
     }
 
     if (risultato.nuovaDomanda) {
-      if (this.dailyChallengeMode) {
-        this.questions[this.currentIndex] = risultato.nuovaDomanda;
-      } else {
-        this.questions = [risultato.nuovaDomanda];
-        this.currentIndex = 0;
-      }
-
-      this.startCurrentQuestion();
+      this.applicaNuovaDomanda(risultato.nuovaDomanda);
     }
   }
 
-  async nextQuestion() {
+  // Inserisce una nuova domanda al posto di quella attuale e riavvia lo stato della domanda.
+  private applicaNuovaDomanda(nuovaDomanda: QuestionModel) {
+    if (this.modalitaSfidaGiornaliera) {
+      this.domande[this.indiceCorrente] = nuovaDomanda;
+    } else {
+      this.domande = [nuovaDomanda];
+      this.indiceCorrente = 0;
+    }
+
+    this.avviaDomandaCorrente();
+  }
+
+  // Passa alla domanda successiva oppure conclude il quiz.
+  async prossimaDomanda() {
     this.haptics.light();
-    if (this.currentIndex >= this.questions.length - 1) {
-      await this.finishQuiz();
+    if (this.indiceCorrente >= this.domande.length - 1) {
+      await this.concludiQuiz();
       return;
     }
 
-    this.currentIndex++;
-    this.startCurrentQuestion();
+    this.indiceCorrente++;
+    this.avviaDomandaCorrente();
   }
 
-  async finishQuiz() {
-    if (this.dailyChallengeMode) {
-      await this.finishDailyChallenge();
+  // Conclude il quiz e assegna premi/progressi in base alla modalità.
+  async concludiQuiz() {
+    if (this.modalitaSfidaGiornaliera) {
+      await this.concludiSfidaGiornaliera();
       return;
     }
 
-    if (this.arcadeMode) {
-      await this.finishArcadeLevel();
+    if (this.modalitaScalata) {
+      await this.concludiLivelloScalata();
       return;
     }
-
-    const allQuestionsCorrect =
-      this.questions.length > 0 &&
-      this.correctAnswers === this.questions.length;
 
     const user = await firstValueFrom(this.auth.user$);
 
-    if (user) {
-      try {
-        await this.dailyEventsService.trackNormalQuizPlayed();
-      } catch (error) {
-        console.warn('Daily event quiz played non salvato:', error);
-      }
+    const risultato = await this.quizCompletamentoService.completaQuizNormale({
+      userId: user?.uid,
+      idCategoria: this.idCategoria,
+      idDifficolta: this.idDifficolta,
+      numeroLivello: this.numeroLivello,
+      risposteCorrette: this.risposteCorrette,
+      totaleDomande: this.domande.length,
+      livelloGiaCompletato: this.livelloGiaCompletato,
+      numeriLivelliDifficolta: this.numeriLivelliDifficolta,
+    });
 
-      if (allQuestionsCorrect) {
-        try {
-          await this.dailyEventsService.trackNormalQuizWon();
-        } catch (error) {
-          console.warn('Daily event quiz won non salvato:', error);
-        }
-      }
-
-      if (allQuestionsCorrect && !this.levelAlreadyCompleted) {
-        try {
-          await this.userStatsService.recordQuizResult(
-            user.uid,
-            this.correctAnswers,
-            this.questions.length,
-          );
-
-          await this.progressService.completeLevel(
-            user.uid,
-            this.categoryId,
-            this.difficultyId,
-            this.levelNumber,
-          );
-
-          try {
-            await this.userStatsService.recordQuizHistory(
-              user.uid,
-              this.categoryId,
-              this.difficultyId,
-              this.correctAnswers,
-              this.questions.length,
-            );
-          } catch (error) {
-            console.warn('Storico quiz non salvato:', error);
-          }
-
-          try {
-            await this.dailyEventsService.trackNormalLevelCompleted();
-          } catch (error) {
-            console.warn('Daily event livello completato non salvato:', error);
-          }
-
-          this.levelAlreadyCompleted = true;
-
-          if (this.isLastLevelInDifficulty()) {
-            const completedLevelNumbers =
-              await this.progressService.getCompletedLevelNumbers(
-                user.uid,
-                this.categoryId,
-                this.difficultyId,
-              );
-
-            const completedLevels = new Set(completedLevelNumbers);
-            completedLevels.add(this.levelNumber);
-
-            const difficultyCompleted =
-              this.difficultyLevelNumbers.length > 0 &&
-              this.difficultyLevelNumbers.every((levelNumber) =>
-                completedLevels.has(levelNumber),
-              );
-
-            if (difficultyCompleted) {
-              await this.progressService.completeUserDifficulty(
-                user.uid,
-                this.categoryId,
-                this.difficultyId,
-              );
-            }
-          }
-
-          this.rewardXp =
-            this.correctAnswers * USER_STATS_CONFIG.xpPerCorrectAnswer;
-          this.rewardDoubled = false;
-          this.rewardDoubleLoading = false;
-          this.rewardMessage = `Hai completato il livello ${this.displayLevelNumber}!`;
-          this.rewardUnlockedMessage = this.getRewardUnlockedMessage();
-          this.showRewardModal = true;
-
-          return;
-        } catch (error) {
-          console.error('Errore completamento quiz:', error);
-        }
-      }
+    if (risultato.esito === 'premio') {
+      this.livelloGiaCompletato = risultato.livelloCompletato;
+      this.premioXp = risultato.premioXp;
+      this.premioRaddoppiato = false;
+      this.raddoppioPremioInCaricamento = false;
+      this.messaggioPremio = `Hai completato il livello ${this.numeroLivelloVisualizzato}!`;
+      this.messaggioSbloccoPremio = this.recuperaMessaggioSbloccoPremio();
+      this.mostraModalePremio = true;
+      return;
     }
 
     this.navigatingAway = true;
-    this.goToExitPage();
+    this.vaiAllaPaginaDiUscita();
   }
 
-  markCurrentQuestionAsWrong() {
-    if (this.answered) return;
+  // Marca la domanda corrente come sbagliata senza cambiare subito schermata.
+  segnaDomandaCorrenteComeSbagliata() {
+    if (this.haRisposto) return;
 
-    this.answered = true;
-    this.isCorrect = false;
-    this.wrongAnswers++;
+    this.haRisposto = true;
+    this.rispostaCorretta = false;
+    this.risposteSbagliate++;
     this.haptics.light();
-    this.stopTimer();
+    this.fermaTimer();
   }
 
-  resetQuestionState() {
-    this.selectedAnswerIndex = null;
-    this.answered = false;
-    this.isCorrect = false;
-    this.hiddenAnswers = [];
-    this.showWrongModal = false;
-    this.showTimeModal = false;
-    this.showExitModal = false;
-    this.showAudienceHint = false;
+  // Ripulisce lo stato grafico e logico della domanda corrente.
+  resettaStatoDomanda() {
+    this.indiceRispostaSelezionata = null;
+    this.haRisposto = false;
+    this.rispostaCorretta = false;
+    this.risposteNascoste = [];
+    this.mostraModaleErrore = false;
+    this.mostraModaleTempo = false;
+    this.mostraModaleUscita = false;
+    this.mostraSuggerimentoPubblico = false;
     this.lifeLostForLeaving = false;
-    this.timeLeft = this.maxTime;
+    this.tempoRimasto = this.tempoMassimo;
   }
 
-  async loseLifeAndContinue() {
-    if (this.arcadeMode) {
-      await this.loseArcadeLifeAndExit();
+  // Consuma una vita dopo errore e continua secondo la modalità.
+  async perdiVitaEContinua() {
+    if (this.modalitaScalata) {
+      await this.perdiVitaScalataEEsci();
       return;
     }
 
     await this.livesService.spendLife();
-    this.showWrongModal = false;
-    this.nextQuestion();
+    this.mostraModaleErrore = false;
+    this.prossimaDomanda();
   }
 
-  async watchAdAndContinue() {
+  // Dopo un errore, mostra un video reward e permette di continuare.
+  async guardaVideoEContinua() {
     this.adInProgress = true;
 
     try {
-      const reward = await this.ads.showRewardedAd();
+      const premioOttenuto =
+        await this.quizVideoRewardService.mostraVideoReward();
+      if (!premioOttenuto) return;
 
-      if (reward) {
-        this.showWrongModal = false;
+      this.mostraModaleErrore = false;
 
-        if (this.dailyChallengeMode) {
-          this.retryCurrentDailyChallengeQuestion();
-          return;
-        }
-
-        if (this.arcadeMode) {
-          await this.switchQuestion();
-          return;
-        }
-
-        await this.loadQuestions();
+      if (this.modalitaSfidaGiornaliera) {
+        this.riprovaDomandaSfidaGiornaliera();
+        return;
       }
+
+      if (this.modalitaScalata) {
+        await this.cambiaDomanda();
+        return;
+      }
+
+      await this.caricaDomande();
     } finally {
       this.adInProgress = false;
     }
   }
 
-  async watchAdForMoreTime() {
+  // Mostra un video reward per ottenere secondi extra sulla stessa domanda.
+  async guardaVideoPerPiuTempo() {
     this.adInProgress = true;
 
     try {
-      const reward = await this.ads.showRewardedAd();
+      const premioOttenuto =
+        await this.quizVideoRewardService.mostraVideoReward();
+      if (!premioOttenuto) return;
 
-      if (reward) {
-        this.showTimeModal = false;
-        this.answered = false;
-        this.isCorrect = false;
-        this.selectedAnswerIndex = null;
-        this.timeLeft = 5;
-        this.startTimer();
-      }
+      this.mostraModaleTempo = false;
+      this.haRisposto = false;
+      this.rispostaCorretta = false;
+      this.indiceRispostaSelezionata = null;
+      this.tempoRimasto = 5;
+      this.avviaTimer();
     } finally {
       this.adInProgress = false;
     }
   }
 
-  async loseLifeAfterTimeExpired() {
-    if (this.dailyChallengeMode) {
-      await this.restartDailyChallenge();
+  // Gestisce la scelta di perdere una vita quando il timer è scaduto.
+  async perdiVitaDopoTempoScaduto() {
+    if (this.modalitaSfidaGiornaliera) {
+      await this.ricominciaSfidaGiornaliera();
       return;
     }
 
-    if (this.arcadeMode) {
-      await this.loseArcadeLifeAndExit();
+    if (this.modalitaScalata) {
+      await this.perdiVitaScalataEEsci();
       return;
     }
 
     await this.livesService.spendLife();
 
-    this.markCurrentQuestionAsWrong();
-    this.showTimeModal = false;
-    this.nextQuestion();
+    this.segnaDomandaCorrenteComeSbagliata();
+    this.mostraModaleTempo = false;
+    this.prossimaDomanda();
   }
 
-  async watchAdForCoins() {
+  // Mostra un video reward per guadagnare monete quando non bastano per un aiuto.
+  async guardaVideoPerMonete() {
     this.adInProgress = true;
 
     try {
-      const reward = await this.ads.showRewardedAd();
-
-      if (reward) {
-        await this.coinsService.addCoins(10);
-      }
-
-      this.showCoinsModal = false;
-      if (!this.answered && this.currentQuestion && this.timeLeft > 0) {
-        this.startTimer();
-      }
+      await this.quizVideoRewardService.aggiungiMoneteDaVideo(10);
+      this.mostraModaleMonete = false;
+      this.riavviaTimerSeDomandaAttiva();
     } finally {
       this.adInProgress = false;
     }
   }
 
-  closeCoinsModal() {
-    this.showCoinsModal = false;
+  // Chiude la modale monete e riavvia il timer se la domanda è ancora attiva.
+  chiudiModaleMonete() {
+    this.mostraModaleMonete = false;
+    this.riavviaTimerSeDomandaAttiva();
+  }
 
-    if (!this.answered && this.currentQuestion && this.timeLeft > 0) {
-      this.startTimer();
+  // Riavvia il timer solo se la domanda è ancora attiva e valida.
+  private riavviaTimerSeDomandaAttiva() {
+    if (!this.haRisposto && this.domandaCorrente && this.tempoRimasto > 0) {
+      this.avviaTimer();
     }
   }
 
-  continueAfterReward() {
+  // Controlla se il premio XP del quiz normale può essere raddoppiato.
+  private puoRaddoppiarePremioXp(): boolean {
+    return (
+      !this.raddoppioPremioInCaricamento &&
+      !this.premioRaddoppiato &&
+      this.premioXp > 0
+    );
+  }
+
+  // Controlla se il premio in monete della Sfida Daily può essere raddoppiato.
+  private puoRaddoppiarePremioSfidaGiornaliera(): boolean {
+    return (
+      !this.raddoppioPremioInCaricamento &&
+      !this.premioRaddoppiato &&
+      this.premioMoneteSfidaGiornaliera > 0
+    );
+  }
+
+  // Chiude la modale premio e torna alla schermata corretta.
+  continuaDopoPremio() {
     this.haptics.heavy();
-    this.showRewardModal = false;
+    this.mostraModalePremio = false;
     this.navigatingAway = true;
 
-    this.goToExitPage();
+    this.vaiAllaPaginaDiUscita();
   }
 
-  async watchAdAndDoubleReward() {
-    if (this.dailyChallengeMode) {
-      await this.watchAdAndDoubleDailyChallengeReward();
+  // Raddoppia il premio tramite video reward, se possibile.
+  async guardaVideoERaddoppiaPremio() {
+    if (this.modalitaSfidaGiornaliera) {
+      await this.guardaVideoERaddoppiaPremioSfidaGiornaliera();
       return;
     }
 
-    if (this.rewardDoubleLoading || this.rewardDoubled || this.rewardXp <= 0) {
-      return;
-    }
+    if (!this.puoRaddoppiarePremioXp()) return;
 
-    this.rewardDoubleLoading = true;
+    this.raddoppioPremioInCaricamento = true;
     this.adInProgress = true;
 
     try {
-      const reward = await this.ads.showRewardedAd();
+      const risultato = await this.quizVideoRewardService.raddoppiaPremioXp(
+        this.premioXp,
+      );
 
-      if (!reward) return;
+      if (!risultato.riuscito) return;
 
-      const user = await firstValueFrom(this.auth.user$);
-
-      if (!user) return;
-
-      const bonusXp = this.rewardXp;
-
-      await this.userStatsService.addXp(user.uid, bonusXp);
-
-      this.rewardXp += bonusXp;
-      this.rewardDoubled = true;
+      this.premioXp += risultato.bonusXp;
+      this.premioRaddoppiato = true;
     } finally {
       this.adInProgress = false;
-      this.rewardDoubleLoading = false;
+      this.raddoppioPremioInCaricamento = false;
     }
   }
 
-  goBack() {
-    if (this.loading || !this.currentQuestion) {
+  // Gestisce il tasto indietro interno mostrando conferma quando serve.
+  tornaIndietro() {
+    if (this.caricamento || !this.domandaCorrente) {
       this.navigatingAway = true;
-      this.goToExitPage();
+      this.vaiAllaPaginaDiUscita();
       return;
     }
 
-    this.showExitModal = true;
+    this.mostraModaleUscita = true;
   }
 
-  closeExitModal() {
-    this.showExitModal = false;
+  // Chiude la conferma di uscita e ripristina lo stato corretto.
+  chiudiModaleUscita() {
+    this.mostraModaleUscita = false;
 
-    if (this.timeLeft <= 0) {
-      this.showTimeModal = true;
+    if (this.tempoRimasto <= 0) {
+      this.mostraModaleTempo = true;
     }
   }
 
-  async confirmExitQuiz() {
-    this.showExitModal = false;
-    this.stopTimer();
+  // Conferma l’uscita dal quiz e applica eventuale perdita di vita.
+  async confermaUscitaQuiz() {
+    this.mostraModaleUscita = false;
+    this.fermaTimer();
     this.navigatingAway = true;
 
-    if (this.dailyChallengeMode || this.arcadeMode) {
-      this.goToExitPage();
+    if (this.modalitaSfidaGiornaliera || this.modalitaScalata) {
+      this.vaiAllaPaginaDiUscita();
       return;
     }
 
     await this.livesService.spendLife();
-    this.goToExitPage();
+    this.vaiAllaPaginaDiUscita();
   }
 
-  returnToEvents() {
+  // Torna alla pagina eventi dalla Sfida Daily.
+  tornaAgliEventi() {
     this.haptics.light();
-    this.stopTimer();
-    this.showWrongModal = false;
-    this.showTimeModal = false;
-    this.showExitModal = false;
+    this.fermaTimer();
+    this.mostraModaleErrore = false;
+    this.mostraModaleTempo = false;
+    this.mostraModaleUscita = false;
     this.navigatingAway = true;
     void this.navigation.navigateByUrl('/events/challenge');
   }
 
-  private async loseArcadeLifeAndExit() {
+  // Nella Scalata registra l’errore, consuma una vita e torna alla mappa.
+  private async perdiVitaScalataEEsci() {
     const user = await firstValueFrom(this.auth.user$);
 
     if (user) {
@@ -850,93 +839,96 @@ export class QuizPage implements OnInit, OnDestroy {
 
     await this.livesService.spendLife();
 
-    this.markCurrentQuestionAsWrong();
-    this.showWrongModal = false;
-    this.showTimeModal = false;
+    this.segnaDomandaCorrenteComeSbagliata();
+    this.mostraModaleErrore = false;
+    this.mostraModaleTempo = false;
     this.navigatingAway = true;
-    this.goToExitPage();
+    this.vaiAllaPaginaDiUscita();
   }
 
-  private startCurrentQuestion() {
-    this.resetQuestionState();
+  // Prepara una nuova domanda e fa partire il timer.
+  private avviaDomandaCorrente() {
+    this.resettaStatoDomanda();
 
     if (
-      this.dailyChallengeMode &&
-      !this.trackedDailyQuestionIndexes.has(this.currentIndex)
+      this.modalitaSfidaGiornaliera &&
+      !this.trackedDailyQuestionIndexes.has(this.indiceCorrente)
     ) {
-      this.trackedDailyQuestionIndexes.add(this.currentIndex);
+      this.trackedDailyQuestionIndexes.add(this.indiceCorrente);
       void this.dailyEventsService.trackDailyChallengeQuestion();
     }
 
-    this.startTimer();
+    this.avviaTimer();
   }
 
-  // Avvia il countdown della domanda corrente.
-  startTimer() {
-    this.stopTimer(false);
+  // Avvia il countdown della domanda corrente usando il service dedicato.
+  avviaTimer() {
+    this.fermaTimer(false);
     this.audioService.playCountdownQuiz();
 
     this.quizAiutiTimerService.avviaTimer({
-      tempoIniziale: this.timeLeft,
+      tempoIniziale: this.tempoRimasto,
       onTick: ({ tempoRimasto }) => {
-        this.timeLeft = tempoRimasto;
+        this.tempoRimasto = tempoRimasto;
       },
       onScaduto: () => {
+        this.audioService.stopGameSound();
         this.audioService.playFinishTime();
-        this.timeLeft = 0;
-        this.showExitModal = false;
-        this.showTimeModal = true;
+        this.tempoRimasto = 0;
+        this.mostraModaleUscita = false;
+        this.mostraModaleTempo = true;
       },
     });
   }
 
   // Ferma il countdown e, se richiesto, anche il suono collegato.
-  stopTimer(stopGameSound = true) {
+  fermaTimer(interrompiSuono = true) {
     this.quizAiutiTimerService.fermaTimer();
 
-    if (stopGameSound) {
+    if (interrompiSuono) {
       this.audioService.stopGameSound();
     }
   }
 
-  private async finishArcadeLevel() {
+  // Registra il completamento del livello Scalata e prepara premi/transizione.
+  private async concludiLivelloScalata() {
     const user = await firstValueFrom(this.auth.user$);
 
     if (!user) {
       this.navigatingAway = true;
-      this.goToExitPage();
+      this.vaiAllaPaginaDiUscita();
       return;
     }
 
-    const reward = this.getArcadeReward(this.displayLevelNumber);
+    const reward = this.calcolaPremioScalata(this.numeroLivelloVisualizzato);
     const updatedArcade =
       await this.userStatsService.recordArcadeLevelCompleted(
         user.uid,
-        this.displayLevelNumber,
+        this.numeroLivelloVisualizzato,
         reward.totalCoins,
         reward.totalXp,
       );
 
     if (!updatedArcade) {
       this.navigatingAway = true;
-      this.goToExitPage();
+      this.vaiAllaPaginaDiUscita();
       return;
     }
 
-    this.arcadeRewardCoins = reward.baseCoins;
-    this.arcadeRewardXp = reward.baseXp;
-    this.arcadeChestRewardCoins = reward.bonusCoins;
-    this.arcadeChestRewardXp = reward.bonusXp;
-    this.arcadeRewardHasBonus = reward.hasBonus;
+    this.premioMoneteScalata = reward.baseCoins;
+    this.premioXpScalata = reward.baseXp;
+    this.premioMoneteForziereScalata = reward.bonusCoins;
+    this.premioXpForziereScalata = reward.bonusXp;
+    this.premioScalataHaBonus = reward.hasBonus;
 
-    await this.playArcadeTransition(
-      this.displayLevelNumber,
+    await this.riproduciTransizioneScalata(
+      this.numeroLivelloVisualizzato,
       updatedArcade.currentLevel,
       !reward.hasBonus,
     );
 
     if (reward.hasBonus) {
-      this.showArcadeChestRewardModal = true;
+      this.mostraModaleForziereScalata = true;
       return;
     }
 
@@ -947,31 +939,35 @@ export class QuizPage implements OnInit, OnDestroy {
      */
   }
 
-  async continueAfterArcadeTransition() {
+  // Dopo la transizione della Scalata, carica il livello successivo.
+  async continuaDopoTransizioneScalata() {
     this.haptics.light();
-    this.loading = true;
-    this.arcadeTransitionVisible = false;
-    this.arcadeTransitionReady = false;
-    this.usedHelps = [];
-    await this.loadQuestions();
+    this.caricamento = true;
+    this.transizioneScalataVisibile = false;
+    this.transizioneScalataPronta = false;
+    this.aiutiUsati = [];
+    await this.caricaDomande();
   }
 
-  returnToArcadeMapAfterTransition() {
+  // Dopo la transizione, torna alla mappa della Scalata.
+  tornaMappaScalataDopoTransizione() {
     this.haptics.light();
-    this.arcadeTransitionVisible = false;
-    this.arcadeTransitionReady = false;
+    this.transizioneScalataVisibile = false;
+    this.transizioneScalataPronta = false;
     this.navigatingAway = true;
-    this.goToExitPage();
+    this.vaiAllaPaginaDiUscita();
   }
 
-  continueAfterArcadeChestReward() {
+  // Chiude il forziere bonus e torna alla mappa della Scalata.
+  continuaDopoForziereScalata() {
     this.haptics.heavy();
-    this.showArcadeChestRewardModal = false;
+    this.mostraModaleForziereScalata = false;
     this.navigatingAway = true;
-    this.goToExitPage();
+    this.vaiAllaPaginaDiUscita();
   }
 
-  private getArcadeReward(arcadeLevel: number): {
+  // Calcola monete e XP del livello Scalata, incluso eventuale bonus forziere.
+  private calcolaPremioScalata(arcadeLevel: number): {
     baseCoins: number;
     baseXp: number;
     bonusCoins: number;
@@ -995,122 +991,119 @@ export class QuizPage implements OnInit, OnDestroy {
     };
   }
 
-  private async playArcadeTransition(
+  // Mostra l’animazione tra un livello Scalata e il successivo.
+  private async riproduciTransizioneScalata(
     fromLevel: number,
     toLevel: number,
     waitForUserChoice: boolean,
   ) {
-    this.arcadeTransitionFrom = fromLevel;
-    this.arcadeTransitionTo = toLevel;
-    this.arcadeTransitionReady = false;
-    this.arcadeTransitionVisible = true;
+    this.transizioneScalataDa = fromLevel;
+    this.transizioneScalataA = toLevel;
+    this.transizioneScalataPronta = false;
+    this.transizioneScalataVisibile = true;
 
-    await this.wait(this.arcadeRewardHasBonus ? 1900 : 1350);
+    await this.wait(this.premioScalataHaBonus ? 1900 : 1350);
 
     if (waitForUserChoice) {
-      this.arcadeTransitionReady = true;
+      this.transizioneScalataPronta = true;
       return;
     }
 
-    this.arcadeTransitionVisible = false;
+    this.transizioneScalataVisibile = false;
   }
 
-  private async finishDailyChallenge() {
+  // Completa la Sfida Daily e prepara la modale premio.
+  private async concludiSfidaGiornaliera() {
     const result = await this.dailyEventsService.completeDailyChallenge(
-      this.correctAnswers,
-      this.questions.length,
-      this.usedHelps.length,
+      this.risposteCorrette,
+      this.domande.length,
+      this.aiutiUsati.length,
     );
 
-    this.dailyChallengeRewardCoins = result.rewardCoins;
-    this.dailyChallengeRewardAlreadyClaimed = result.alreadyClaimed;
-    this.rewardDoubled = false;
-    this.rewardDoubleLoading = false;
-    this.rewardMessage = result.alreadyClaimed
+    this.premioMoneteSfidaGiornaliera = result.rewardCoins;
+    this.premioSfidaGiornalieraGiaRiscosso = result.alreadyClaimed;
+    this.premioRaddoppiato = false;
+    this.raddoppioPremioInCaricamento = false;
+    this.messaggioPremio = result.alreadyClaimed
       ? 'Sfida giornaliera completata. Il premio di oggi era già stato riscosso.'
       : `Hai completato la sfida e ottenuto ${result.rewardCoins} TurtleCoins.`;
-    this.rewardUnlockedMessage =
-      this.correctAnswers === this.questions.length
+    this.messaggioSbloccoPremio =
+      this.risposteCorrette === this.domande.length
         ? 'Percorso perfetto'
-        : `${this.correctAnswers}/${this.questions.length} risposte corrette`;
-    this.showRewardModal = true;
+        : `${this.risposteCorrette}/${this.domande.length} risposte corrette`;
+    this.mostraModalePremio = true;
   }
 
-  async restartDailyChallenge() {
-    if (!this.dailyChallengeMode) return;
+  // Azzera la run della Sfida Daily e ricarica nuove domande.
+  async ricominciaSfidaGiornaliera() {
+    if (!this.modalitaSfidaGiornaliera) return;
 
-    this.stopTimer();
-    this.showWrongModal = false;
-    this.showTimeModal = false;
-    this.showExitModal = false;
-    this.usedHelps = [];
-    this.selectedAnswerIndex = null;
-    this.hiddenAnswers = [];
-    this.showAudienceHint = false;
-    await this.loadQuestions();
+    this.fermaTimer();
+    this.mostraModaleErrore = false;
+    this.mostraModaleTempo = false;
+    this.mostraModaleUscita = false;
+    this.aiutiUsati = [];
+    this.indiceRispostaSelezionata = null;
+    this.risposteNascoste = [];
+    this.mostraSuggerimentoPubblico = false;
+    await this.caricaDomande();
   }
 
-  private retryCurrentDailyChallengeQuestion() {
-    this.resetQuestionState();
-    this.startTimer();
+  // Dopo video reward, fa riprovare la stessa domanda Daily.
+  private riprovaDomandaSfidaGiornaliera() {
+    this.resettaStatoDomanda();
+    this.avviaTimer();
   }
 
-  private async watchAdAndDoubleDailyChallengeReward() {
-    if (
-      this.rewardDoubleLoading ||
-      this.rewardDoubled ||
-      this.dailyChallengeRewardCoins <= 0
-    ) {
-      return;
-    }
+  // Raddoppia il premio della Sfida Daily tramite video reward.
+  private async guardaVideoERaddoppiaPremioSfidaGiornaliera() {
+    if (!this.puoRaddoppiarePremioSfidaGiornaliera()) return;
 
-    this.rewardDoubleLoading = true;
+    this.raddoppioPremioInCaricamento = true;
     this.adInProgress = true;
 
     try {
-      const reward = await this.ads.showRewardedAd();
+      const risultato =
+        await this.quizVideoRewardService.raddoppiaPremioSfidaGiornaliera();
 
-      if (!reward) return;
+      if (!risultato.riuscito) return;
 
-      const bonusCoins =
-        await this.dailyEventsService.doubleDailyChallengeReward();
-
-      if (bonusCoins <= 0) return;
-
-      this.dailyChallengeRewardCoins += bonusCoins;
-      this.rewardDoubled = true;
-      this.rewardMessage = `Premio raddoppiato: ${this.dailyChallengeRewardCoins} TurtleCoins.`;
+      this.premioMoneteSfidaGiornaliera += risultato.bonusCoins;
+      this.premioRaddoppiato = true;
+      this.messaggioPremio = `Premio raddoppiato: ${this.premioMoneteSfidaGiornaliera} TurtleCoins.`;
     } finally {
       this.adInProgress = false;
-      this.rewardDoubleLoading = false;
+      this.raddoppioPremioInCaricamento = false;
     }
   }
 
-  private goToExitPage() {
-    if (this.dailyChallengeMode) {
+  // Naviga alla schermata corretta in base alla modalità attiva.
+  private vaiAllaPaginaDiUscita() {
+    if (this.modalitaSfidaGiornaliera) {
       void this.navigation.navigateByUrl('/events/challenge');
       return;
     }
 
-    if (this.arcadeMode) {
+    if (this.modalitaScalata) {
       void this.navigation.navigateByUrl('/arcade');
       return;
     }
 
     void this.navigation.navigateByUrl(
-      `/levels/${this.categoryId}/${this.difficultyId}`,
+      `/levels/${this.idCategoria}/${this.idDifficolta}`,
     );
   }
 
-  private getRewardUnlockedMessage(): string {
-    const currentLevelIndex = this.difficultyLevelNumbers.indexOf(
-      this.levelNumber,
+  // Prepara il testo che indica il prossimo livello sbloccato.
+  private recuperaMessaggioSbloccoPremio(): string {
+    const currentLevelIndex = this.numeriLivelliDifficolta.indexOf(
+      this.numeroLivello,
     );
     const nextDisplayLevel = currentLevelIndex + 2;
 
     if (
       currentLevelIndex >= 0 &&
-      nextDisplayLevel <= this.difficultyLevelNumbers.length
+      nextDisplayLevel <= this.numeriLivelliDifficolta.length
     ) {
       return `Livello ${nextDisplayLevel} sbloccato`;
     }
@@ -1118,67 +1111,55 @@ export class QuizPage implements OnInit, OnDestroy {
     return 'Difficolta completata';
   }
 
-  private isLastLevelInDifficulty(): boolean {
-    if (this.difficultyLevelNumbers.length === 0) return false;
+  // Sostituisce la domanda corrente usando il service, rispettando quiz normale, Daily e Scalata.
+  private async cambiaDomanda() {
+    if (this.cambioDomandaInCorso) return;
 
-    return (
-      this.difficultyLevelNumbers[this.difficultyLevelNumbers.length - 1] ===
-      this.levelNumber
-    );
-  }
-
-  // Cambia la domanda senza acquistare un aiuto, usato dopo un video reward.
-  private async switchQuestion() {
-    if (this.switchingQuestion) return;
-
-    this.switchingQuestion = true;
+    this.cambioDomandaInCorso = true;
 
     try {
       const nuovaDomanda =
         await this.quizAiutiTimerService.recuperaNuovaDomanda({
-          modalitaSfidaGiornaliera: this.dailyChallengeMode,
-          modalitaScalata: this.arcadeMode,
-          idCategoria: this.categoryId,
-          idDifficolta: this.difficultyId,
-          numeroLivello: this.levelNumber,
-          numeroLivelloScalata: this.displayLevelNumber,
+          modalitaSfidaGiornaliera: this.modalitaSfidaGiornaliera,
+          modalitaScalata: this.modalitaScalata,
+          idCategoria: this.idCategoria,
+          idDifficolta: this.idDifficolta,
+          numeroLivello: this.numeroLivello,
+          numeroLivelloScalata: this.numeroLivelloVisualizzato,
         });
 
       if (!nuovaDomanda) return;
 
-      if (this.dailyChallengeMode) {
-        this.questions[this.currentIndex] = nuovaDomanda;
-      } else {
-        this.questions = [nuovaDomanda];
-        this.currentIndex = 0;
-      }
-
-      this.startCurrentQuestion();
+      this.applicaNuovaDomanda(nuovaDomanda);
     } finally {
-      this.switchingQuestion = false;
+      this.cambioDomandaInCorso = false;
     }
   }
 
-  private pauseTimer() {
-    this.stopTimer();
+  // Mette in pausa il timer durante animazioni o modali.
+  private mettiTimerInPausa() {
+    this.fermaTimer();
   }
 
-  private resumeTimer() {
-    if (!this.answered && !this.showTimeModal && this.currentQuestion) {
-      this.startTimer();
+  // Riavvia il timer se la domanda è ancora giocabile.
+  private riprendiTimer() {
+    if (!this.haRisposto && !this.mostraModaleTempo && this.domandaCorrente) {
+      this.avviaTimer();
     }
   }
 
-  private async playHelpAnimation(helpId: HelpId) {
-    this.pauseTimer();
-    this.helpAnimation = helpId;
+  // Mostra la piccola animazione dell’aiuto e poi riprende il timer.
+  private async riproduciAnimazioneAiuto(helpId: HelpId) {
+    this.mettiTimerInPausa();
+    this.animazioneAiuto = helpId;
     await this.wait(1600);
-    this.helpAnimation = null;
-    this.resumeTimer();
+    this.animazioneAiuto = null;
+    this.riprendiTimer();
   }
 
+  // Pulizia finale: ferma timer e listener dell’app.
   ngOnDestroy() {
-    this.stopTimer();
+    this.fermaTimer();
     this.appStateListener?.remove();
   }
 }
