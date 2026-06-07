@@ -1,48 +1,50 @@
 <ion-content class="quiz-content">
   <div class="page-fade">
-    @if (helpAnimation) {
+    @if (animazioneAiuto) {
     <div class="help-animation-backdrop">
-      <div class="help-animation-card" [ngClass]="helpAnimation">
-        @if (helpAnimation === 'fifty') {
+      <div class="help-animation-card" [ngClass]="animazioneAiuto">
+        @if (animazioneAiuto === 'fifty') {
         <div class="help-animation-icon">50:50</div>
         <h2>Taglio tattico!</h2>
         <p>Due risposte sbagliate stanno sparendo...</p>
-        } @if (helpAnimation === 'audience') {
+        } @if (animazioneAiuto === 'audience') {
         <div class="help-animation-icon">👥</div>
         <h2>Pubblico in ascolto!</h2>
         <p>Stiamo raccogliendo i voti...</p>
-        } @if (helpAnimation === 'switch') {
+        } @if (animazioneAiuto === 'switch') {
         <div class="help-animation-icon">🔄</div>
         <h2>Cambio domanda!</h2>
         <p>Prepariamo una nuova sfida...</p>
         }
       </div>
     </div>
-    } @if (arcadeTransitionVisible) {
+    } @if (transizioneScalataVisibile) {
     <div class="arcade-transition-backdrop">
-      <div class="arcade-transition-card" [class.bonus]="arcadeRewardHasBonus">
+      <div class="arcade-transition-card" [class.bonus]="premioScalataHaBonus">
         <div class="arcade-transition-eyebrow">
-          @if (arcadeRewardHasBonus) { Forziere vicino! } @else { Scalata }
+          @if (premioScalataHaBonus) { Forziere vicino! } @else { Scalata }
         </div>
 
         <div class="arcade-path">
-          <div class="arcade-node from">{{ arcadeTransitionFrom }}</div>
+          <div class="arcade-node from">{{ transizioneScalataDa }}</div>
           <div class="arcade-walk-line">
             <span></span>
           </div>
-          <div class="arcade-node to">{{ arcadeTransitionTo }}</div>
+          <div class="arcade-node to">{{ transizioneScalataA }}</div>
         </div>
 
         <h2>Livello superato!</h2>
 
-        <p>+{{ arcadeRewardXp }} XP e +{{ arcadeRewardCoins }} TurtleCoins</p>
+        <p>
+          +{{ premioXpScalata }} XP e +{{ premioMoneteScalata }} TurtleCoins
+        </p>
 
-        @if (arcadeTransitionReady) {
+        @if (transizioneScalataPronta) {
         <div class="arcade-transition-actions">
           <button
             class="arcade-transition-continue"
             type="button"
-            (click)="continueAfterArcadeTransition()"
+            (click)="continuaDopoTransizioneScalata()"
           >
             Continua
           </button>
@@ -50,7 +52,7 @@
           <button
             class="arcade-transition-map"
             type="button"
-            (click)="returnToArcadeMapAfterTransition()"
+            (click)="tornaMappaScalataDopoTransizione()"
           >
             Torna alla scalata
           </button>
@@ -58,17 +60,17 @@
         }
       </div>
     </div>
-    } @if (loading) {
+    } @if (caricamento) {
     <app-game-loader
       icon="🎯"
-      [title]="arcadeMode ? 'Preparazione Scalata...' : 'Preparazione quiz...'"
+      [title]="modalitaScalata ? 'Preparazione Scalata...' : 'Preparazione quiz...'"
       [subtitle]="
-        arcadeMode
+        modalitaScalata
           ? 'Stiamo caricando il prossimo livello'
           : 'Stiamo caricando le domande migliori per te'
       "
     ></app-game-loader>
-    } @else if (!currentQuestion) {
+    } @else if (!domandaCorrente) {
     <div class="empty-state">
       <h2>⏳ Aggiornamento in arrivo</h2>
       <p>
@@ -76,24 +78,24 @@
         preparando nuove interessanti novità!
       </p>
 
-      <button type="button" (click)="goBack()">
-        @if (arcadeMode) { Torna alla scalata } @else { Torna ai livelli }
+      <button type="button" (click)="tornaIndietro()">
+        @if (modalitaScalata) { Torna alla scalata } @else { Torna ai livelli }
       </button>
     </div>
     } @else {
     <div class="quiz-topbar">
-      <button class="back-btn" type="button" (click)="goBack()">
+      <button class="back-btn" type="button" (click)="tornaIndietro()">
         <ion-icon name="arrow-back-outline"></ion-icon>
       </button>
 
       <div class="quiz-pill">
-        <span>{{ categoryIcon }}</span>
-        <strong>{{ categoryTitle }}</strong>
+        <span>{{ iconaCategoria }}</span>
+        <strong>{{ titoloCategoria }}</strong>
       </div>
 
       <div class="quiz-pill">
         <span>Difficoltà:</span>
-        <strong class="difficulty">{{ difficultyTitle }}</strong>
+        <strong class="difficulty">{{ titoloDifficolta }}</strong>
       </div>
 
       <div class="coins-pill">
@@ -104,10 +106,10 @@
 
     <div class="progress-section">
       <div class="progress-copy">
-        <strong>{{ questionProgressLabel }}</strong>
+        <strong>{{ testoAvanzamentoDomanda }}</strong>
       </div>
 
-      <div class="timer-circle" [class.timer-danger]="timeLeft <= 5">
+      <div class="timer-circle" [class.timer-danger]="tempoRimasto <= 5">
         <svg viewBox="0 0 36 36">
           <path
             class="timer-bg"
@@ -117,7 +119,7 @@
           />
           <path
             class="timer-fill"
-            [attr.stroke-dasharray]="timerPercent + ', 100'"
+            [attr.stroke-dasharray]="percentualeTimer + ', 100'"
             d="M18 2.0845
                  a 15.9155 15.9155 0 0 1 0 31.831
                  a 15.9155 15.9155 0 0 1 0 -31.831"
@@ -125,58 +127,61 @@
         </svg>
 
         <div>
-          <strong>{{ timeLeft }}</strong>
+          <strong>{{ tempoRimasto }}</strong>
           <span>sec</span>
         </div>
       </div>
     </div>
 
     <div class="progress-bar">
-      <div class="progress-fill" [style.width.%]="progressPercent"></div>
+      <div class="progress-fill" [style.width.%]="percentualeAvanzamento"></div>
     </div>
 
-    <div class="question-card" [class.question-success]="answered && isCorrect">
-      @if (answered && isCorrect && !dailyChallengeMode) {
-      <div class="xp-float">{{ correctRewardLabel }}</div>
+    <div
+      class="question-card"
+      [class.question-success]="haRisposto && rispostaCorretta"
+    >
+      @if (haRisposto && rispostaCorretta && !modalitaSfidaGiornaliera) {
+      <div class="xp-float">{{ testoPremioRispostaCorretta }}</div>
       }
 
-      <h1>{{ currentQuestion.question }}</h1>
+      <h1>{{ domandaCorrente.question }}</h1>
     </div>
 
     <div class="answers-list">
-      @for (answer of currentQuestion.answers; track i; let i = $index) {
+      @for (answer of domandaCorrente.answers; track i; let i = $index) {
       <button
         class="answer-card"
         type="button"
-        [class.hidden]="hiddenAnswers.includes(i)"
-        [class.correct]="getAnswerClass(i) === 'correct'"
+        [class.hidden]="risposteNascoste.includes(i)"
+        [class.correct]="recuperaClasseRisposta(i) === 'correct'"
         [class.correct-pop]="
-    answered &&
-    i === selectedAnswerIndex &&
-    i === currentQuestion.correctIndex
+    haRisposto &&
+    i === indiceRispostaSelezionata &&
+    i === domandaCorrente.correctIndex
   "
-        [class.wrong]="getAnswerClass(i) === 'wrong'"
+        [class.wrong]="recuperaClasseRisposta(i) === 'wrong'"
         [class.wrong-shake]="
-    answered &&
-    i === selectedAnswerIndex &&
-    i !== currentQuestion.correctIndex
+    haRisposto &&
+    i === indiceRispostaSelezionata &&
+    i !== domandaCorrente.correctIndex
   "
-        (click)="selectAnswer(i)"
+        (click)="selezionaRisposta(i)"
       >
-        <span class="answer-letter">{{ answerLetters[i] }}</span>
+        <span class="answer-letter">{{ lettereRisposte[i] }}</span>
         <span class="answer-text">{{ answer }}</span>
       </button>
       }
     </div>
 
-    @if (showAudienceHint) {
+    @if (mostraSuggerimentoPubblico) {
     <div class="audience-box">
       <h3>👥 Il pubblico pensa...</h3>
 
       <div class="audience-bars">
-        @for (percent of audiencePercentages; track $index; let i = $index) {
+        @for (percent of percentualiPubblico; track $index; let i = $index) {
         <div class="audience-row">
-          <span>{{ answerLetters[i] }}</span>
+          <span>{{ lettereRisposte[i] }}</span>
 
           <div class="audience-track">
             <div class="audience-fill" [style.width.%]="percent"></div>
@@ -192,13 +197,13 @@
     <div class="helps-title">Aiuti disponibili</div>
 
     <div class="helps-grid">
-      @for (help of helps; track help.id) {
+      @for (help of aiuti; track help.id) {
       <button
         class="help-card"
         type="button"
-        [class.used]="usedHelps.includes(help.id)"
-        [disabled]="usedHelps.includes(help.id) || answered || showTimeModal || !!helpAnimation"
-        (click)="useHelp(help.id)"
+        [class.used]="aiutiUsati.includes(help.id)"
+        [disabled]="aiutiUsati.includes(help.id) || haRisposto || mostraModaleTempo || !!animazioneAiuto"
+        (click)="usaAiuto(help.id)"
       >
         <div class="help-icon">{{ help.icon }}</div>
         <strong>{{ help.title }}</strong>
@@ -227,88 +232,88 @@
     }
   </div>
 
-  @if (showWrongModal) {
+  @if (mostraModaleErrore) {
   <div class="quiz-modal-backdrop">
     <div
       class="wrong-modal"
-      [class.daily-fail]="dailyChallengeMode"
-      [class.arcade-fail]="arcadeMode"
+      [class.daily-fail]="modalitaSfidaGiornaliera"
+      [class.arcade-fail]="modalitaScalata"
     >
       <div class="wrong-icon">💔</div>
 
       <h2>
-        @if (dailyChallengeMode) { Sfida interrotta! } @else if (arcadeMode) {
-        Scalata interrotta! } @else { Risposta errata! }
+        @if (modalitaSfidaGiornaliera) { Sfida interrotta! } @else if
+        (modalitaScalata) { Scalata interrotta! } @else { Risposta errata! }
       </h2>
 
       <p>
-        @if (dailyChallengeMode) { Nella sfida giornaliera basta un errore per
-        ricominciare da capo. Guarda un video per salvare la run e riprovare
-        questa domanda. } @else if (arcadeMode) { Hai perso la domanda del
-        livello {{ displayLevelNumber }}. Guarda un video per cambiare domanda e
-        continuare, oppure perdi una vita e riparti da questo livello quando
-        vuoi. } @else { Riprova o continua usando una vita }
+        @if (modalitaSfidaGiornaliera) { Nella sfida giornaliera basta un errore
+        per ricominciare da capo. Guarda un video per salvare la run e riprovare
+        questa domanda. } @else if (modalitaScalata) { Hai perso la domanda del
+        livello {{ numeroLivelloVisualizzato }}. Guarda un video per cambiare
+        domanda e continuare, oppure perdi una vita e riparti da questo livello
+        quando vuoi. } @else { Riprova o continua usando una vita }
       </p>
 
       <div class="wrong-actions">
-        @if (dailyChallengeMode) {
-        <button class="ad-btn" type="button" (click)="watchAdAndContinue()">
+        @if (modalitaSfidaGiornaliera) {
+        <button class="ad-btn" type="button" (click)="guardaVideoEContinua()">
           Guarda video e riprova
         </button>
 
         <button
           class="life-btn"
           type="button"
-          (click)="restartDailyChallenge()"
+          (click)="ricominciaSfidaGiornaliera()"
         >
           Ricomincia da capo
         </button>
 
-        <button class="ad-btn" type="button" (click)="returnToEvents()">
+        <button class="ad-btn" type="button" (click)="tornaAgliEventi()">
           Torna agli eventi
         </button>
-        } @else if (arcadeMode) {
-        <button class="ad-btn" type="button" (click)="watchAdAndContinue()">
+        } @else if (modalitaScalata) {
+        <button class="ad-btn" type="button" (click)="guardaVideoEContinua()">
           ▶ Guarda video e cambia domanda
         </button>
 
-        <button class="life-btn" type="button" (click)="loseLifeAndContinue()">
+        <button class="life-btn" type="button" (click)="perdiVitaEContinua()">
           Perdi una vita e torna alla scalata
         </button>
         } @else {
-        <button class="ad-btn" type="button" (click)="watchAdAndContinue()">
+        <button class="ad-btn" type="button" (click)="guardaVideoEContinua()">
           ▶ Guarda pubblicità e continua
         </button>
 
-        <button class="life-btn" type="button" (click)="loseLifeAndContinue()">
+        <button class="life-btn" type="button" (click)="perdiVitaEContinua()">
           Perdi una vita
         </button>
         }
       </div>
     </div>
   </div>
-  } @if (showTimeModal) {
+  } @if (mostraModaleTempo) {
   <div class="quiz-modal-backdrop">
     <div
       class="wrong-modal time-modal"
-      [class.daily-fail]="dailyChallengeMode"
-      [class.arcade-fail]="arcadeMode"
+      [class.daily-fail]="modalitaSfidaGiornaliera"
+      [class.arcade-fail]="modalitaScalata"
     >
       <div class="wrong-icon">⏰</div>
 
       <h2>Tempo scaduto!</h2>
 
-      @if (dailyChallengeMode) {
+      @if (modalitaSfidaGiornaliera) {
       <p>
         Il tempo è finito: nella sfida giornaliera conta come errore e la run
         riparte da capo. Puoi guardare un video per ottenere
         <strong>+5 secondi</strong>.
       </p>
-      } @else if (arcadeMode) {
+      } @else if (modalitaScalata) {
       <p>
-        Il tempo del livello {{ displayLevelNumber }} è finito. Guarda un video
-        per ottenere <strong>+5 secondi</strong>, oppure perdi una vita e torna
-        alla mappa senza azzerare la scalata.
+        Il tempo del livello {{ numeroLivelloVisualizzato }} è finito. Guarda un
+        video per ottenere <strong>+5 secondi</strong>, oppure perdi una vita e
+        torna alla mappa senza azzerare la scalata.
       </p>
       } @else {
       <p>
@@ -319,43 +324,55 @@
       }
 
       <div class="wrong-actions">
-        @if (dailyChallengeMode) {
-        <button class="ad-btn" type="button" (click)="watchAdForMoreTime()">
+        @if (modalitaSfidaGiornaliera) {
+        <button
+          class="ad-btn"
+          type="button"
+          (click)="guardaVideoPerTempoExtra()"
+        >
           Guarda video e ottieni +5s
         </button>
 
         <button
           class="life-btn"
           type="button"
-          (click)="restartDailyChallenge()"
+          (click)="ricominciaSfidaGiornaliera()"
         >
           Ricomincia da capo
         </button>
 
-        <button class="ad-btn" type="button" (click)="returnToEvents()">
+        <button class="ad-btn" type="button" (click)="tornaAgliEventi()">
           Torna agli eventi
         </button>
-        } @else if (arcadeMode) {
-        <button class="ad-btn" type="button" (click)="watchAdForMoreTime()">
+        } @else if (modalitaScalata) {
+        <button
+          class="ad-btn"
+          type="button"
+          (click)="guardaVideoPerTempoExtra()"
+        >
           ▶ Guarda video e ottieni +5s
         </button>
 
         <button
           class="life-btn"
           type="button"
-          (click)="loseLifeAfterTimeExpired()"
+          (click)="perdiVitaDopoTempoScaduto()"
         >
           Perdi una vita e torna alla scalata
         </button>
         } @else {
-        <button class="ad-btn" type="button" (click)="watchAdForMoreTime()">
+        <button
+          class="ad-btn"
+          type="button"
+          (click)="guardaVideoPerTempoExtra()"
+        >
           ▶ Guarda pubblicità e ottieni +5s
         </button>
 
         <button
           class="life-btn"
           type="button"
-          (click)="loseLifeAfterTimeExpired()"
+          (click)="perdiVitaDopoTempoScaduto()"
         >
           Perdi una vita
         </button>
@@ -363,7 +380,7 @@
       </div>
     </div>
   </div>
-  } @if (showExitModal) {
+  } @if (mostraModaleUscita) {
   <div class="quiz-modal-backdrop">
     <div class="wrong-modal exit-modal">
       <div class="wrong-icon">🚪</div>
@@ -371,30 +388,31 @@
       <h2>Vuoi uscire?</h2>
 
       <p>
-        @if (dailyChallengeMode) { Puoi tornare agli eventi senza consumare
-        vite. La run giornaliera resta interrotta. } @else if (arcadeMode) {
-        Puoi uscire e tornare alla scalata senza perdere vite. La scalata
-        ripartira dal livello {{ displayLevelNumber }}. } @else { Se abbandoni
-        il quiz perderai una vita. Puoi restare e continuare con il timer
-        attuale. }
+        @if (modalitaSfidaGiornaliera) { Puoi tornare agli eventi senza
+        consumare vite. La run giornaliera resta interrotta. } @else if
+        (modalitaScalata) { Puoi uscire e tornare alla scalata senza perdere
+        vite. La scalata ripartira dal livello {{ numeroLivelloVisualizzato }}.
+        } @else { Se abbandoni il quiz perderai una vita. Puoi restare e
+        continuare con il timer attuale. }
       </p>
 
       <div class="wrong-actions">
-        <button class="ad-btn" type="button" (click)="closeExitModal()">
-          @if (arcadeMode) { Continua Scalata } @else { Continua il quiz }
+        <button class="ad-btn" type="button" (click)="chiudiModaleUscita()">
+          @if (modalitaScalata) { Continua Scalata } @else { Continua il quiz }
         </button>
 
-        <button class="life-btn" type="button" (click)="confirmExitQuiz()">
-          @if (dailyChallengeMode) { Torna agli eventi } @else if (arcadeMode) {
-          Torna alla scalata } @else { Esci e perdi una vita }
+        <button class="life-btn" type="button" (click)="confermaUscitaQuiz()">
+          @if (modalitaSfidaGiornaliera) { Torna agli eventi } @else if
+          (modalitaScalata) { Torna alla scalata } @else { Esci e perdi una vita
+          }
         </button>
       </div>
     </div>
   </div>
-  } @if (showCoinsModal) {
+  } @if (mostraModaleMonete) {
   <div class="quiz-modal-backdrop">
     <div class="coins-modal">
-      <button class="modal-close" type="button" (click)="closeCoinsModal()">
+      <button class="modal-close" type="button" (click)="chiudiModaleMonete()">
         <ion-icon name="close-outline"></ion-icon>
       </button>
 
@@ -409,14 +427,14 @@
       <h2>TurtleCoins insufficienti</h2>
 
       <p>
-        Questo aiuto costa {{ neededCoins }} TurtleCoins. Guarda una pubblicità
-        per guadagnare 10 TurtleCoins.
+        Questo aiuto costa {{ moneteNecessarie }} TurtleCoins. Guarda una
+        pubblicità per guadagnare 10 TurtleCoins.
       </p>
 
       <button
         class="ad-btn coins-ad-btn"
         type="button"
-        (click)="watchAdForCoins()"
+        (click)="guardaVideoPerMonete()"
       >
         <span class="ad-btn-icon">▶</span>
         <span class="ad-btn-copy">
@@ -426,7 +444,7 @@
       </button>
     </div>
   </div>
-  } @if (showArcadeChestRewardModal) {
+  } @if (mostraModaleForziereScalata) {
   <div class="arcade-chest-modal-backdrop">
     <div class="arcade-chest-modal">
       <div class="arcade-chest-glow"></div>
@@ -443,12 +461,12 @@
 
       <div class="arcade-chest-rewards">
         <div>
-          <strong>+{{ arcadeChestRewardCoins }}</strong>
+          <strong>+{{ premioMoneteForziereScalata }}</strong>
           <span>TurtleCoins</span>
         </div>
 
         <div>
-          <strong>+{{ arcadeChestRewardXp }}</strong>
+          <strong>+{{ premioXpForziereScalata }}</strong>
           <span>XP</span>
         </div>
       </div>
@@ -456,13 +474,13 @@
       <button
         class="arcade-chest-btn"
         type="button"
-        (click)="continueAfterArcadeChestReward()"
+        (click)="continuaDopoForziereScalata()"
       >
         Torna alla scalata
       </button>
     </div>
   </div>
-  } @if (showRewardModal) {
+  } @if (mostraModalePremio) {
   <div class="modal-backdrop">
     <div class="reward-modal epic">
       <div class="reward-burst"></div>
@@ -478,24 +496,24 @@
       <div class="reward-icon">🏆</div>
 
       <h2>
-        @if (dailyChallengeMode) { Sfida completata! } @else { Livello
+        @if (modalitaSfidaGiornaliera) { Sfida completata! } @else { Livello
         completato! }
       </h2>
 
-      <p>{{ rewardMessage }}</p>
+      <p>{{ messaggioPremio }}</p>
 
       <div class="reward-unlock">
         <span>🔓</span>
-        {{ rewardUnlockedMessage }}
+        {{ messaggioSbloccoPremio }}
       </div>
 
-      @if (dailyChallengeMode) {
+      @if (modalitaSfidaGiornaliera) {
       <div class="reward-xp coin-reward">
         <img class="coin-icon small" src="assets/ui/coin-turtle.webp" alt="" />
-        +{{ dailyChallengeRewardCoins }} TurtleCoins
+        +{{ premioMoneteSfidaGiornaliera }} TurtleCoins
       </div>
       } @else {
-      <div class="reward-xp">+{{ rewardXp }} XP</div>
+      <div class="reward-xp">+{{ premioXp }} XP</div>
       }
 
       <div class="reward-streak">
@@ -503,20 +521,20 @@
         Continua così!
       </div>
 
-      @if (!rewardDoubled && (!dailyChallengeMode || dailyChallengeRewardCoins >
-      0)) {
+      @if (!premioRaddoppiato && (!modalitaSfidaGiornaliera ||
+      premioMoneteSfidaGiornaliera > 0)) {
       <button
         class="reward-double-btn"
         type="button"
-        (click)="watchAdAndDoubleReward()"
-        [disabled]="rewardDoubleLoading"
+        (click)="guardaVideoERaddoppiaPremio()"
+        [disabled]="raddoppioPremioInCaricamento"
       >
-        @if (!rewardDoubleLoading) { ▶ Guarda video e raddoppia } @else { Video
-        in corso... }
+        @if (!raddoppioPremioInCaricamento) { ▶ Guarda video e raddoppia } @else
+        { Video in corso... }
       </button>
       }
 
-      <button class="reward-btn" type="button" (click)="continueAfterReward()">
+      <button class="reward-btn" type="button" (click)="continuaDopoPremio()">
         Continua
         <ion-icon name="chevron-forward-outline"></ion-icon>
       </button>
