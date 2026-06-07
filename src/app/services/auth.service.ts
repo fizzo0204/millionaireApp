@@ -78,15 +78,29 @@ export class AuthService {
 
       if (user) {
         /*
-         * Ogni utente Firebase diventa un profilo giocabile.
-         * Anche l'anonimo ha un UID stabile, quindi puo salvare progressi,
-         * monete, vite e reward in Firestore fino a quando non collega un account.
+         * Aggiorniamo subito lo stato auth della UI. Le operazioni Firestore
+         * successive possono fallire se ci sono ancora listener aperti sul vecchio
+         * profilo anonimo, ma non devono lasciare l'app bloccata come ospite.
          */
-        await this.userStatsService.ensureUserProfile(user);
-        await this.hydrateStoredPlayGamesProfile(user);
-      }
+        this.userSubject.next(user);
 
-      this.userSubject.next(user);
+        try {
+          /*
+           * Ogni utente Firebase diventa un profilo giocabile.
+           * Anche l'anonimo ha un UID stabile, quindi puo salvare progressi,
+           * monete, vite e reward in Firestore fino a quando non collega un account.
+           */
+          await this.userStatsService.ensureUserProfile(user);
+          await this.hydrateStoredPlayGamesProfile(user);
+        } catch (error) {
+          console.warn(
+            'Profilo utente non sincronizzato subito dopo il cambio auth:',
+            error,
+          );
+        }
+      } else {
+        this.userSubject.next(null);
+      }
 
       if (!this.initialAuthResolved) {
         this.initialAuthResolved = true;
@@ -482,8 +496,9 @@ export class AuthService {
       ) {
         console.log('Controllo se Play Games ha gia un profilo TurtleMind...');
         const profileSnapshot = await this.createCurrentProfileSnapshot();
-        const existingProfileState =
-          await this.getExistingProviderProfileState(playGamesResult.credential);
+        const existingProfileState = await this.getExistingProviderProfileState(
+          playGamesResult.credential,
+        );
 
         if (existingProfileState?.profileExists) {
           /*
@@ -641,7 +656,9 @@ export class AuthService {
      * Il bottone manuale Play Games serve solo agli ospiti Android.
      * Chi e gia Play Games deve vedere Google/Facebook come collegamento forte.
      */
-    return this.playGamesAuthService.canUsePlayGames && Boolean(user?.isAnonymous);
+    return (
+      this.playGamesAuthService.canUsePlayGames && Boolean(user?.isAnonymous)
+    );
   }
 
   isBaseProfile(user: User | null): boolean {
@@ -728,6 +745,11 @@ export class AuthService {
           'Account Auth esistente senza profilo TurtleMind: importo profilo corrente',
         );
 
+        const profiloOspiteEliminato =
+          await this.deleteProfileSnapshotIfAnonymousBeforeAccountSwitch(
+            profileSnapshot,
+          );
+
         const signedInUser = await signInWithCredential(
           firebaseAuth,
           credential,
@@ -738,15 +760,14 @@ export class AuthService {
           profileSnapshot,
         );
 
-        await this.syncSignedInProviderProfile(
-          signedInUser.user,
-          providerId,
-        );
+        await this.syncSignedInProviderProfile(signedInUser.user, providerId);
 
-        await this.deleteProfileSnapshotIfAnonymous(
-          profileSnapshot,
-          signedInUser.user.uid,
-        );
+        if (!profiloOspiteEliminato) {
+          await this.deleteProfileSnapshotIfAnonymous(
+            profileSnapshot,
+            signedInUser.user.uid,
+          );
+        }
 
         return true;
       }
@@ -762,22 +783,36 @@ export class AuthService {
     console.warn('Account gia esistente: carico profilo salvato');
 
     if (credential) {
+      const profiloOspiteEliminato =
+        await this.deleteProfileSnapshotIfAnonymousBeforeAccountSwitch(
+          profileSnapshot,
+        );
+
       const signedInUser = await signInWithCredential(firebaseAuth, credential);
 
       await this.syncSignedInProviderProfile(signedInUser.user, providerId);
 
-      await this.deleteProfileSnapshotIfAnonymous(
-        profileSnapshot,
-        signedInUser.user.uid,
-      );
+      if (!profiloOspiteEliminato) {
+        await this.deleteProfileSnapshotIfAnonymous(
+          profileSnapshot,
+          signedInUser.user.uid,
+        );
+      }
 
       return true;
     }
 
     if (signInFallback) {
+      const profiloOspiteEliminato =
+        await this.deleteProfileSnapshotIfAnonymousBeforeAccountSwitch(
+          profileSnapshot,
+        );
+
       await signInFallback();
 
-      await this.deleteProfileSnapshotIfAnonymous(profileSnapshot);
+      if (!profiloOspiteEliminato) {
+        await this.deleteProfileSnapshotIfAnonymous(profileSnapshot);
+      }
 
       return true;
     }
@@ -811,6 +846,11 @@ export class AuthService {
         return false;
       }
 
+      const profiloOspiteEliminato =
+        await this.deleteProfileSnapshotIfAnonymousBeforeAccountSwitch(
+          profileSnapshot,
+        );
+
       const signedInUser = await signInWithCredential(
         firebaseAuth,
         freshPlayGamesResult.credential,
@@ -829,10 +869,12 @@ export class AuthService {
         freshPlayGamesResult.profile,
       );
 
-      await this.deleteProfileSnapshotIfAnonymous(
-        profileSnapshot,
-        signedInUser.user.uid,
-      );
+      if (!profiloOspiteEliminato) {
+        await this.deleteProfileSnapshotIfAnonymous(
+          profileSnapshot,
+          signedInUser.user.uid,
+        );
+      }
 
       return true;
     }
@@ -853,6 +895,11 @@ export class AuthService {
       return false;
     }
 
+    const profiloOspiteEliminato =
+      await this.deleteProfileSnapshotIfAnonymousBeforeAccountSwitch(
+        profileSnapshot,
+      );
+
     const signedInUser = await signInWithCredential(
       firebaseAuth,
       freshPlayGamesResult.credential,
@@ -864,10 +911,12 @@ export class AuthService {
       freshPlayGamesResult.profile,
     );
 
-    await this.deleteProfileSnapshotIfAnonymous(
-      profileSnapshot,
-      signedInUser.user.uid,
-    );
+    if (!profiloOspiteEliminato) {
+      await this.deleteProfileSnapshotIfAnonymous(
+        profileSnapshot,
+        signedInUser.user.uid,
+      );
+    }
 
     return true;
   }
@@ -889,6 +938,11 @@ export class AuthService {
       return false;
     }
 
+    const profiloOspiteEliminato =
+      await this.deleteProfileSnapshotIfAnonymousBeforeAccountSwitch(
+        profileSnapshot,
+      );
+
     const signedInUser = await signInWithCredential(
       firebaseAuth,
       freshPlayGamesResult.credential,
@@ -907,10 +961,12 @@ export class AuthService {
       freshPlayGamesResult.profile,
     );
 
-    await this.deleteProfileSnapshotIfAnonymous(
-      profileSnapshot,
-      signedInUser.user.uid,
-    );
+    if (!profiloOspiteEliminato) {
+      await this.deleteProfileSnapshotIfAnonymous(
+        profileSnapshot,
+        signedInUser.user.uid,
+      );
+    }
 
     return true;
   }
@@ -1003,9 +1059,7 @@ export class AuthService {
     }
   }
 
-  private async createCurrentProfileSnapshot(): Promise<
-    UserProfileMigrationSnapshot | null
-  > {
+  private async createCurrentProfileSnapshot(): Promise<UserProfileMigrationSnapshot | null> {
     const currentUser = firebaseAuth.currentUser;
 
     if (!currentUser) return null;
@@ -1115,20 +1169,53 @@ export class AuthService {
     return decision === 'use-existing-profile';
   }
 
+  private async deleteProfileSnapshotIfAnonymousBeforeAccountSwitch(
+    profileSnapshot: UserProfileMigrationSnapshot | null,
+  ): Promise<boolean> {
+    /*
+     * Le rules permettono di eliminare un profilo solo mentre l'utente loggato
+     * ne e ancora il proprietario. Per questo, quando stiamo passando da
+     * anonimo a Google/Facebook/Play Games gia esistente, proviamo a cancellare
+     * il profilo ospite prima del cambio account.
+     */
+    if (!profileSnapshot) return false;
+    if (!this.isAnonymousOnlySnapshot(profileSnapshot)) return false;
+    if (firebaseAuth.currentUser?.uid !== profileSnapshot.uid) return false;
+
+    try {
+      await this.userStatsService.deleteUserProfileData(profileSnapshot.uid);
+      return true;
+    } catch (error) {
+      console.warn(
+        'Profilo ospite non eliminato prima del cambio account:',
+        error,
+      );
+      return false;
+    }
+  }
+
   private async deleteProfileSnapshotIfAnonymous(
     profileSnapshot: UserProfileMigrationSnapshot | null,
     targetUid?: string,
   ): Promise<void> {
     /*
-     * Dopo un cambio account cancelliamo solo il profilo ospite vero.
-     * Play Games e un profilo recuperabile: se lo eliminassimo, al logout
-     * l'utente tornerebbe su Play Games partendo da zero.
+     * Fallback non bloccante. Se il cambio account e gia avvenuto, le rules
+     * possono impedire al nuovo UID di cancellare il vecchio profilo anonimo.
+     * In quel caso non blocchiamo il login: il profilo principale e gia stato
+     * importato correttamente.
      */
     if (!profileSnapshot) return;
     if (targetUid && profileSnapshot.uid === targetUid) return;
     if (!this.isAnonymousOnlySnapshot(profileSnapshot)) return;
 
-    await this.userStatsService.deleteUserProfileData(profileSnapshot.uid);
+    try {
+      await this.userStatsService.deleteUserProfileData(profileSnapshot.uid);
+    } catch (error) {
+      console.warn(
+        'Profilo ospite non eliminato dopo il cambio account:',
+        error,
+      );
+    }
   }
 
   private isAnonymousOnlySnapshot(
