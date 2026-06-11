@@ -786,26 +786,34 @@ export class AuthService {
             profileSnapshot,
           );
 
-        const signedInUser = await signInWithCredential(
-          firebaseAuth,
-          credential,
-        );
-
-        await this.userStatsService.restoreProfileSnapshotIntoLinkedAccount(
-          signedInUser.user,
-          profileSnapshot,
-        );
-
-        await this.syncSignedInProviderProfile(signedInUser.user, providerId);
-
-        if (!profiloOspiteEliminato) {
-          await this.deleteProfileSnapshotIfAnonymous(
-            profileSnapshot,
-            signedInUser.user.uid,
+        try {
+          const signedInUser = await signInWithCredential(
+            firebaseAuth,
+            credential,
           );
-        }
 
-        return true;
+          await this.userStatsService.restoreProfileSnapshotIntoLinkedAccount(
+            signedInUser.user,
+            profileSnapshot,
+          );
+
+          await this.syncSignedInProviderProfile(signedInUser.user, providerId);
+
+          if (!profiloOspiteEliminato) {
+            await this.deleteProfileSnapshotIfAnonymous(
+              profileSnapshot,
+              signedInUser.user.uid,
+            );
+          }
+
+          return true;
+        } catch (error) {
+          await this.restoreDeletedAnonymousSnapshotIfNeeded(
+            profileSnapshot,
+            profiloOspiteEliminato,
+          );
+          throw error;
+        }
       }
     }
 
@@ -824,18 +832,29 @@ export class AuthService {
           profileSnapshot,
         );
 
-      const signedInUser = await signInWithCredential(firebaseAuth, credential);
-
-      await this.syncSignedInProviderProfile(signedInUser.user, providerId);
-
-      if (!profiloOspiteEliminato) {
-        await this.deleteProfileSnapshotIfAnonymous(
-          profileSnapshot,
-          signedInUser.user.uid,
+      try {
+        const signedInUser = await signInWithCredential(
+          firebaseAuth,
+          credential,
         );
-      }
 
-      return true;
+        await this.syncSignedInProviderProfile(signedInUser.user, providerId);
+
+        if (!profiloOspiteEliminato) {
+          await this.deleteProfileSnapshotIfAnonymous(
+            profileSnapshot,
+            signedInUser.user.uid,
+          );
+        }
+
+        return true;
+      } catch (error) {
+        await this.restoreDeletedAnonymousSnapshotIfNeeded(
+          profileSnapshot,
+          profiloOspiteEliminato,
+        );
+        throw error;
+      }
     }
 
     if (signInFallback) {
@@ -844,13 +863,21 @@ export class AuthService {
           profileSnapshot,
         );
 
-      await signInFallback();
+      try {
+        await signInFallback();
 
-      if (!profiloOspiteEliminato) {
-        await this.deleteProfileSnapshotIfAnonymous(profileSnapshot);
+        if (!profiloOspiteEliminato) {
+          await this.deleteProfileSnapshotIfAnonymous(profileSnapshot);
+        }
+
+        return true;
+      } catch (error) {
+        await this.restoreDeletedAnonymousSnapshotIfNeeded(
+          profileSnapshot,
+          profiloOspiteEliminato,
+        );
+        throw error;
       }
-
-      return true;
     }
 
     return false;
@@ -979,32 +1006,66 @@ export class AuthService {
         profileSnapshot,
       );
 
-    const signedInUser = await signInWithCredential(
-      firebaseAuth,
-      freshPlayGamesResult.credential,
-    );
+    try {
+      const signedInUser = await signInWithCredential(
+        firebaseAuth,
+        freshPlayGamesResult.credential,
+      );
 
-    if (importCurrentProfile && profileSnapshot) {
-      await this.userStatsService.restoreProfileSnapshotIntoLinkedAccount(
+      if (importCurrentProfile && profileSnapshot) {
+        await this.userStatsService.restoreProfileSnapshotIntoLinkedAccount(
+          signedInUser.user,
+          profileSnapshot,
+        );
+      }
+
+      await this.syncSignedInProviderProfile(
         signedInUser.user,
-        profileSnapshot,
+        AUTH_CONFIG.providers.playGames,
+        freshPlayGamesResult.profile,
       );
+
+      if (!profiloOspiteEliminato) {
+        await this.deleteProfileSnapshotIfAnonymous(
+          profileSnapshot,
+          signedInUser.user.uid,
+        );
+      }
+
+      return true;
+    } catch (error) {
+      await this.restoreDeletedAnonymousSnapshotIfNeeded(
+        profileSnapshot,
+        profiloOspiteEliminato,
+      );
+      throw error;
+    }
+  }
+
+  // Ripristina il profilo anonimo se il passaggio al provider fallisce dopo la cancellazione preventiva.
+  private async restoreDeletedAnonymousSnapshotIfNeeded(
+    profileSnapshot: UserProfileMigrationSnapshot | null,
+    profiloOspiteEliminato: boolean,
+  ): Promise<void> {
+    if (!profileSnapshot || !profiloOspiteEliminato) return;
+
+    const currentUser = firebaseAuth.currentUser;
+
+    if (!currentUser || currentUser.uid !== profileSnapshot.uid) {
+      return;
     }
 
-    await this.syncSignedInProviderProfile(
-      signedInUser.user,
-      AUTH_CONFIG.providers.playGames,
-      freshPlayGamesResult.profile,
-    );
-
-    if (!profiloOspiteEliminato) {
-      await this.deleteProfileSnapshotIfAnonymous(
+    try {
+      await this.userStatsService.restoreProfileSnapshotIntoLinkedAccount(
+        currentUser,
         profileSnapshot,
-        signedInUser.user.uid,
+      );
+    } catch (error) {
+      console.warn(
+        'Non sono riuscito a ripristinare il profilo ospite dopo il login fallito:',
+        error,
       );
     }
-
-    return true;
   }
 
   // Sincronizza il documento utente con i dati del provider e aggiorna lo stato UI.

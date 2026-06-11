@@ -154,6 +154,18 @@ export class AuthAccountLinkService {
   private isAnonymousOnlySnapshot(
     profileSnapshot: UserProfileMigrationSnapshot,
   ): boolean {
+    /*
+     * Caso principale: se Firebase Auth e ancora anonimo e l'UID corrente
+     * coincide con lo snapshot, possiamo eliminarlo prima del cambio account.
+     * Questo evita di provare a cancellare users/{uidAnonimo} dopo essere gia
+     * passati a Google/Facebook, cosa che le rules bloccano correttamente.
+     */
+    const currentUser = firebaseAuth.currentUser;
+
+    if (currentUser?.isAnonymous && currentUser.uid === profileSnapshot.uid) {
+      return true;
+    }
+
     const auth = (profileSnapshot.profile?.['auth'] ??
       {}) as Partial<UserAuthProfile>;
     const providerIds = auth.providerIds ?? [];
