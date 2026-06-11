@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, firstValueFrom } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import {
   signInWithCredential,
   GoogleAuthProvider,
@@ -9,40 +9,27 @@ import {
   linkWithCredential,
   linkWithPopup,
   AuthCredential,
-  updateProfile,
   signInWithPopup,
   FacebookAuthProvider,
-  getAuth as getFirebaseAuth,
   signOut as signOutFirebaseAuth,
 } from 'firebase/auth';
-import { deleteApp, initializeApp } from 'firebase/app';
-import {
-  collection as firestoreCollection,
-  doc as firestoreDoc,
-  getDoc as getFirestoreDoc,
-  getDocs as getFirestoreDocs,
-  getFirestore as getFirebaseFirestore,
-} from 'firebase/firestore';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { UserStatsService } from './user-stats.service';
 import { firebaseAuth } from 'src/app/config/firebase.config';
+import { environment } from 'src/environments/environment';
 import { AUTH_CONFIG } from 'src/app/config/auth.config';
 import {
   AppAuthProviderId,
   ProviderProfileMetadata,
-  UserAuthProfile,
 } from 'src/app/models/auth.model';
-import { AccountLinkService } from './account-link.service';
 import { PlayGamesAuthService } from './play-games-auth.service';
-import { environment } from 'src/environments/environment';
+import { AuthProfileSyncService } from './auth-profile-sync.service';
+import {
+  AuthAccountLinkService,
+  ExistingProviderProfileState,
+} from './auth-account-link.service';
 import { UserProfileMigrationSnapshot } from 'src/app/models/user-stats.model';
-
-interface ExistingProviderProfileState {
-  uid: string;
-  profileExists: boolean;
-  hasSavedProgress: boolean;
-}
 
 @Injectable({
   providedIn: 'root',
@@ -59,8 +46,9 @@ export class AuthService {
 
   constructor(
     private userStatsService: UserStatsService,
-    private accountLinkService: AccountLinkService,
     private playGamesAuthService: PlayGamesAuthService,
+    private authProfileSyncService: AuthProfileSyncService,
+    private authAccountLinkService: AuthAccountLinkService,
   ) {
     onAuthStateChanged(firebaseAuth, async (user) => {
       this.debug(
@@ -112,6 +100,7 @@ export class AuthService {
             this.userSubject.next(playGamesUser);
             return;
           }
+
           this.debug('🚪 Nessun utente → creo accesso anonimo...');
           const anon = await signInAnonymously(firebaseAuth);
           await this.userStatsService.ensureUserProfile(anon.user);
@@ -230,7 +219,10 @@ export class AuthService {
 
         try {
           const linkedUser = await linkWithPopup(currentUser, provider);
-          await this.completeCurrentProfileAccountLink(linkedUser.user);
+          await this.completeCurrentProfileAccountLink(
+            linkedUser.user,
+            AUTH_CONFIG.providers.google,
+          );
           this.debug('Profilo corrente collegato a Google');
           return true;
         } catch (err: any) {
@@ -306,7 +298,10 @@ export class AuthService {
            * cancelleremmo anche l'account appena collegato.
            */
           const linkedUser = await linkWithCredential(currentUser!, credential);
-          await this.completeCurrentProfileAccountLink(linkedUser.user);
+          await this.completeCurrentProfileAccountLink(
+            linkedUser.user,
+            AUTH_CONFIG.providers.google,
+          );
           this.debug('✅ Profilo corrente collegato a Google');
         } catch (err: any) {
           if (err.code === 'auth/credential-already-in-use') {
@@ -327,7 +322,7 @@ export class AuthService {
       this.debug('✅ Accesso Google completato.');
       return true;
     } catch (error) {
-      this.debug('❌ Errore login Google:', error);
+      console.error('❌ Errore login Google:', error);
       return false;
     } finally {
       this.loadingSubject.next(false);
@@ -348,7 +343,10 @@ export class AuthService {
 
         try {
           const linkedUser = await linkWithPopup(currentUser, provider);
-          await this.completeCurrentProfileAccountLink(linkedUser.user);
+          await this.completeCurrentProfileAccountLink(
+            linkedUser.user,
+            AUTH_CONFIG.providers.facebook,
+          );
           this.debug('Profilo corrente collegato a Facebook');
           return true;
         } catch (err: any) {
@@ -419,7 +417,10 @@ export class AuthService {
            * mantenendo UID e progressi, quindi non esiste un anonimo separato.
            */
           const linkedUser = await linkWithCredential(currentUser!, credential);
-          await this.completeCurrentProfileAccountLink(linkedUser.user);
+          await this.completeCurrentProfileAccountLink(
+            linkedUser.user,
+            AUTH_CONFIG.providers.facebook,
+          );
           this.debug('✅ Profilo corrente collegato a Facebook');
         } catch (err: any) {
           if (err.code === 'auth/credential-already-in-use') {
@@ -440,7 +441,7 @@ export class AuthService {
       this.debug('✅ Accesso Facebook completato.');
       return true;
     } catch (error) {
-      this.debug('❌ Errore login Facebook:', error);
+      console.error('❌ Errore login Facebook:', error);
       return false;
     } finally {
       this.loadingSubject.next(false);
@@ -509,7 +510,7 @@ export class AuthService {
           );
 
           if (!shouldSwitch) {
-            this.debug('Play Games gia esistente: resto sul profilo attuale');
+            console.warn('Play Games gia esistente: resto sul profilo attuale');
             return false;
           }
 
@@ -532,7 +533,7 @@ export class AuthService {
 
           if (!signedIn) return false;
         } else {
-          this.debug(
+          console.warn(
             'Controllo Play Games non riuscito: provo il link diretto con credenziale fresca',
           );
           const freshPlayGamesResult =
@@ -584,7 +585,7 @@ export class AuthService {
       this.clearInitialPlayGamesAutoSignInSuppression();
       return true;
     } catch (error) {
-      this.debug('Errore login Play Games:', error);
+      console.error('Errore login Play Games:', error);
       return false;
     } finally {
       this.loadingSubject.next(false);
@@ -608,7 +609,7 @@ export class AuthService {
       this.debug('🙈 Nuovo utente anonimo generato.');
       this.userSubject.next(anon.user);
     } catch (err) {
-      this.debug('❌ Errore durante logout:', err);
+      console.error('❌ Errore durante logout:', err);
     } finally {
       this.loadingSubject.next(false);
     }
@@ -629,15 +630,22 @@ export class AuthService {
     await this.userStatsService.ensureUserProfile(user);
     await this.userStatsService.mergeCurrentProgressIntoLinkedAccount(user.uid);
 
+    const providerMetadata =
+      providerProfile ??
+      this.getProviderMetadataFromFirebaseUser(user, linkedProviderId);
+
+    if (providerMetadata) {
+      await this.applyProviderProfileMetadata(user, providerMetadata);
+    }
+
     if (linkedProviderId === AUTH_CONFIG.providers.playGames) {
       /*
        * Play Games passa da una credenziale custom: questo rende esplicito in
        * Firestore che il profilo base non e piu anonimo.
        */
-      await this.applyProviderProfileMetadata(user, providerProfile);
       await this.userStatsService.markPlayGamesProfile(
         user.uid,
-        providerProfile,
+        providerMetadata,
       );
     }
 
@@ -648,6 +656,35 @@ export class AuthService {
     }
 
     this.userSubject.next(firebaseAuth.currentUser ?? user);
+  }
+
+  // Mostra i log solo in sviluppo, evitando console.log sparsi in produzione.
+  private debug(...args: unknown[]): void {
+    if (!environment.production) {
+      console.log(...args);
+    }
+  }
+
+  // Recupera nome e foto dal provider collegato, utile dopo il link da ospite a Google/Facebook.
+  private getProviderMetadataFromFirebaseUser(
+    user: User,
+    providerId?: AppAuthProviderId,
+  ): ProviderProfileMetadata | undefined {
+    if (!providerId) return undefined;
+
+    const providerData = user.providerData.find(
+      (provider) => provider.providerId === providerId,
+    );
+
+    const displayName = providerData?.displayName ?? user.displayName;
+    const photoURL = providerData?.photoURL ?? user.photoURL;
+
+    if (!displayName && !photoURL) return undefined;
+
+    return {
+      displayName: displayName ?? undefined,
+      photoURL: photoURL ?? undefined,
+    };
   }
 
   canConnectPlayGames(user: User | null): boolean {
@@ -970,94 +1007,44 @@ export class AuthService {
     return true;
   }
 
+  // Sincronizza il documento utente con i dati del provider e aggiorna lo stato UI.
   private async syncSignedInProviderProfile(
     user: User,
     providerId: AppAuthProviderId,
     providerProfile?: ProviderProfileMetadata,
   ): Promise<void> {
-    /*
-     * Dopo un sign-in diretto allineiamo il documento Firestore al provider
-     * reale. Per Play Games serve un marker esplicito per distinguerlo
-     * dall'ospite anonimo e mostrare la UI corretta.
-     */
-    await this.userStatsService.ensureUserProfile(user);
-
-    if (providerId === AUTH_CONFIG.providers.playGames) {
-      await this.applyProviderProfileMetadata(user, providerProfile);
-      await this.userStatsService.markPlayGamesProfile(
-        user.uid,
+    const currentUser =
+      await this.authProfileSyncService.syncSignedInProviderProfile(
+        user,
+        providerId,
         providerProfile,
       );
-    }
 
-    try {
-      await user.reload();
-    } catch {
-      // Non blocchiamo il flusso: Firestore contiene gia il provider corretto.
-    }
-
-    this.userSubject.next(firebaseAuth.currentUser ?? user);
+    this.userSubject.next(currentUser);
   }
 
+  // Applica displayName e photoURL del provider al profilo Firebase corrente.
   private async applyProviderProfileMetadata(
     user: User,
     providerProfile?: ProviderProfileMetadata,
   ): Promise<void> {
-    /*
-     * Nel link anonimo -> Play Games Firebase mantiene lo stesso utente.
-     * A volte pero non copia subito displayName/photoURL dal provider, quindi
-     * li applichiamo noi quando il plugin nativo ce li restituisce.
-     */
-    if (!providerProfile?.displayName && !providerProfile?.photoURL) return;
-
-    try {
-      await updateProfile(user, {
-        displayName: providerProfile.displayName ?? user.displayName,
-        photoURL: providerProfile.photoURL ?? user.photoURL,
-      });
-    } catch (error) {
-      console.warn('Profilo Firebase non aggiornato con dati provider:', error);
-    }
-  }
-
-  private async hydrateStoredPlayGamesProfile(user: User): Promise<void> {
-    /*
-     * Recupera il nickname per profili Play Games creati quando ancora non lo
-     * salvavamo. Lo facciamo solo per Play Games puro e solo se manca il nome,
-     * cosi non disturbiamo gli account Google/Facebook.
-     */
-    if (!this.playGamesAuthService.canUsePlayGames) return;
-
-    const profile = await firstValueFrom(
-      this.userStatsService.getUserProfile(user.uid),
+    await this.authProfileSyncService.applyProviderProfileMetadata(
+      user,
+      providerProfile,
     );
-    const providerIds = profile?.auth?.providerIds ?? [];
-    const isPurePlayGames =
-      providerIds.includes(AUTH_CONFIG.providers.playGames) &&
-      !providerIds.includes(AUTH_CONFIG.providers.google) &&
-      !providerIds.includes(AUTH_CONFIG.providers.facebook);
+  }
 
-    if (!isPurePlayGames || profile?.displayName) return;
+  // Recupera i dati Play Games salvati quando Firebase non li ha ancora caricati.
+  private async hydrateStoredPlayGamesProfile(user: User): Promise<void> {
+    const currentUser =
+      await this.authProfileSyncService.hydrateStoredPlayGamesProfile(user);
 
-    try {
-      const providerProfile =
-        await this.playGamesAuthService.getNativePlayGamesProfile();
-
-      if (!providerProfile?.displayName && !providerProfile?.photoURL) {
-        return;
-      }
-
-      await this.applyProviderProfileMetadata(user, providerProfile);
-      await this.userStatsService.markPlayGamesProfile(
-        user.uid,
-        providerProfile,
-      );
-      this.userSubject.next(firebaseAuth.currentUser ?? user);
-    } catch (error) {
-      console.warn('Nickname Play Games non recuperato:', error);
+    if (currentUser) {
+      this.userSubject.next(currentUser);
     }
   }
 
+  // Crea uno snapshot del profilo corrente prima di un possibile cambio account.
   private async createCurrentProfileSnapshot(): Promise<UserProfileMigrationSnapshot | null> {
     const currentUser = firebaseAuth.currentUser;
 
@@ -1082,179 +1069,41 @@ export class AuthService {
     );
   }
 
+  // Verifica se il provider esistente ha già un profilo TurtleMind salvato.
   private async getExistingProviderProfileState(
     credential: AuthCredential,
   ): Promise<ExistingProviderProfileState | null> {
-    /*
-     * Controlliamo l'account esistente con una Firebase app temporanea.
-     * Cosi non tocchiamo l'utente anonimo attuale mentre decidiamo se esiste
-     * davvero un profilo di gioco da proteggere con la modale.
-     */
-    const tempAppName = `provider-profile-check-${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2)}`;
-    const tempApp = initializeApp(environment.firebase, tempAppName);
-    const tempAuth = getFirebaseAuth(tempApp);
-
-    try {
-      const existingUser = await signInWithCredential(tempAuth, credential);
-      const tempFirestore = getFirebaseFirestore(tempApp);
-      const userRef = firestoreDoc(
-        tempFirestore,
-        `users/${existingUser.user.uid}`,
-      );
-      const profileSnapshot = await getFirestoreDoc(userRef);
-      let hasSubcollectionData = false;
-
-      for (const collectionName of this.userStatsService
-        .progressSubcollectionNames) {
-        const collectionRef = firestoreCollection(
-          tempFirestore,
-          `users/${existingUser.user.uid}/${collectionName}`,
-        );
-        const collectionSnapshot = await getFirestoreDocs(collectionRef);
-
-        if (!collectionSnapshot.empty) {
-          hasSubcollectionData = true;
-          break;
-        }
-      }
-
-      return {
-        uid: existingUser.user.uid,
-        profileExists: profileSnapshot.exists(),
-        hasSavedProgress:
-          profileSnapshot.exists() &&
-          this.userStatsService.hasMeaningfulSavedProgress(
-            profileSnapshot.data(),
-            hasSubcollectionData,
-          ),
-      };
-    } catch (error) {
-      /*
-       * Se non riusciamo a controllare il profilo in modo affidabile, restiamo
-       * conservativi e mostriamo la modale prima di cambiare account.
-       */
-      console.warn(
-        'Non riesco a verificare i progressi del provider esistente',
-        error,
-      );
-      return null;
-    } finally {
-      try {
-        await signOutFirebaseAuth(tempAuth);
-      } catch {
-        // La app temporanea potrebbe non aver completato il login: va bene cosi.
-      }
-
-      try {
-        await deleteApp(tempApp);
-      } catch {
-        // Evita rumore in console se Firebase ha gia pulito la app temporanea.
-      }
-    }
+    return this.authAccountLinkService.getExistingProviderProfileState(
+      credential,
+    );
   }
 
+  // Chiede conferma prima di passare a un provider che ha già un profilo.
   private async confirmExistingProviderSwitch(
     providerId: AppAuthProviderId,
   ): Promise<boolean> {
-    /*
-     * Se Google/Facebook esiste gia, non facciamo merge automatico.
-     * L'utente puo caricare il vecchio profilo oppure restare su quello attuale.
-     */
-    const decision =
-      await this.accountLinkService.confirmExistingAccountSwitch(providerId);
-
-    return decision === 'use-existing-profile';
+    return this.authAccountLinkService.confirmExistingProviderSwitch(
+      providerId,
+    );
   }
 
+  // Elimina il profilo ospite prima del cambio account, finché le rules lo permettono.
   private async deleteProfileSnapshotIfAnonymousBeforeAccountSwitch(
     profileSnapshot: UserProfileMigrationSnapshot | null,
   ): Promise<boolean> {
-    /*
-     * Le rules permettono di eliminare un profilo solo mentre l'utente loggato
-     * ne e ancora il proprietario. Per questo, quando stiamo passando da
-     * anonimo a Google/Facebook/Play Games gia esistente, proviamo a cancellare
-     * il profilo ospite prima del cambio account.
-     */
-    if (!profileSnapshot) return false;
-    if (!this.isAnonymousOnlySnapshot(profileSnapshot)) return false;
-    if (firebaseAuth.currentUser?.uid !== profileSnapshot.uid) return false;
-
-    try {
-      await this.userStatsService.deleteUserProfileData(profileSnapshot.uid);
-      return true;
-    } catch (error) {
-      console.warn(
-        'Profilo ospite non eliminato prima del cambio account:',
-        error,
-      );
-      return false;
-    }
+    return this.authAccountLinkService.deleteProfileSnapshotIfAnonymousBeforeAccountSwitch(
+      profileSnapshot,
+    );
   }
 
+  // Elimina il profilo ospite dopo il cambio account, senza bloccare il login se fallisce.
   private async deleteProfileSnapshotIfAnonymous(
     profileSnapshot: UserProfileMigrationSnapshot | null,
     targetUid?: string,
   ): Promise<void> {
-    /*
-     * Fallback non bloccante. Se il cambio account e gia avvenuto, le rules
-     * possono impedire al nuovo UID di cancellare il vecchio profilo anonimo.
-     * In quel caso non blocchiamo il login: il profilo principale e gia stato
-     * importato correttamente.
-     */
-    if (!profileSnapshot) return;
-    if (targetUid && profileSnapshot.uid === targetUid) return;
-    if (!this.isAnonymousOnlySnapshot(profileSnapshot)) return;
-
-    try {
-      await this.userStatsService.deleteUserProfileData(profileSnapshot.uid);
-    } catch (error) {
-      console.warn(
-        'Profilo ospite non eliminato dopo il cambio account:',
-        error,
-      );
-    }
-  }
-
-  private isAnonymousOnlySnapshot(
-    profileSnapshot: UserProfileMigrationSnapshot,
-  ): boolean {
-    const auth = (profileSnapshot.profile?.['auth'] ??
-      {}) as Partial<UserAuthProfile>;
-    const providerIds = auth.providerIds ?? [];
-    const createdFromProviderId = auth.createdFromProviderId;
-    const strongProviderIds = [
-      AUTH_CONFIG.providers.google,
-      AUTH_CONFIG.providers.facebook,
-      AUTH_CONFIG.providers.playGames,
-    ];
-
-    if (
-      createdFromProviderId &&
-      strongProviderIds.includes(createdFromProviderId)
-    ) {
-      return false;
-    }
-
-    if (
-      providerIds.some((providerId) => strongProviderIds.includes(providerId))
-    ) {
-      return false;
-    }
-
-    return (
-      createdFromProviderId === AUTH_CONFIG.providers.anonymous ||
-      providerIds.length === 0 ||
-      providerIds.every(
-        (providerId) => providerId === AUTH_CONFIG.providers.anonymous,
-      )
+    await this.authAccountLinkService.deleteProfileSnapshotIfAnonymous(
+      profileSnapshot,
+      targetUid,
     );
-  }
-
-  private debug(...args: unknown[]): void {
-    if (!environment.production) {
-      console.log(...args);
-    }
   }
 }
