@@ -23,6 +23,10 @@ import { User } from 'firebase/auth';
   providedIn: 'root',
 })
 export class DailyRewardService {
+  /*
+   * Queste chiavi restano solo per migrare vecchi dati locali verso Firestore.
+   * Da ora in poi il daily reward e gli avatar non vengono più salvati in localStorage.
+   */
   private readonly storageKey = DAILY_REWARD_CONFIG.storageKeys.reward;
   private readonly unlockedAvatarsKey =
     DAILY_REWARD_CONFIG.storageKeys.unlockedAvatars;
@@ -128,6 +132,11 @@ export class DailyRewardService {
     };
 
     if (!user) {
+      /*
+       * In teoria TurtleMind crea sempre un utente anonimo.
+       * Se per un istante non esiste user, aggiorniamo solo la cache in memoria
+       * e non salviamo più nulla in localStorage.
+       */
       this.cachedDailyReward = updatedData;
 
       if (
@@ -141,11 +150,8 @@ export class DailyRewardService {
             rewardPayload.avatarId,
           ],
         };
-
-        this.saveLocalUnlockedAvatarsFallback();
       }
 
-      this.saveLocalFallback();
       return true;
     }
 
@@ -198,10 +204,7 @@ export class DailyRewardService {
       return false;
     }
 
-    return this.userStatsService.applyDailyRewardBonus(
-      user.uid,
-      rewardPayload,
-    );
+    return this.userStatsService.applyDailyRewardBonus(user.uid, rewardPayload);
   }
 
   async simulateDay(day: number): Promise<void> {
@@ -223,7 +226,7 @@ export class DailyRewardService {
       ...updatedData,
     };
 
-    localStorage.removeItem(this.storageKey);
+    this.clearMigratedLocalData();
 
     if (!user) return;
 
@@ -242,10 +245,7 @@ export class DailyRewardService {
       unlockedAvatarIds: [...this.cachedAvatar.unlockedAvatarIds, avatar.id],
     };
 
-    if (!user) {
-      this.saveLocalUnlockedAvatarsFallback();
-      return;
-    }
+    if (!user) return;
 
     await this.ensureRemoteProfile(user);
 
@@ -255,10 +255,7 @@ export class DailyRewardService {
   async refreshAvatarCacheForCurrentUser(): Promise<void> {
     const user = await firstValueFrom(this.auth.user$);
 
-    if (!user) {
-      this.loadLocalFallback();
-      return;
-    }
+    if (!user) return;
 
     await this.ensureRemoteProfile(user);
 
@@ -295,10 +292,7 @@ export class DailyRewardService {
       ...updatedData,
     };
 
-    if (!user) {
-      this.saveLocalFallback();
-      return;
-    }
+    if (!user) return;
 
     await this.ensureRemoteProfile(user);
 
@@ -313,7 +307,7 @@ export class DailyRewardService {
       unlockedAvatarIds: [],
     };
 
-    localStorage.removeItem(this.unlockedAvatarsKey);
+    this.clearMigratedLocalData();
 
     if (!user) return;
 
@@ -342,10 +336,7 @@ export class DailyRewardService {
       selectedAvatar: avatarId,
     };
 
-    if (!user) {
-      localStorage.setItem(this.selectedAvatarKey, avatarId);
-      return;
-    }
+    if (!user) return;
 
     await this.ensureRemoteProfile(user);
 
@@ -358,10 +349,7 @@ export class DailyRewardService {
 
   private listenToUser(): void {
     this.userSub = this.auth.user$.subscribe(async (user) => {
-      if (!user) {
-        this.loadLocalFallback();
-        return;
-      }
+      if (!user) return;
 
       if (user.isAnonymous) {
         await this.migrateLocalFallbackToRemote(user.uid);
@@ -374,9 +362,8 @@ export class DailyRewardService {
   private async migrateLocalFallbackToRemote(uid: string): Promise<void> {
     /*
      * Prima l'anonimo usava localStorage per daily reward e avatar.
-     * Ora l'ospite e un profilo Firestore: copiamo una sola volta quei dati
-     * locali nel documento dell'utente anonimo, cosi chi aveva gia giocato
-     * non perde le ricompense ottenute.
+     * Ora l'ospite ha sempre un profilo Firestore: leggiamo quei dati una sola volta,
+     * li copiamo su Firestore e poi puliamo localStorage.
      */
     const savedState = localStorage.getItem(this.storageKey);
     const savedAvatars = localStorage.getItem(this.unlockedAvatarsKey);
@@ -384,14 +371,14 @@ export class DailyRewardService {
 
     if (!savedState && !savedAvatars && !selectedAvatar) return;
 
-    if (savedState) {
-      const state = JSON.parse(savedState) as Partial<DailyRewardState>;
+    const localState = this.parseLocalDailyRewardState(savedState);
 
+    if (localState) {
       await this.userStatsService.updateDailyRewardData(uid, {
-        currentDay: state.currentDay ?? 1,
-        lastClaimDate: state.lastClaimDate ?? null,
-        lastClaimedAt: state.lastClaimDate ? serverTimestamp() : null,
-        claimedToday: state.lastClaimDate === this.getTodayKey(),
+        currentDay: localState.currentDay ?? 1,
+        lastClaimDate: localState.lastClaimDate ?? null,
+        lastClaimedAt: localState.lastClaimDate ? serverTimestamp() : null,
+        claimedToday: localState.lastClaimDate === this.getTodayKey(),
       });
     }
 
@@ -407,9 +394,7 @@ export class DailyRewardService {
       });
     }
 
-    localStorage.removeItem(this.storageKey);
-    localStorage.removeItem(this.unlockedAvatarsKey);
-    localStorage.removeItem(this.selectedAvatarKey);
+    this.clearMigratedLocalData();
   }
 
   private async refreshRemoteCache(uid: string): Promise<void> {
@@ -430,62 +415,36 @@ export class DailyRewardService {
     };
   }
 
+  private parseLocalDailyRewardState(
+    savedState: string | null,
+  ): Partial<DailyRewardState> | null {
+    if (!savedState) return null;
+
+    try {
+      return JSON.parse(savedState) as Partial<DailyRewardState>;
+    } catch {
+      return null;
+    }
+  }
+
   private parseLocalAvatarIds(savedAvatars: string | null): string[] {
     if (!savedAvatars) return [];
 
-    const parsedAvatars: unknown[] = JSON.parse(savedAvatars);
+    try {
+      const parsedAvatars: unknown[] = JSON.parse(savedAvatars);
 
-    return parsedAvatars
-      .map((item: any) => (typeof item === 'string' ? item : item?.id))
-      .filter(Boolean);
+      return parsedAvatars
+        .map((item: any) => (typeof item === 'string' ? item : item?.id))
+        .filter(Boolean);
+    } catch {
+      return [];
+    }
   }
 
-  private loadLocalFallback(): void {
-    const savedState = localStorage.getItem(this.storageKey);
-    const savedAvatars = localStorage.getItem(this.unlockedAvatarsKey);
-    const selectedAvatar =
-      localStorage.getItem(this.selectedAvatarKey) || 'letter';
-
-    const state: DailyRewardState = savedState
-      ? JSON.parse(savedState)
-      : {
-          currentDay: 1,
-          lastClaimDate: null,
-          lastClaimedAt: null,
-          claimedToday: false,
-        };
-
-    const unlockedAvatarIds = this.parseLocalAvatarIds(savedAvatars);
-
-    this.cachedDailyReward = {
-      currentDay: state.currentDay,
-      lastClaimDate: state.lastClaimDate,
-      lastClaimedAt: state.lastClaimedAt ?? null,
-      claimedToday: state.lastClaimDate === this.getTodayKey(),
-    };
-
-    this.cachedAvatar = {
-      selectedAvatar,
-      unlockedAvatarIds,
-    };
-  }
-
-  private saveLocalFallback(): void {
-    const state: DailyRewardState = {
-      currentDay: this.cachedDailyReward.currentDay,
-      lastClaimDate: this.cachedDailyReward.lastClaimDate,
-      lastClaimedAt: this.cachedDailyReward.lastClaimedAt ?? null,
-      claimedToday: this.cachedDailyReward.claimedToday,
-    };
-
-    localStorage.setItem(this.storageKey, JSON.stringify(state));
-  }
-
-  private saveLocalUnlockedAvatarsFallback(): void {
-    localStorage.setItem(
-      this.unlockedAvatarsKey,
-      JSON.stringify(this.cachedAvatar.unlockedAvatarIds),
-    );
+  private clearMigratedLocalData(): void {
+    localStorage.removeItem(this.storageKey);
+    localStorage.removeItem(this.unlockedAvatarsKey);
+    localStorage.removeItem(this.selectedAvatarKey);
   }
 
   private getTodayKey(): string {
@@ -496,5 +455,4 @@ export class DailyRewardService {
 
     return `${year}-${month}-${day}`;
   }
-
 }
