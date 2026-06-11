@@ -63,7 +63,7 @@ export class AuthService {
     private playGamesAuthService: PlayGamesAuthService,
   ) {
     onAuthStateChanged(firebaseAuth, async (user) => {
-      console.log(
+      this.debug(
         '👤 Stato auth cambiato →',
         user?.displayName || (user?.isAnonymous ? 'Anonimo' : 'null'),
       );
@@ -112,12 +112,11 @@ export class AuthService {
             this.userSubject.next(playGamesUser);
             return;
           }
-
-          console.log('🚪 Nessun utente → creo accesso anonimo...');
+          this.debug('🚪 Nessun utente → creo accesso anonimo...');
           const anon = await signInAnonymously(firebaseAuth);
           await this.userStatsService.ensureUserProfile(anon.user);
           this.userSubject.next(anon.user);
-          console.log('🙈 Accesso anonimo creato');
+          this.debug('🙈 Accesso anonimo creato');
         }
       }
     });
@@ -145,11 +144,11 @@ export class AuthService {
     }
 
     if (!user) {
-      console.log('Nessun utente: creo accesso anonimo...');
+      this.debug('Nessun utente: creo accesso anonimo...');
       const anon = await signInAnonymously(firebaseAuth);
       await this.userStatsService.ensureUserProfile(anon.user);
       this.userSubject.next(anon.user);
-      console.log('Accesso anonimo creato');
+      this.debug('Accesso anonimo creato');
       return true;
     }
 
@@ -222,7 +221,7 @@ export class AuthService {
     this.loadingSubject.next(true);
 
     try {
-      console.log('🔹 Avvio login Google...');
+      this.debug('🔹 Avvio login Google...');
       const isMobile = Capacitor.isNativePlatform();
       const currentUser = firebaseAuth.currentUser;
 
@@ -232,7 +231,7 @@ export class AuthService {
         try {
           const linkedUser = await linkWithPopup(currentUser, provider);
           await this.completeCurrentProfileAccountLink(linkedUser.user);
-          console.log('Profilo corrente collegato a Google');
+          this.debug('Profilo corrente collegato a Google');
           return true;
         } catch (err: any) {
           if (err.code !== 'auth/credential-already-in-use') {
@@ -252,7 +251,7 @@ export class AuthService {
       let credential: AuthCredential | null = null;
 
       if (isMobile) {
-        console.log(
+        this.debug(
           '📱 Login Google tramite Capacitor FirebaseAuthentication...',
         );
         const result = await this.waitForNativeAuthResult(
@@ -283,7 +282,7 @@ export class AuthService {
 
         credential = GoogleAuthProvider.credential(result.credential.idToken);
       } else {
-        console.log('💻 Login Google tramite popup web...');
+        this.debug('💻 Login Google tramite popup web...');
         const provider = new GoogleAuthProvider();
         const result = await signInWithPopup(firebaseAuth, provider);
         credential = GoogleAuthProvider.credentialFromResult(result);
@@ -299,7 +298,7 @@ export class AuthService {
           AUTH_CONFIG.providers.google,
         )
       ) {
-        console.log('🔗 Provo a collegare profilo corrente a Google...');
+        this.debug('🔗 Provo a collegare profilo corrente a Google...');
         try {
           /*
            * Firebase non crea due utenti: il profilo corrente viene promosso
@@ -308,7 +307,7 @@ export class AuthService {
            */
           const linkedUser = await linkWithCredential(currentUser!, credential);
           await this.completeCurrentProfileAccountLink(linkedUser.user);
-          console.log('✅ Profilo corrente collegato a Google');
+          this.debug('✅ Profilo corrente collegato a Google');
         } catch (err: any) {
           if (err.code === 'auth/credential-already-in-use') {
             const signedIn = await this.handleExistingProviderCredential(
@@ -325,10 +324,10 @@ export class AuthService {
         await signInWithCredential(firebaseAuth, credential);
       }
 
-      console.log('✅ Accesso Google completato.');
+      this.debug('✅ Accesso Google completato.');
       return true;
     } catch (error) {
-      console.error('❌ Errore login Google:', error);
+      this.debug('❌ Errore login Google:', error);
       return false;
     } finally {
       this.loadingSubject.next(false);
@@ -339,7 +338,7 @@ export class AuthService {
     this.loadingSubject.next(true);
 
     try {
-      console.log('🔹 Avvio login Facebook...');
+      this.debug('🔹 Avvio login Facebook...');
       const isMobile = Capacitor.isNativePlatform();
       const currentUser = firebaseAuth.currentUser;
 
@@ -350,7 +349,7 @@ export class AuthService {
         try {
           const linkedUser = await linkWithPopup(currentUser, provider);
           await this.completeCurrentProfileAccountLink(linkedUser.user);
-          console.log('Profilo corrente collegato a Facebook');
+          this.debug('Profilo corrente collegato a Facebook');
           return true;
         } catch (err: any) {
           if (err.code !== 'auth/credential-already-in-use') {
@@ -370,7 +369,7 @@ export class AuthService {
       let credential: AuthCredential | null = null;
 
       if (isMobile) {
-        console.log(
+        this.debug(
           '📱 Login Facebook tramite Capacitor FirebaseAuthentication...',
         );
         const result = await this.waitForNativeAuthResult(
@@ -396,7 +395,7 @@ export class AuthService {
           result.credential.accessToken,
         );
       } else {
-        console.log('💻 Login Facebook tramite popup web...');
+        this.debug('💻 Login Facebook tramite popup web...');
         const provider = new FacebookAuthProvider();
         provider.addScope('public_profile');
         const result = await signInWithPopup(firebaseAuth, provider);
@@ -413,7 +412,7 @@ export class AuthService {
           AUTH_CONFIG.providers.facebook,
         )
       ) {
-        console.log('🔗 Provo a collegare profilo corrente a Facebook...');
+        this.debug('🔗 Provo a collegare profilo corrente a Facebook...');
         try {
           /*
            * Stesso comportamento di Google: il profilo corrente diventa account Facebook
@@ -421,7 +420,7 @@ export class AuthService {
            */
           const linkedUser = await linkWithCredential(currentUser!, credential);
           await this.completeCurrentProfileAccountLink(linkedUser.user);
-          console.log('✅ Profilo corrente collegato a Facebook');
+          this.debug('✅ Profilo corrente collegato a Facebook');
         } catch (err: any) {
           if (err.code === 'auth/credential-already-in-use') {
             const signedIn = await this.handleExistingProviderCredential(
@@ -438,10 +437,10 @@ export class AuthService {
         await signInWithCredential(firebaseAuth, credential);
       }
 
-      console.log('✅ Accesso Facebook completato.');
+      this.debug('✅ Accesso Facebook completato.');
       return true;
     } catch (error) {
-      console.error('❌ Errore login Facebook:', error);
+      this.debug('❌ Errore login Facebook:', error);
       return false;
     } finally {
       this.loadingSubject.next(false);
@@ -478,7 +477,7 @@ export class AuthService {
     this.loadingSubject.next(true);
 
     try {
-      console.log('Avvio collegamento Play Games...');
+      this.debug('Avvio collegamento Play Games...');
 
       const currentUser = firebaseAuth.currentUser;
       const playGamesResult =
@@ -494,7 +493,7 @@ export class AuthService {
           AUTH_CONFIG.providers.playGames,
         )
       ) {
-        console.log('Controllo se Play Games ha gia un profilo TurtleMind...');
+        this.debug('Controllo se Play Games ha gia un profilo TurtleMind...');
         const profileSnapshot = await this.createCurrentProfileSnapshot();
         const existingProfileState = await this.getExistingProviderProfileState(
           playGamesResult.credential,
@@ -510,7 +509,7 @@ export class AuthService {
           );
 
           if (!shouldSwitch) {
-            console.warn('Play Games gia esistente: resto sul profilo attuale');
+            this.debug('Play Games gia esistente: resto sul profilo attuale');
             return false;
           }
 
@@ -533,7 +532,7 @@ export class AuthService {
 
           if (!signedIn) return false;
         } else {
-          console.warn(
+          this.debug(
             'Controllo Play Games non riuscito: provo il link diretto con credenziale fresca',
           );
           const freshPlayGamesResult =
@@ -553,7 +552,7 @@ export class AuthService {
               AUTH_CONFIG.providers.playGames,
               freshPlayGamesResult.profile,
             );
-            console.log('Profilo corrente collegato a Play Games');
+            this.debug('Profilo corrente collegato a Play Games');
           } catch (err: any) {
             if (this.isCredentialAlreadyInUseError(err)) {
               const signedIn = await this.handleExistingPlayGamesProfile();
@@ -581,11 +580,11 @@ export class AuthService {
         );
       }
 
-      console.log('Accesso Play Games completato.');
+      this.debug('Accesso Play Games completato.');
       this.clearInitialPlayGamesAutoSignInSuppression();
       return true;
     } catch (error) {
-      console.error('Errore login Play Games:', error);
+      this.debug('Errore login Play Games:', error);
       return false;
     } finally {
       this.loadingSubject.next(false);
@@ -596,20 +595,20 @@ export class AuthService {
     this.loadingSubject.next(true);
 
     try {
-      console.log('👋 Effettuo logout...');
+      this.debug('👋 Effettuo logout...');
 
       await FirebaseAuthentication.signOut();
       await firebaseAuth.signOut();
       this.suppressInitialPlayGamesAutoSignIn();
 
-      console.log('⚪ Creo nuovo utente anonimo dopo logout...');
+      this.debug('⚪ Creo nuovo utente anonimo dopo logout...');
       const anon = await signInAnonymously(firebaseAuth);
       await this.userStatsService.ensureUserProfile(anon.user);
 
-      console.log('🙈 Nuovo utente anonimo generato.');
+      this.debug('🙈 Nuovo utente anonimo generato.');
       this.userSubject.next(anon.user);
     } catch (err) {
-      console.error('❌ Errore durante logout:', err);
+      this.debug('❌ Errore durante logout:', err);
     } finally {
       this.loadingSubject.next(false);
     }
@@ -1251,5 +1250,11 @@ export class AuthService {
         (providerId) => providerId === AUTH_CONFIG.providers.anonymous,
       )
     );
+  }
+
+  private debug(...args: unknown[]): void {
+    if (!environment.production) {
+      console.log(...args);
+    }
   }
 }
