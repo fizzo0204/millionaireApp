@@ -40,6 +40,7 @@ export class DailyEventGamesService {
   private readonly dailyCooldownMs = 24 * 60 * 60 * 1000;
   private readonly dailyChallengeCoinsReward =
     DAILY_EVENTS_CONFIG.dailyChallengeCoinsReward;
+  private readonly duplicateAvatarCoins = 5;
 
   // Indica se la ruota ha ancora il giro gratuito disponibile.
   isWheelFreeSpinAvailable(data: DailyEventsData | null): boolean {
@@ -106,19 +107,29 @@ export class DailyEventGamesService {
           : [];
 
         let avatarId: string | undefined;
+        let avatarDuplicate = false;
+        let avatarConvertedCoins = 0;
         let amount = selectedReward.amount;
 
         if (selectedReward.type === 'baseAvatar') {
-          const lockedBaseAvatar =
-            this.getRandomLockedBaseAvatar(unlockedAvatarIds);
+          const dailyAvatar = this.getRandomDailyAvatar();
 
-          if (lockedBaseAvatar) {
-            avatarId = lockedBaseAvatar.id;
+          if (dailyAvatar) {
+            avatarId = dailyAvatar.id;
+            avatarDuplicate = unlockedAvatarIds.includes(dailyAvatar.id);
+            avatarConvertedCoins = avatarDuplicate
+              ? this.duplicateAvatarCoins
+              : 0;
+
             rewardResult = {
               reward: selectedReward,
-              label: lockedBaseAvatar.label,
+              label: dailyAvatar.label,
               doubled: false,
               avatarId,
+              avatarIcon: dailyAvatar.icon,
+              avatarDuplicate,
+              convertedCoins: avatarConvertedCoins || undefined,
+              amount: avatarConvertedCoins || undefined,
             };
           } else {
             selectedReward =
@@ -149,6 +160,10 @@ export class DailyEventGamesService {
           updates['stats.coins'] = currentCoins + amount;
         }
 
+        if (selectedReward.type === 'baseAvatar' && avatarDuplicate) {
+          updates['stats.coins'] = currentCoins + avatarConvertedCoins;
+        }
+
         if (selectedReward.type === 'xp' && amount) {
           const updatedXp = currentXp + amount;
 
@@ -156,12 +171,15 @@ export class DailyEventGamesService {
           updates['stats.level'] = getLevelFromXp(updatedXp);
         }
 
-        if (selectedReward.type === 'baseAvatar' && avatarId) {
-          updates['avatar.unlockedAvatarIds'] = unlockedAvatarIds.includes(
+        if (
+          selectedReward.type === 'baseAvatar' &&
+          avatarId &&
+          !avatarDuplicate
+        ) {
+          updates['avatar.unlockedAvatarIds'] = [
+            ...unlockedAvatarIds,
             avatarId,
-          )
-            ? unlockedAvatarIds
-            : [...unlockedAvatarIds, avatarId];
+          ];
         }
 
         transaction.update(userRef, updates);
@@ -391,18 +409,17 @@ export class DailyEventGamesService {
     return DAILY_WHEEL_REWARDS[0];
   }
 
-  // Recupera un avatar base non ancora sbloccato.
-  private getRandomLockedBaseAvatar(unlockedAvatarIds: string[]) {
-    const baseAvatars = AVATARS.filter(
-      (avatar) =>
-        avatar.source === 'base' &&
-        avatar.id !== 'letter' &&
-        !unlockedAvatarIds.includes(avatar.id),
+  // Estrae sempre un avatar daily dalla ruota.
+  // Se l'utente lo possiede già, non lo sblocchiamo di nuovo: nel risultato
+  // segnaliamo il doppione e lo convertiamo in TurtleCoins.
+  private getRandomDailyAvatar() {
+    const dailyAvatars = AVATARS.filter(
+      (avatar) => avatar.source === 'daily' && avatar.id !== 'letter',
     );
 
-    if (baseAvatars.length === 0) return null;
+    if (dailyAvatars.length === 0) return null;
 
-    return baseAvatars[Math.floor(Math.random() * baseAvatars.length)];
+    return dailyAvatars[Math.floor(Math.random() * dailyAvatars.length)];
   }
 
   // Limita il progresso ruota al target giornaliero, se presente.

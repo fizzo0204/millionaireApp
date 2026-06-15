@@ -6,107 +6,172 @@
     </button>
 
     @if (loading) {
-      <div class="events-loader">
+    <div class="events-loader">
+      <div class="loader-orbit">
         <ion-spinner name="crescent"></ion-spinner>
-        <span>Preparo la ruota...</span>
       </div>
+      <span>Preparo la ruota...</span>
+    </div>
     } @else {
-      <section class="detail-hero">
+    <section class="detail-hero">
+      <div class="hero-glow"></div>
+
+      <div class="hero-copy">
+        <span>Ruota della fortuna</span>
+        <h1>
+          @if (wheelFreeSpinAvailable) { Giro gratis pronto } @else { Altro giro
+          con video }
+        </h1>
+        <p>
+          Ogni 24 ore hai un giro gratis. Dopo puoi girare guardando un video.
+        </p>
+      </div>
+
+      <div class="hero-icon">
+        <ion-icon name="sparkles-outline"></ion-icon>
+      </div>
+    </section>
+
+    <section class="wheel-panel" [class.wheel-panel-spinning]="wheelSpinning">
+      <div class="wheel-panel-glow"></div>
+
+      <div class="wheel-title-row">
         <div>
-          <span>Ruota della fortuna</span>
-          <h1>
-            @if (wheelFreeSpinAvailable) {
-              Giro gratis pronto
-            } @else {
-              Altro giro con video
-            }
-          </h1>
-          <p>Ogni 24 ore hai un giro gratis. Dopo puoi girare guardando un video.</p>
+          <span>Premi giornalieri</span>
+          <strong>Tocca e tenta la fortuna</strong>
         </div>
 
-        <div class="hero-icon">
-          <ion-icon name="sparkles-outline"></ion-icon>
+        <div class="spin-status">
+          @if (wheelSpinning) { In rotazione } @else if (wheelFreeSpinAvailable)
+          { Gratis } @else { Video }
         </div>
-      </section>
+      </div>
 
-      <section class="wheel-panel">
-        <div class="wheel-stage">
-          <div
-            class="fortune-wheel"
-            [class.spinning]="wheelSpinning"
-            [style.transform]="'rotate(' + wheelRotation + 'deg)'"
-          >
-            @for (reward of wheelRewards; track reward.id; let i = $index) {
-              <span [style.transform]="'rotate(' + getWheelLabelAngle(i) + 'deg)'">
-                <b [style.transform]="'rotate(' + -getWheelLabelAngle(i) + 'deg)'">
-                  {{ reward.shortLabel }}
-                </b>
-              </span>
-            }
-          </div>
+      <div class="wheel-stage">
+        <div class="wheel-aura"></div>
+        <div class="wheel-sparks">
+          <i></i>
+          <i></i>
+          <i></i>
+          <i></i>
+          <i></i>
+          <i></i>
+        </div>
 
+        <div class="wheel-pointer-wrap">
+          <div class="wheel-pointer-shine"></div>
           <div class="wheel-pointer"></div>
-          <button
-            type="button"
-            class="wheel-button"
-            [disabled]="wheelSpinning"
-            (click)="spinWheel()"
-          >
-            @if (wheelSpinning) {
-              <ion-spinner name="dots"></ion-spinner>
-            } @else if (wheelFreeSpinAvailable) {
-              Gira gratis
-            } @else {
-              <ion-icon name="play"></ion-icon>
-              <span>Guarda e gira</span>
-            }
-          </button>
         </div>
-      </section>
+
+        <div class="wheel-shadow"></div>
+
+        <div
+          class="fortune-wheel"
+          [class.spinning]="wheelSpinning"
+          [style.transform]="'rotate(' + wheelRotation + 'deg)'"
+        >
+          <div class="wheel-rim-dots"></div>
+
+          @for (reward of wheelRewards; track reward.id; let i = $index) {
+          <span [style.transform]="'rotate(' + getWheelLabelAngle(i) + 'deg)'">
+            <b [style.transform]="'rotate(' + -getWheelLabelAngle(i) + 'deg)'">
+              {{ reward.shortLabel }}
+            </b>
+          </span>
+          }
+        </div>
+
+        <button
+          type="button"
+          class="wheel-button"
+          [disabled]="wheelSpinning"
+          (click)="spinWheel()"
+        >
+          @if (wheelSpinning) {
+          <ion-spinner name="dots"></ion-spinner>
+          <span>Giro...</span>
+          } @else if (wheelFreeSpinAvailable) {
+          <strong>Gira</strong>
+          <small>gratis</small>
+          } @else {
+          <ion-icon name="play"></ion-icon>
+          <span>Guarda<br />e gira</span>
+          }
+        </button>
+      </div>
+
+      <div class="wheel-hint">
+        <ion-icon name="gift-outline"></ion-icon>
+        <span>Puoi trovare TurtleCoins, XP o avatar speciali.</span>
+      </div>
+    </section>
     }
   </div>
 
   @if (wheelReward) {
-    <div class="wheel-result-backdrop">
-      <div class="wheel-result-modal">
-        <button class="modal-close" type="button" (click)="closeWheelReward()">
-          <ion-icon name="close-outline"></ion-icon>
-        </button>
-
-        <div class="result-shine"></div>
-
-        <div class="result-icon">
-          @if (wheelReward.reward.type === "coins") {
-            <img src="assets/ui/coin-turtle.webp" alt="TurtleCoins" />
-          } @else if (wheelReward.reward.type === "xp") {
-            <ion-icon name="flash"></ion-icon>
-          } @else {
-            <ion-icon name="person-outline"></ion-icon>
-          }
-        </div>
-
-        <span>Premio ruota</span>
-        <h2>{{ wheelReward.label }}</h2>
-
-        @if (wheelReward.reward.type !== "baseAvatar" && !wheelReward.doubled) {
-          <button
-            type="button"
-            class="double-button"
-            [disabled]="wheelDoubleLoading"
-            (click)="doubleWheelReward()"
-          >
-            @if (wheelDoubleLoading) {
-              Video in corso...
-            } @else {
-              Guarda video e raddoppia
-            }
-          </button>
-        }
-
-        <button type="button" class="continue-button" (click)="closeWheelReward()">
-          Continua
-        </button>
-      </div>
+  <div class="wheel-result-backdrop">
+    <div class="result-confetti">
+      <i></i>
+      <i></i>
+      <i></i>
+      <i></i>
+      <i></i>
+      <i></i>
+      <i></i>
+      <i></i>
     </div>
+
+    <div class="wheel-result-modal">
+      <button class="modal-close" type="button" (click)="closeWheelReward()">
+        <ion-icon name="close-outline"></ion-icon>
+      </button>
+
+      <div class="result-shine"></div>
+      <div class="result-ring"></div>
+
+      <div class="result-icon">
+        @if (wheelReward.reward.type === "coins") {
+        <img src="assets/ui/coin-turtle.webp" alt="TurtleCoins" />
+        } @else if (wheelReward.reward.type === "xp") {
+        <ion-icon name="flash"></ion-icon>
+        } @else if (wheelReward.avatarIcon) {
+        <img [src]="wheelReward.avatarIcon" [alt]="wheelReward.label" />
+        } @else {
+        <ion-icon name="person-outline"></ion-icon>
+        }
+      </div>
+
+      <span>
+        @if (wheelReward.avatarDuplicate) { Avatar doppione } @else { Premio
+        ruota }
+      </span>
+      <h2>{{ wheelReward.label }}</h2>
+
+      @if (wheelReward.avatarDuplicate) {
+      <p>
+        Lo avevi già sbloccato: il doppione è stato convertito in
+        <strong>+{{ wheelReward.convertedCoins }} TurtleCoins</strong>.
+      </p>
+      } @if (wheelReward.reward.type !== "baseAvatar" && !wheelReward.doubled) {
+      <button
+        type="button"
+        class="double-button"
+        [disabled]="wheelDoubleLoading"
+        (click)="doubleWheelReward()"
+      >
+        @if (wheelDoubleLoading) { Video in corso... } @else { Guarda video e
+        raddoppia }
+      </button>
+      }
+
+      <button
+        type="button"
+        class="continue-button"
+        (click)="closeWheelReward()"
+      >
+        Continua
+      </button>
+    </div>
+  </div>
   }
 </ion-content>

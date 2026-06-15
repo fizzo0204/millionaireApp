@@ -48,6 +48,9 @@ export interface DailyWheelRewardResult {
   label: string;
   doubled: boolean;
   avatarId?: string;
+  avatarIcon?: string;
+  avatarDuplicate?: boolean;
+  convertedCoins?: number;
   amount?: number;
 }
 

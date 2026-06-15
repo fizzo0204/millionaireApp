@@ -30,16 +30,30 @@ ion-content.event-detail-content {
   font-weight: 900;
 }
 
+.loader-orbit {
+  width: 74px;
+  height: 74px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 234, 0, 0.16),
+    rgba(14, 165, 233, 0.1)
+  );
+  box-shadow: 0 0 28px rgba(56, 189, 248, 0.26);
+}
+
 .detail-hero,
 .wheel-panel {
   border: 1px solid rgba(96, 165, 250, 0.22);
-  background: rgba(3, 31, 61, 0.76);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 12px 26px rgba(0, 0, 0, 0.24);
 }
 
 .detail-hero {
+  position: relative;
   overflow: hidden;
   border-radius: 24px;
   padding: 18px;
@@ -48,12 +62,34 @@ ion-content.event-detail-content {
   gap: 14px;
   align-items: center;
   background:
-    linear-gradient(135deg, rgba(168, 85, 247, 0.28), transparent 48%),
-    rgba(3, 31, 61, 0.86);
+    radial-gradient(circle at 82% 14%, rgba(255, 234, 0, 0.2), transparent 30%),
+    linear-gradient(135deg, rgba(168, 85, 247, 0.34), transparent 48%),
+    rgba(3, 31, 61, 0.9);
+}
+
+.hero-glow {
+  position: absolute;
+  inset: -60px;
+  background: conic-gradient(
+    from 120deg,
+    transparent,
+    rgba(255, 234, 0, 0.18),
+    transparent,
+    rgba(56, 189, 248, 0.16),
+    transparent
+  );
+  animation: heroSpin 9s linear infinite;
+}
+
+.hero-copy,
+.hero-icon {
+  position: relative;
+  z-index: 2;
 }
 
 .detail-hero span,
-.wheel-result-modal > span {
+.wheel-result-modal > span,
+.wheel-title-row span {
   color: #ffea00;
   font-size: 0.72rem;
   font-weight: 1000;
@@ -82,8 +118,11 @@ ion-content.event-detail-content {
   place-items: center;
   border-radius: 22px;
   color: #04111f;
-  background: #ffea00;
-  box-shadow: 0 8px 0 rgba(129, 90, 0, 0.78);
+  background: linear-gradient(180deg, #fff476, #ffcc00);
+  box-shadow:
+    0 8px 0 rgba(129, 90, 0, 0.78),
+    0 0 28px rgba(255, 234, 0, 0.42);
+  animation: heroIconFloat 2.4s ease-in-out infinite;
 }
 
 .hero-icon ion-icon {
@@ -91,54 +130,205 @@ ion-content.event-detail-content {
 }
 
 .wheel-panel {
+  position: relative;
   overflow: hidden;
   margin-top: 14px;
-  border-radius: 24px;
+  border-radius: 28px;
   padding: 16px;
+  background:
+    radial-gradient(
+      circle at 50% 36%,
+      rgba(255, 234, 0, 0.15),
+      transparent 34%
+    ),
+    linear-gradient(180deg, rgba(7, 44, 82, 0.92), rgba(3, 31, 61, 0.94));
+}
+
+.wheel-panel-glow {
+  position: absolute;
+  inset: -120px;
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    rgba(56, 189, 248, 0.16),
+    transparent,
+    rgba(255, 234, 0, 0.14),
+    transparent
+  );
+  animation: panelGlowSpin 12s linear infinite;
+}
+
+.wheel-title-row,
+.wheel-stage,
+.wheel-hint {
+  position: relative;
+  z-index: 2;
+}
+
+.wheel-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.wheel-title-row strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.98rem;
+  font-weight: 1000;
+}
+
+.spin-status {
+  padding: 7px 10px;
+  border-radius: 999px;
+  color: #04111f;
+  background: linear-gradient(180deg, #86efac, #22c55e);
+  font-size: 0.68rem;
+  font-weight: 1000;
+  white-space: nowrap;
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.24);
+}
+
+.wheel-panel-spinning .spin-status {
+  background: linear-gradient(180deg, #fde68a, #f97316);
+  box-shadow: 0 0 18px rgba(249, 115, 22, 0.32);
 }
 
 .wheel-stage {
-  position: relative;
   display: grid;
   place-items: center;
-  min-height: 300px;
+  min-height: 340px;
+  perspective: 900px;
+}
+
+.wheel-aura {
+  position: absolute;
+  width: 286px;
+  height: 286px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255, 234, 0, 0.22), transparent 55%),
+    radial-gradient(circle, rgba(14, 165, 233, 0.2), transparent 72%);
+  filter: blur(2px);
+  animation: auraPulse 2s ease-in-out infinite;
+}
+
+.wheel-shadow {
+  position: absolute;
+  width: 220px;
+  height: 28px;
+  bottom: 36px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.32);
+  filter: blur(7px);
 }
 
 .fortune-wheel {
   position: relative;
-  width: 226px;
-  height: 226px;
+  width: 258px;
+  height: 258px;
   border-radius: 50%;
-  border: 8px solid #ffea00;
-  background: conic-gradient(
-    #0ea5e9 0deg 51deg,
-    #a855f7 51deg 102deg,
-    #22c55e 102deg 153deg,
-    #f97316 153deg 204deg,
-    #ec4899 204deg 255deg,
-    #38bdf8 255deg 306deg,
-    #facc15 306deg 360deg
-  );
+  border: 10px solid #ffea00;
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      transparent 0 27%,
+      rgba(255, 255, 255, 0.1) 28% 29%,
+      transparent 30%
+    ),
+    conic-gradient(
+      #0ea5e9 0deg 51deg,
+      #a855f7 51deg 102deg,
+      #22c55e 102deg 153deg,
+      #f97316 153deg 204deg,
+      #ec4899 204deg 255deg,
+      #38bdf8 255deg 306deg,
+      #facc15 306deg 360deg
+    );
   box-shadow:
-    inset 0 0 0 5px rgba(255, 255, 255, 0.18),
-    0 18px 28px rgba(0, 0, 0, 0.35);
-  transition: transform 1.7s cubic-bezier(0.16, 0.76, 0.18, 1);
+    inset 0 0 0 5px rgba(255, 255, 255, 0.2),
+    inset 0 0 22px rgba(0, 0, 0, 0.3),
+    0 0 0 6px rgba(255, 255, 255, 0.05),
+    0 0 36px rgba(255, 234, 0, 0.28),
+    0 24px 34px rgba(0, 0, 0, 0.42);
+  transition: transform 2.8s cubic-bezier(0.08, 0.78, 0.12, 1);
+  transform-style: preserve-3d;
+}
+
+.fortune-wheel.spinning {
+  box-shadow:
+    inset 0 0 0 5px rgba(255, 255, 255, 0.2),
+    inset 0 0 24px rgba(0, 0, 0, 0.3),
+    0 0 0 6px rgba(255, 255, 255, 0.05),
+    0 0 46px rgba(255, 234, 0, 0.42),
+    0 0 72px rgba(56, 189, 248, 0.24),
+    0 26px 36px rgba(0, 0, 0, 0.42);
+}
+
+.fortune-wheel::before {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.34),
+    transparent 34%,
+    rgba(255, 255, 255, 0.14) 66%,
+    transparent
+  );
+  pointer-events: none;
 }
 
 .fortune-wheel::after {
-  content: "";
+  content: "🐢";
   position: absolute;
-  inset: 68px;
+  inset: 78px;
+  z-index: 3;
   border-radius: 50%;
-  background: #031f3d;
+  display: grid;
+  place-items: center;
+  font-size: 2.2rem;
+  background:
+    radial-gradient(
+      circle at 35% 24%,
+      rgba(255, 255, 255, 0.28),
+      transparent 30%
+    ),
+    linear-gradient(180deg, #0b5fb2, #031f3d);
   box-shadow:
-    inset 0 0 0 3px rgba(255, 255, 255, 0.12),
-    0 0 0 6px rgba(255, 234, 0, 0.5);
+    inset 0 0 0 4px rgba(255, 255, 255, 0.12),
+    0 0 0 7px rgba(255, 234, 0, 0.64),
+    0 0 26px rgba(255, 234, 0, 0.3);
+}
+
+.wheel-rim-dots {
+  position: absolute;
+  inset: -5px;
+  z-index: 2;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    #fff7ad 0deg 4deg,
+    transparent 4deg 18deg
+  );
+  -webkit-mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 14px),
+    #000 calc(100% - 13px)
+  );
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 14px),
+    #000 calc(100% - 13px)
+  );
+  opacity: 0.82;
 }
 
 .fortune-wheel span {
   position: absolute;
-  inset: 8px;
+  inset: 10px;
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -146,43 +336,75 @@ ion-content.event-detail-content {
 }
 
 .fortune-wheel span b {
-  width: 54px;
-  margin-top: 9px;
+  width: 62px;
+  margin-top: 12px;
+  padding: 3px 4px;
+  border-radius: 999px;
   color: #fff;
-  font-size: 0.62rem;
+  font-size: 0.64rem;
   font-weight: 1000;
   text-align: center;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.55);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.58);
+  background: rgba(2, 8, 23, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+.wheel-pointer-wrap {
+  position: absolute;
+  top: 14px;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 8px 7px rgba(0, 0, 0, 0.42));
+  animation: pointerBounce 1.3s ease-in-out infinite;
+}
+
+.wheel-pointer-shine {
+  position: absolute;
+  top: -8px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 234, 0, 0.18);
+  filter: blur(8px);
 }
 
 .wheel-pointer {
-  position: absolute;
-  top: 24px;
   width: 0;
   height: 0;
-  border-left: 14px solid transparent;
-  border-right: 14px solid transparent;
-  border-top: 28px solid #ffea00;
-  filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.38));
+  border-left: 18px solid transparent;
+  border-right: 18px solid transparent;
+  border-top: 38px solid #ffea00;
+}
+
+.wheel-pointer::after {
+  content: "";
+  position: absolute;
+  transform: translate(-9px, -35px);
+  width: 18px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff7ad;
 }
 
 .wheel-button,
 .double-button,
 .continue-button {
   border: 0;
-  border-radius: 15px;
+  border-radius: 17px;
   color: #04111f;
-  background: linear-gradient(180deg, #ffea00, #ffc400);
+  background: linear-gradient(180deg, #fff476, #ffc400);
   font-weight: 1000;
   box-shadow:
-    0 5px 0 rgba(129, 90, 0, 0.78),
-    0 10px 16px rgba(0, 0, 0, 0.24);
+    0 6px 0 rgba(129, 90, 0, 0.78),
+    0 12px 18px rgba(0, 0, 0, 0.28);
 }
 
 .wheel-button {
   position: absolute;
-  width: 112px;
-  min-height: 54px;
+  z-index: 7;
+  width: 118px;
+  min-height: 58px;
   padding: 0 12px;
   display: flex;
   align-items: center;
@@ -190,6 +412,19 @@ ion-content.event-detail-content {
   gap: 5px;
   font-size: 0.76rem;
   line-height: 1.05;
+  animation: mainButtonPulse 1.7s ease-in-out infinite;
+}
+
+.wheel-button strong {
+  display: block;
+  font-size: 1rem;
+  line-height: 0.95;
+}
+
+.wheel-button small {
+  display: block;
+  font-size: 0.68rem;
+  text-transform: uppercase;
 }
 
 .wheel-button ion-icon {
@@ -202,6 +437,74 @@ ion-content.event-detail-content {
   color: #cbd5e1;
   background: rgba(15, 23, 42, 0.56);
   box-shadow: none;
+  animation: none;
+}
+
+.wheel-hint {
+  margin-top: 4px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #dbeafe;
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.wheel-hint ion-icon {
+  color: #ffea00;
+  font-size: 1rem;
+}
+
+.wheel-sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.wheel-sparks i {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ffea00;
+  opacity: 0;
+  box-shadow: 0 0 12px rgba(255, 234, 0, 0.8);
+  animation: sparkFloat 2.4s ease-in-out infinite;
+}
+
+.wheel-sparks i:nth-child(1) {
+  left: 16%;
+  top: 28%;
+  animation-delay: 0.1s;
+}
+.wheel-sparks i:nth-child(2) {
+  right: 14%;
+  top: 34%;
+  animation-delay: 0.42s;
+}
+.wheel-sparks i:nth-child(3) {
+  left: 23%;
+  bottom: 23%;
+  animation-delay: 0.74s;
+}
+.wheel-sparks i:nth-child(4) {
+  right: 22%;
+  bottom: 20%;
+  animation-delay: 1.05s;
+}
+.wheel-sparks i:nth-child(5) {
+  left: 48%;
+  top: 10%;
+  animation-delay: 1.36s;
+}
+.wheel-sparks i:nth-child(6) {
+  right: 45%;
+  bottom: 9%;
+  animation-delay: 1.68s;
 }
 
 .wheel-result-backdrop {
@@ -219,21 +522,25 @@ ion-content.event-detail-content {
   position: relative;
   overflow: hidden;
   width: min(330px, 100%);
-  border-radius: 24px;
-  padding: 26px 20px 18px;
+  border-radius: 28px;
+  padding: 28px 20px 18px;
   text-align: center;
-  border: 1px solid rgba(255, 234, 0, 0.32);
+  border: 1px solid rgba(255, 234, 0, 0.36);
   background:
-    linear-gradient(145deg, rgba(14, 165, 233, 0.24), transparent 48%),
+    radial-gradient(circle at 50% 0, rgba(255, 234, 0, 0.18), transparent 32%),
+    linear-gradient(145deg, rgba(14, 165, 233, 0.26), transparent 48%),
     linear-gradient(180deg, #063f7d, #031f3d);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.42);
+  box-shadow:
+    0 0 34px rgba(255, 234, 0, 0.18),
+    0 26px 52px rgba(0, 0, 0, 0.48);
+  animation: resultModalIn 520ms cubic-bezier(0.22, 1.35, 0.36, 1) both;
 }
 
 .modal-close {
   position: absolute;
   top: 12px;
   right: 12px;
-  z-index: 3;
+  z-index: 4;
   width: 34px;
   height: 34px;
   border: 0;
@@ -244,8 +551,13 @@ ion-content.event-detail-content {
   background: rgba(255, 82, 96, 0.92);
 }
 
-.result-shine {
+.result-shine,
+.result-ring {
   position: absolute;
+  pointer-events: none;
+}
+
+.result-shine {
   inset: -36px;
   background: conic-gradient(
     from 90deg,
@@ -254,6 +566,17 @@ ion-content.event-detail-content {
     transparent
   );
   animation: resultShine 4.5s linear infinite;
+}
+
+.result-ring {
+  left: 50%;
+  top: 28px;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  border: 2px dashed rgba(255, 234, 0, 0.38);
+  animation: resultRingSpin 8s linear infinite;
 }
 
 .result-icon,
@@ -266,28 +589,28 @@ ion-content.event-detail-content {
 }
 
 .result-icon {
-  width: 92px;
-  height: 92px;
+  width: 96px;
+  height: 96px;
   margin: 0 auto 12px;
   display: grid;
   place-items: center;
-  border-radius: 26px;
+  border-radius: 28px;
   color: #04111f;
-  background: #ffea00;
+  background: linear-gradient(180deg, #fff476, #ffcc00);
   box-shadow:
-    0 8px 0 rgba(129, 90, 0, 0.78),
-    0 0 22px rgba(255, 234, 0, 0.46);
+    0 9px 0 rgba(129, 90, 0, 0.78),
+    0 0 28px rgba(255, 234, 0, 0.52);
   animation: prizePop 620ms cubic-bezier(0.16, 0.95, 0.2, 1.18) both;
 }
 
 .result-icon img {
-  width: 86px;
-  height: 86px;
+  width: 88px;
+  height: 88px;
   object-fit: contain;
 }
 
 .result-icon ion-icon {
-  font-size: 2.7rem;
+  font-size: 2.8rem;
 }
 
 .wheel-result-modal h2 {
@@ -306,15 +629,145 @@ ion-content.event-detail-content {
   font-size: 0.82rem;
 }
 
+.double-button {
+  animation: doublePulse 1.6s ease-in-out infinite;
+}
+
 .continue-button {
   color: #e0f2fe;
   background: rgba(255, 255, 255, 0.13);
   box-shadow: none;
 }
 
+.result-confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.result-confetti i {
+  position: absolute;
+  top: -20px;
+  width: 9px;
+  height: 16px;
+  border-radius: 4px;
+  background: #ffea00;
+  animation: confettiFall 1.8s ease-in forwards;
+}
+
+.result-confetti i:nth-child(2n) {
+  background: #38bdf8;
+}
+.result-confetti i:nth-child(3n) {
+  background: #22c55e;
+}
+.result-confetti i:nth-child(4n) {
+  background: #ec4899;
+}
+.result-confetti i:nth-child(1) {
+  left: 10%;
+  animation-delay: 0.02s;
+}
+.result-confetti i:nth-child(2) {
+  left: 22%;
+  animation-delay: 0.2s;
+}
+.result-confetti i:nth-child(3) {
+  left: 34%;
+  animation-delay: 0.08s;
+}
+.result-confetti i:nth-child(4) {
+  left: 47%;
+  animation-delay: 0.28s;
+}
+.result-confetti i:nth-child(5) {
+  left: 58%;
+  animation-delay: 0.15s;
+}
+.result-confetti i:nth-child(6) {
+  left: 70%;
+  animation-delay: 0.34s;
+}
+.result-confetti i:nth-child(7) {
+  left: 82%;
+  animation-delay: 0.1s;
+}
+.result-confetti i:nth-child(8) {
+  left: 92%;
+  animation-delay: 0.25s;
+}
+
+@keyframes heroSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes panelGlowSpin {
+  to {
+    transform: rotate(-360deg);
+  }
+}
 @keyframes resultShine {
   to {
     transform: rotate(360deg);
+  }
+}
+@keyframes resultRingSpin {
+  to {
+    transform: translateX(-50%) rotate(360deg);
+  }
+}
+
+@keyframes heroIconFloat {
+  50% {
+    transform: translateY(-5px) rotate(-3deg);
+  }
+}
+
+@keyframes auraPulse {
+  50% {
+    transform: scale(1.06);
+    opacity: 0.72;
+  }
+}
+
+@keyframes pointerBounce {
+  50% {
+    transform: translateY(4px);
+  }
+}
+
+@keyframes mainButtonPulse {
+  50% {
+    transform: scale(1.04);
+    filter: brightness(1.06);
+  }
+}
+
+@keyframes sparkFloat {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.72);
+  }
+  45% {
+    opacity: 1;
+    transform: translateY(-8px) scale(1);
+  }
+}
+
+@keyframes resultModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.84);
+  }
+  70% {
+    transform: translateY(-4px) scale(1.04);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -323,24 +776,48 @@ ion-content.event-detail-content {
     opacity: 0;
     transform: translateY(18px) scale(0.72) rotate(-6deg);
   }
-
   to {
     opacity: 1;
     transform: translateY(0) scale(1) rotate(0);
   }
 }
 
+@keyframes doublePulse {
+  50% {
+    transform: scale(1.02);
+    filter: brightness(1.08);
+  }
+}
+
+@keyframes confettiFall {
+  to {
+    transform: translateY(110vh) rotate(520deg);
+    opacity: 0;
+  }
+}
+
 @media (max-width: 390px) {
+  .wheel-stage {
+    min-height: 320px;
+  }
+
   .fortune-wheel {
-    width: 204px;
-    height: 204px;
+    width: 238px;
+    height: 238px;
   }
 
   .fortune-wheel::after {
-    inset: 62px;
+    inset: 72px;
   }
 
   .fortune-wheel span b {
-    margin-top: 8px;
+    width: 58px;
+    margin-top: 10px;
+    font-size: 0.6rem;
+  }
+
+  .wheel-aura {
+    width: 266px;
+    height: 266px;
   }
 }

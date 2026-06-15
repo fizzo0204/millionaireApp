@@ -91,9 +91,11 @@ export class EventsWheelPage implements OnInit {
       const targetAngle =
         360 - (safeSegmentIndex * segmentAngle + segmentAngle / 2);
 
-      this.wheelRotation += 1440 + targetAngle;
+      // Aumentiamo i giri e la durata per dare alla ruota un effetto più "gioco mobile"
+      // e rendere più soddisfacente il rallentamento prima del premio finale.
+      this.wheelRotation += 2160 + targetAngle;
 
-      await this.wait(1700);
+      await this.wait(2800);
 
       this.wheelReward = result;
       void this.haptics.success();
@@ -104,7 +106,11 @@ export class EventsWheelPage implements OnInit {
   }
 
   async doubleWheelReward(): Promise<void> {
-    if (!this.wheelReward || this.wheelReward.doubled || this.wheelDoubleLoading) {
+    if (
+      !this.wheelReward ||
+      this.wheelReward.doubled ||
+      this.wheelDoubleLoading
+    ) {
       return;
     }
 
@@ -136,8 +142,9 @@ export class EventsWheelPage implements OnInit {
     void this.navigation.navigateByUrl('/events');
   }
 
+  // Piccola utility interna per sincronizzare la durata dell'animazione CSS
+  // con la comparsa della modale del premio.
   private wait(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
-
 }
