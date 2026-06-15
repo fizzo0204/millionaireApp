@@ -212,14 +212,42 @@ export class DailyEventsService {
   }
 
   // Riscatta il premio di una missione completata.
-  async claimMissionReward(missionId: string): Promise<number> {
+  // Restituisce anche l'eventuale premio finale 7/7.
+  async claimMissionReward(missionId: string): Promise<{
+    rewardCoins: number;
+    finalRewardCoins: number;
+    finalRewardClaimed: boolean;
+  }> {
     const result = await this.dailyMissionService.claimMissionReward(missionId);
 
     if (result.notificationCount !== null) {
       this.updateNotificationCount(result.notificationCount);
     }
 
-    return result.rewardCoins;
+    return {
+      rewardCoins: result.rewardCoins,
+      finalRewardCoins: result.finalRewardCoins,
+      finalRewardClaimed: result.finalRewardClaimed,
+    };
+  }
+
+  // Controlla e assegna il premio finale missioni se tutte le missioni
+  // erano gia state riscattate prima dell'apertura della pagina.
+  async claimFinalMissionsRewardIfAvailable(): Promise<{
+    finalRewardCoins: number;
+    finalRewardClaimed: boolean;
+  }> {
+    const result =
+      await this.dailyMissionService.claimFinalMissionsRewardIfAvailable();
+
+    if (result.notificationCount !== null) {
+      this.updateNotificationCount(result.notificationCount);
+    }
+
+    return {
+      finalRewardCoins: result.finalRewardCoins,
+      finalRewardClaimed: result.finalRewardClaimed,
+    };
   }
 
   // Esegue un giro della ruota eventi.

@@ -6,120 +6,141 @@
     </button>
 
     @if (loading) {
-      <div class="events-loader">
-        <ion-spinner name="crescent"></ion-spinner>
-        <span>Carico missioni...</span>
-      </div>
+    <div class="events-loader">
+      <ion-spinner name="crescent"></ion-spinner>
+      <span>Carico missioni...</span>
+    </div>
     } @else {
-      <section class="detail-hero">
-        <div>
-          <span>Missioni giornaliere</span>
-          <h1>Obiettivi di oggi</h1>
-          <p>Completa le attivita daily e riscatta TurtleCoins extra.</p>
+    <section class="detail-hero">
+      <div>
+        <span>Missioni giornaliere</span>
+        <h1>Obiettivi di oggi</h1>
+        <p>Completa le attivita daily e riscatta TurtleCoins extra.</p>
+      </div>
+
+      <strong>{{ completedMissions }}/{{ missions.length }}</strong>
+    </section>
+
+    <div class="missions-progress">
+      <div [style.width.%]="missionProgressPercent"></div>
+    </div>
+
+    <section class="missions-grid">
+      @for (mission of missions; track mission.id) {
+      <article
+        class="mission-card"
+        [class.completed]="mission.completed"
+        [class.claimed]="mission.claimed"
+        [class.reward-claimed]="recentlyClaimedMissionId === mission.id"
+        [class.switch-loading]="missionSwitchLoadingId === mission.id"
+        [class.switch-revealed]="recentlySwitchedMissionId === mission.id"
+      >
+        @if (recentlyClaimedMissionId === mission.id) {
+        <div class="mission-reward-pop">
+          <img src="assets/ui/coin-turtle.webp" alt="TurtleCoins" />
+          <span>+{{ mission.rewardCoins }}</span>
+        </div>
+        }
+
+        <div class="mission-top">
+          <div class="mission-status">
+            @if (mission.claimed) {
+            <ion-icon name="checkmark-circle"></ion-icon>
+            } @else {
+            <span>{{ mission.progress }}/{{ mission.target }}</span>
+            }
+          </div>
+
+          <div class="mission-top-actions">
+            @if (mission.canSwitch) {
+            <button
+              type="button"
+              class="mission-switch-icon"
+              aria-label="Cambia missione"
+              [disabled]="missionSwitchLoadingId !== null || missionClaimLoadingId !== null"
+              (click)="switchMission($event, mission)"
+              (mousedown)="switchMission($event, mission)"
+              (touchstart)="switchMission($event, mission)"
+            >
+              @if (missionSwitchLoadingId === mission.id) {
+              <ion-spinner name="crescent"></ion-spinner>
+              } @else if (mission.switchRequiresAd) {
+              <ion-icon name="play-circle-outline"></ion-icon>
+              } @else {
+              <ion-icon name="refresh-outline"></ion-icon>
+              }
+            </button>
+            }
+
+            <span class="mission-badge">
+              @if (mission.claimed) { Fatto } @else if (mission.completed) {
+              Pronta } @else if (mission.switched) { Nuova } @else { In corso }
+            </span>
+          </div>
         </div>
 
-        <strong>{{ completedMissions }}/{{ missions.length }}</strong>
-      </section>
+        <div class="mission-copy">
+          <h2>{{ mission.title }}</h2>
+          <p>{{ mission.description }}</p>
 
-      <div class="missions-progress">
-        <div [style.width.%]="missionProgressPercent"></div>
-      </div>
+          <div class="mission-track">
+            <div [style.width.%]="getMissionPercent(mission)"></div>
+          </div>
+        </div>
 
-      <section class="missions-grid">
-        @for (mission of missions; track mission.id) {
-          <article
-            class="mission-card"
-            [class.completed]="mission.completed"
-            [class.claimed]="mission.claimed"
-            [class.reward-claimed]="recentlyClaimedMissionId === mission.id"
-            [class.switch-loading]="missionSwitchLoadingId === mission.id"
-            [class.switch-revealed]="recentlySwitchedMissionId === mission.id"
-          >
-            @if (recentlyClaimedMissionId === mission.id) {
-              <div class="mission-reward-pop">
-                <img src="assets/ui/coin-turtle.webp" alt="TurtleCoins" />
-                <span>+{{ mission.rewardCoins }}</span>
-              </div>
-            }
-
-            <div class="mission-top">
-              <div class="mission-status">
-                @if (mission.claimed) {
-                  <ion-icon name="checkmark-circle"></ion-icon>
-                } @else {
-                  <span>{{ mission.progress }}/{{ mission.target }}</span>
-                }
-              </div>
-
-              <div class="mission-top-actions">
-                @if (mission.canSwitch) {
-                  <button
-                    type="button"
-                    class="mission-switch-icon"
-                    aria-label="Cambia missione"
-                    [disabled]="missionSwitchLoadingId !== null || missionClaimLoadingId !== null"
-                    (click)="switchMission($event, mission)"
-                    (mousedown)="switchMission($event, mission)"
-                    (touchstart)="switchMission($event, mission)"
-                  >
-                    @if (missionSwitchLoadingId === mission.id) {
-                      <ion-spinner name="crescent"></ion-spinner>
-                    } @else {
-                      <ion-icon name="refresh-outline"></ion-icon>
-                    }
-                  </button>
-                }
-
-                <span class="mission-badge">
-                  @if (mission.claimed) {
-                    Fatto
-                  } @else if (mission.completed) {
-                    Pronta
-                  } @else if (mission.switched) {
-                    Nuova
-                  } @else {
-                    In corso
-                  }
-                </span>
-              </div>
-            </div>
-
-            <div class="mission-copy">
-              <h2>{{ mission.title }}</h2>
-              <p>{{ mission.description }}</p>
-
-              <div class="mission-track">
-                <div [style.width.%]="getMissionPercent(mission)"></div>
-              </div>
-            </div>
-
-            @if (mission.completed && !mission.claimed) {
-              <button
-                type="button"
-                class="mission-claim"
-                [disabled]="missionClaimLoadingId === mission.id"
-                (click)="claimMission(mission)"
-              >
-                @if (missionClaimLoadingId === mission.id) {
-                  <ion-spinner name="dots"></ion-spinner>
-                } @else {
-                  Riscatta
-                }
-              </button>
-            } @else {
-              <div class="mission-actions">
-                <div class="mission-foot">
-                  @if (mission.claimed) {
-                    Ricompensa ottenuta
-                  } @else {
-                    {{ mission.progress }}/{{ mission.target }}
-                  }
-                </div>
-              </div>
-            }
-          </article>
+        @if (mission.completed && !mission.claimed) {
+        <button
+          type="button"
+          class="mission-claim"
+          [disabled]="missionClaimLoadingId === mission.id"
+          (click)="claimMission(mission)"
+        >
+          @if (missionClaimLoadingId === mission.id) {
+          <ion-spinner name="dots"></ion-spinner>
+          } @else { Riscatta }
+        </button>
+        } @else {
+        <div class="mission-actions">
+          <div class="mission-foot">
+            @if (mission.claimed) { Ricompensa ottenuta } @else { {{
+            mission.progress }}/{{ mission.target }} }
+          </div>
+        </div>
         }
-      </section>
+      </article>
+      }
+    </section>
     }
   </div>
+
+  @if (showFinalMissionRewardModal) {
+  <div class="final-mission-backdrop">
+    <div class="final-mission-modal">
+      <div class="final-mission-glow"></div>
+
+      <div class="final-mission-chest">
+        <img src="assets/ui/epic-chest-reward.webp" alt="Forziere missioni" />
+      </div>
+
+      <span>Missioni completate</span>
+      <h2>Forziere giornaliero!</h2>
+
+      <p>Hai riscattato tutte le missioni di oggi. Ecco il premio finale.</p>
+
+      <div class="final-mission-reward">
+        <img src="assets/ui/coin-turtle.webp" alt="TurtleCoins" />
+        <strong>+{{ finalMissionRewardCoins }}</strong>
+        <small>TurtleCoins</small>
+      </div>
+
+      <button
+        type="button"
+        class="final-mission-button"
+        (click)="closeFinalMissionReward()"
+      >
+        Fantastico!
+      </button>
+    </div>
+  </div>
+  }
 </ion-content>

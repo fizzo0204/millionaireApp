@@ -6,6 +6,7 @@ import {
   DailyMissionView,
 } from 'src/app/models/daily-events.model';
 import { Subscription } from 'rxjs';
+import { AdsService } from 'src/app/services/ads.service';
 import { DailyEventsService } from 'src/app/services/daily-events.service';
 import { HapticsService } from 'src/app/services/haptics.service';
 import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
@@ -20,6 +21,7 @@ import { NavigationTransitionService } from 'src/app/services/navigation-transit
 export class EventsMissionsPage implements OnInit, OnDestroy {
   private navigation = inject(NavigationTransitionService);
   private dailyEventsService = inject(DailyEventsService);
+  private ads = inject(AdsService);
   private haptics = inject(HapticsService);
 
   loading = true;
@@ -27,6 +29,8 @@ export class EventsMissionsPage implements OnInit, OnDestroy {
   missionSwitchLoadingId: string | null = null;
   recentlyClaimedMissionId: string | null = null;
   recentlySwitchedMissionId: string | null = null;
+  showFinalMissionRewardModal = false;
+  finalMissionRewardCoins = 0;
   missions: DailyMissionView[] = [];
   private claimAnimationTimer?: ReturnType<typeof setTimeout>;
   private switchAnimationTimer?: ReturnType<typeof setTimeout>;
@@ -66,6 +70,7 @@ export class EventsMissionsPage implements OnInit, OnDestroy {
 
     try {
       this.missions = await this.dailyEventsService.getTodayMissions();
+      await this.checkFinalMissionRewardIfNeeded();
     } finally {
       if (showLoader) {
         this.loading = false;
@@ -86,14 +91,19 @@ export class EventsMissionsPage implements OnInit, OnDestroy {
     this.missionClaimLoadingId = mission.id;
 
     try {
-      const coins = await this.dailyEventsService.claimMissionReward(
+      const result = await this.dailyEventsService.claimMissionReward(
         mission.id,
       );
 
-      if (coins > 0) {
+      if (result.rewardCoins > 0) {
         this.markMissionAsClaimed(mission.id);
         this.showClaimAnimation(mission.id);
         void this.haptics.success();
+
+        if (result.finalRewardClaimed && result.finalRewardCoins > 0) {
+          this.showFinalMissionReward(result.finalRewardCoins);
+        }
+
         return;
       }
 
@@ -122,6 +132,19 @@ export class EventsMissionsPage implements OnInit, OnDestroy {
     this.missionSwitchLoadingId = mission.id;
 
     try {
+      /*
+       * La prima sostituzione della missione e gratuita.
+       * Se la missione e gia stata cambiata almeno una volta, chiediamo
+       * un video premio prima di generare una nuova missione.
+       */
+      if (mission.switchRequiresAd) {
+        const rewarded = await this.ads.showRewardedAd();
+
+        if (!rewarded) {
+          return;
+        }
+      }
+
       const replacement = await this.dailyEventsService.switchDailyMission(
         mission.originalMissionId,
       );
@@ -138,6 +161,10 @@ export class EventsMissionsPage implements OnInit, OnDestroy {
     } finally {
       this.missionSwitchLoadingId = null;
     }
+  }
+
+  closeFinalMissionReward(): void {
+    this.showFinalMissionRewardModal = false;
   }
 
   goBack(): void {
@@ -212,7 +239,8 @@ export class EventsMissionsPage implements OnInit, OnDestroy {
         claimed: false,
         completed: false,
         switched: true,
-        canSwitch: false,
+        canSwitch: true,
+        switchRequiresAd: true,
       };
     });
   }
@@ -228,5 +256,28 @@ export class EventsMissionsPage implements OnInit, OnDestroy {
         progress: mission.target,
       };
     });
+  }
+
+  // Controlla se tutte le missioni sono state riscattate e, in quel caso,
+  // prova ad assegnare il premio finale. Serve anche per gli utenti che avevano
+  // gia completato tutto prima della fix.
+  private async checkFinalMissionRewardIfNeeded(): Promise<void> {
+    if (this.missions.length === 0) return;
+    if (!this.missions.every((mission) => mission.claimed)) return;
+
+    const result =
+      await this.dailyEventsService.claimFinalMissionsRewardIfAvailable();
+
+    if (result.finalRewardClaimed && result.finalRewardCoins > 0) {
+      this.showFinalMissionReward(result.finalRewardCoins);
+    }
+  }
+
+  // Mostra la modale finale quando l'utente completa e riscatta tutte
+  // le missioni giornaliere.
+  private showFinalMissionReward(coins: number): void {
+    this.finalMissionRewardCoins = coins;
+    this.showFinalMissionRewardModal = true;
+    void this.haptics.success();
   }
 }

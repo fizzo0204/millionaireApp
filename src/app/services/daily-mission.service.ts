@@ -30,6 +30,13 @@ interface MissionNotificationResult {
   notificationCount: number | null;
 }
 
+interface MissionClaimResult {
+  rewardCoins: number;
+  finalRewardCoins: number;
+  finalRewardClaimed: boolean;
+  notificationCount: number | null;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -39,6 +46,7 @@ export class DailyMissionService {
   private auth = inject(AuthService);
   private userStatsService = inject(UserStatsService);
   private readonly dailyCooldownMs = 24 * 60 * 60 * 1000;
+  private readonly finalMissionsRewardCoins = 25;
 
   // Recupera il piano missioni previsto per il giorno corrente.
   getTodayPlan(): DailyMissionConfig[] {
@@ -77,10 +85,8 @@ export class DailyMissionService {
         completed,
         switched,
         canSwitch:
-          originalMission.metric !== 'adsWatched' &&
-          !data.missionSwitches[originalMission.id] &&
-          !claimed &&
-          !completed,
+          originalMission.metric !== 'adsWatched' && !claimed && !completed,
+        switchRequiresAd: switched,
       };
     });
 
@@ -135,6 +141,8 @@ export class DailyMissionService {
   }
 
   // Cambia una missione giornaliera con una missione alternativa valida.
+  // La prima sostituzione resta gratuita; dalla seconda in poi il video
+  // viene gestito dalla pagina prima di chiamare questo metodo.
   async switchDailyMission(originalMissionId: string): Promise<{
     replacement: DailyMissionConfig | null;
     notificationCount: number | null;
@@ -157,10 +165,6 @@ export class DailyMissionService {
         );
 
         if (!originalMission || originalMission.metric === 'adsWatched') {
-          return null;
-        }
-
-        if (dailyEvents.missionSwitches[originalMission.id]) {
           return null;
         }
 
@@ -271,16 +275,24 @@ export class DailyMissionService {
   }
 
   // Riscatta il premio di una missione giornaliera completata.
-  async claimMissionReward(missionId: string): Promise<{
-    rewardCoins: number;
-    notificationCount: number | null;
-  }> {
+  // Se dopo questo riscatto risultano riscattate tutte le missioni,
+  // assegna anche il premio finale giornaliero una sola volta.
+  async claimMissionReward(missionId: string): Promise<MissionClaimResult> {
     const user = await firstValueFrom(this.auth.user$);
 
-    if (!user) return { rewardCoins: 0, notificationCount: null };
+    if (!user) {
+      return {
+        rewardCoins: 0,
+        finalRewardCoins: 0,
+        finalRewardClaimed: false,
+        notificationCount: null,
+      };
+    }
 
     const userRef = doc(this.firestore, `users/${user.uid}`);
     let updatedDailyEvents: DailyEventsData | null = null;
+    let finalRewardCoins = 0;
+    let finalRewardClaimed = false;
 
     const rewardCoins = await this.runFirestore(() =>
       runTransaction(this.firestore, async (transaction) => {
@@ -290,9 +302,8 @@ export class DailyMissionService {
 
         const data = snapshot.data();
         const dailyEvents = this.normalizeDailyEventsData(data['dailyEvents']);
-        const mission = this.getTodayResolvedPlan(dailyEvents).find(
-          (item) => item.id === missionId,
-        );
+        const resolvedPlan = this.getTodayResolvedPlan(dailyEvents);
+        const mission = resolvedPlan.find((item) => item.id === missionId);
 
         if (!mission) return 0;
 
@@ -312,11 +323,22 @@ export class DailyMissionService {
             : this.userStatsService.defaultStats.coins;
 
         dailyEvents.missionClaims[mission.id] = true;
+
+        if (this.canClaimFinalMissionsReward(dailyEvents, resolvedPlan)) {
+          finalRewardCoins = this.finalMissionsRewardCoins;
+          finalRewardClaimed = true;
+          dailyEvents.missionsFinalReward = {
+            claimedDate: this.todayKey,
+            claimedAt: new Date().toISOString(),
+            rewardCoins: finalRewardCoins,
+          };
+        }
+
         updatedDailyEvents = dailyEvents;
 
         transaction.update(userRef, {
           dailyEvents,
-          'stats.coins': currentCoins + mission.rewardCoins,
+          'stats.coins': currentCoins + mission.rewardCoins + finalRewardCoins,
         });
 
         return mission.rewardCoins;
@@ -325,6 +347,76 @@ export class DailyMissionService {
 
     return {
       rewardCoins,
+      finalRewardCoins,
+      finalRewardClaimed,
+      notificationCount: updatedDailyEvents
+        ? this.getNotificationCountFromData(updatedDailyEvents)
+        : null,
+    };
+  }
+
+  // Controlla il premio finale quando l'utente aveva gia riscattato tutto
+  // prima della fix oppure rientra nella pagina missioni a 7/7 completato.
+  async claimFinalMissionsRewardIfAvailable(): Promise<{
+    finalRewardCoins: number;
+    finalRewardClaimed: boolean;
+    notificationCount: number | null;
+  }> {
+    const user = await firstValueFrom(this.auth.user$);
+
+    if (!user) {
+      return {
+        finalRewardCoins: 0,
+        finalRewardClaimed: false,
+        notificationCount: null,
+      };
+    }
+
+    const userRef = doc(this.firestore, `users/${user.uid}`);
+    let updatedDailyEvents: DailyEventsData | null = null;
+    let finalRewardCoins = 0;
+    let finalRewardClaimed = false;
+
+    await this.runFirestore(() =>
+      runTransaction(this.firestore, async (transaction) => {
+        const snapshot = await transaction.get(userRef);
+
+        if (!snapshot.exists()) return;
+
+        const data = snapshot.data();
+        const dailyEvents = this.normalizeDailyEventsData(data['dailyEvents']);
+        const resolvedPlan = this.getTodayResolvedPlan(dailyEvents);
+
+        if (!this.canClaimFinalMissionsReward(dailyEvents, resolvedPlan)) {
+          return;
+        }
+
+        const stats = data['stats'] ?? {};
+        const currentCoins =
+          typeof stats?.coins === 'number'
+            ? stats.coins
+            : this.userStatsService.defaultStats.coins;
+
+        finalRewardCoins = this.finalMissionsRewardCoins;
+        finalRewardClaimed = true;
+        dailyEvents.missionsFinalReward = {
+          claimedDate: this.todayKey,
+          claimedAt: new Date().toISOString(),
+          rewardCoins: finalRewardCoins,
+        };
+
+        updatedDailyEvents = dailyEvents;
+
+        transaction.update(userRef, {
+          dailyEvents,
+          'stats.coins': currentCoins + finalRewardCoins,
+        });
+      }),
+    );
+
+    return {
+      finalRewardCoins,
+      finalRewardClaimed,
       notificationCount: updatedDailyEvents
         ? this.getNotificationCountFromData(updatedDailyEvents)
         : null,
@@ -394,6 +486,10 @@ export class DailyMissionService {
       missionClaims: data.missionClaims ?? {},
       missionSwitches: data.missionSwitches ?? {},
       missionProgressBaselines: data.missionProgressBaselines ?? {},
+      missionsFinalReward: {
+        ...fallback.missionsFinalReward,
+        ...(data.missionsFinalReward ?? {}),
+      },
       wheel: {
         ...fallback.wheel,
         ...(data.wheel ?? {}),
@@ -413,6 +509,11 @@ export class DailyMissionService {
       missionClaims: {},
       missionSwitches: {},
       missionProgressBaselines: {},
+      missionsFinalReward: {
+        claimedDate: null,
+        claimedAt: null,
+        rewardCoins: 0,
+      },
       wheel: {
         freeSpinDate: null,
         lastFreeSpinAt: null,
@@ -553,6 +654,22 @@ export class DailyMissionService {
       incompleteCandidates.length > 0 ? incompleteCandidates : candidates;
 
     return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  // Verifica se tutte le missioni del giorno sono state riscattate
+  // e se il premio finale non e gia stato assegnato oggi.
+  private canClaimFinalMissionsReward(
+    dailyEvents: DailyEventsData,
+    resolvedPlan: DailyMissionConfig[],
+  ): boolean {
+    if (resolvedPlan.length === 0) return false;
+    if (dailyEvents.missionsFinalReward.claimedDate === this.todayKey) {
+      return false;
+    }
+
+    return resolvedPlan.every(
+      (mission) => dailyEvents.missionClaims[mission.id] === true,
+    );
   }
 
   // Limita una metrica al target massimo previsto dalle missioni del giorno.

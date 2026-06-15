@@ -30,6 +30,7 @@ export interface DailyMissionView extends DailyMissionConfig {
   completed: boolean;
   switched: boolean;
   canSwitch: boolean;
+  switchRequiresAd: boolean;
 }
 
 export type DailyWheelRewardType = 'coins' | 'xp' | 'baseAvatar';
@@ -64,6 +65,11 @@ export interface DailyEventsData {
     freeSpinDate: string | null;
     lastFreeSpinAt?: unknown | null;
     spinsToday: number;
+  };
+  missionsFinalReward: {
+    claimedDate: string | null;
+    claimedAt?: unknown | null;
+    rewardCoins?: number;
   };
   dailyChallenge: {
     completedDate: string | null;

@@ -72,6 +72,7 @@ export class DailyEventGamesService {
     if (!user) return { reward: null, notificationCount: null };
 
     const userRef = doc(this.firestore, `users/${user.uid}`);
+
     let selectedReward = this.getWeightedWheelReward();
     let rewardResult: DailyWheelRewardResult | null = null;
     let updatedDailyEvents: DailyEventsData | null = null;
