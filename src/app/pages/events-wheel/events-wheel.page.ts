@@ -86,14 +86,24 @@ export class EventsWheelPage implements OnInit {
       const segmentIndex = this.wheelRewards.findIndex(
         (reward) => reward.id === result.reward.id,
       );
+
       const safeSegmentIndex = Math.max(segmentIndex, 0);
       const segmentAngle = 360 / this.wheelRewards.length;
+
+      /*
+       * Calcoliamo l'angolo finale esatto dello spicchio premiato.
+       * La ruota ruota nel tempo e quindi dobbiamo considerare anche
+       * la rotazione attuale, altrimenti dopo più giri il premio visivo
+       * può non corrispondere al premio reale.
+       */
       const targetAngle =
         360 - (safeSegmentIndex * segmentAngle + segmentAngle / 2);
 
-      // Aumentiamo i giri e la durata per dare alla ruota un effetto più "gioco mobile"
-      // e rendere più soddisfacente il rallentamento prima del premio finale.
-      this.wheelRotation += 2160 + targetAngle;
+      const currentAngle = ((this.wheelRotation % 360) + 360) % 360;
+      const extraRotationToTarget = (targetAngle - currentAngle + 360) % 360;
+
+      // Aggiungiamo giri completi + solo la rotazione necessaria per finire sul premio corretto.
+      this.wheelRotation += 2160 + extraRotationToTarget;
 
       await this.wait(2800);
 
