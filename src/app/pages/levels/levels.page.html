@@ -27,6 +27,13 @@
       </div>
     </div>
 
+    @if (caricamentoLivelli) {
+    <app-game-loader
+      icon="🎯"
+      title="Caricamento livelli..."
+      subtitle="Stiamo aggiornando i tuoi progressi"
+    ></app-game-loader>
+    } @else {
     <div class="levels-grid">
       @for (level of levels; track level.number) {
       <button
@@ -59,6 +66,7 @@
       </button>
       }
     </div>
+    }
   </div>
   @if (showNoLivesModal) {
   <div class="no-lives-backdrop">

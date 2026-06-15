@@ -514,10 +514,19 @@
         @if (!rewardDoubleLoading) { ▶ Guarda video e raddoppia } @else { Video
         in corso... }
       </button>
+      } @if (mostraPulsanteLivelloSuccessivo) {
+      <button
+        class="reward-next-level-btn"
+        type="button"
+        (click)="vaiAlLivelloSuccessivoDiretto()"
+      >
+        Vai al livello successivo
+        <ion-icon name="play-forward-outline"></ion-icon>
+      </button>
       }
 
       <button class="reward-btn" type="button" (click)="continueAfterReward()">
-        Continua
+        Torna ai livelli
         <ion-icon name="chevron-forward-outline"></ion-icon>
       </button>
     </div>

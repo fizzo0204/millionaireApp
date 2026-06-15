@@ -90,6 +90,8 @@ export class QuizPage implements OnInit, OnDestroy {
   levelNumber = 1;
   displayLevelNumber = 1;
   totalLevels = 0;
+  numeroLivelloSuccessivoDiretto: number | null = null;
+  mostraPulsanteLivelloSuccessivo = false;
   difficultyLevelNumbers: number[] = [];
   currentIndex = 0;
   correctAnswers = 0;
@@ -184,6 +186,27 @@ export class QuizPage implements OnInit, OnDestroy {
     this.totalLevels = this.difficultyLevelNumbers.length;
     this.displayLevelNumber =
       currentLevelIndex >= 0 ? currentLevelIndex + 1 : this.levelNumber;
+
+    this.aggiornaPulsanteLivelloSuccessivo(currentLevelIndex);
+  }
+
+  /**
+   * Calcola se nella modale premio possiamo mostrare il tasto
+   * per passare direttamente al livello successivo.
+   * Il tasto resta nascosto su sfida giornaliera, scalata e ultimo livello della difficoltà.
+   */
+  private aggiornaPulsanteLivelloSuccessivo(currentLevelIndex: number) {
+    const prossimoLivello =
+      currentLevelIndex >= 0
+        ? this.difficultyLevelNumbers[currentLevelIndex + 1]
+        : null;
+
+    this.numeroLivelloSuccessivoDiretto = prossimoLivello ?? null;
+
+    this.mostraPulsanteLivelloSuccessivo =
+      !this.dailyChallengeMode &&
+      !this.arcadeMode &&
+      this.numeroLivelloSuccessivoDiretto !== null;
   }
 
   ionViewWillLeave() {
@@ -675,12 +698,51 @@ export class QuizPage implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Chiude la modale premio e torna alla schermata dei livelli.
+   * È il comportamento già esistente del bottone "Continua".
+   */
   continueAfterReward() {
     this.haptics.heavy();
     this.showRewardModal = false;
     this.navigatingAway = true;
 
     this.goToExitPage();
+  }
+
+  /**
+   * Nuovo flusso per i quiz normali: dalla modale premio porta subito
+   * al livello successivo della stessa categoria/difficoltà, senza passare dai livelli.
+   *
+   * Fix importante: Ionic/Angular può riutilizzare la stessa QuizPage quando cambia
+   * solo il parametro della rotta. Per questo non ci limitiamo a navigare, ma
+   * aggiorniamo anche lo stato interno della pagina e ricarichiamo subito domande/progressi.
+   */
+  async vaiAlLivelloSuccessivoDiretto() {
+    const prossimoLivello = this.numeroLivelloSuccessivoDiretto;
+
+    if (!this.mostraPulsanteLivelloSuccessivo || !prossimoLivello) {
+      return;
+    }
+
+    this.haptics.heavy();
+    this.stopTimer();
+
+    this.showRewardModal = false;
+    this.showWrongModal = false;
+    this.showTimeModal = false;
+    this.showExitModal = false;
+    this.navigatingAway = false;
+
+    this.levelNumber = prossimoLivello;
+
+    void this.router.navigateByUrl(
+      `/quiz/${this.categoryId}/${this.difficultyId}/${prossimoLivello}`,
+      { replaceUrl: true },
+    );
+
+    await this.setupLevelProgress();
+    await this.loadQuestions();
   }
 
   async watchAdAndDoubleReward() {

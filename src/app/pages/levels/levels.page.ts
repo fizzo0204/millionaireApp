@@ -11,11 +11,12 @@ import { AdsService } from 'src/app/services/ads.service';
 import { LevelModel } from 'src/app/models/level.model';
 import { DifficultyId } from 'src/app/models/difficulty.model';
 import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
+import { GameLoaderComponent } from 'src/app/components/game-loader/game-loader.component';
 
 @Component({
   selector: 'app-levels',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonicModule, GameLoaderComponent],
   templateUrl: './levels.page.html',
   styleUrls: ['./levels.page.scss'],
 })
@@ -37,6 +38,7 @@ export class LevelsPage {
 
   levels: LevelModel[] = [];
   previousCompletedLevelNumbers: number[] = [];
+  caricamentoLivelli = true;
 
   showNoLivesModal = false;
   lifeLoading = false;
@@ -52,66 +54,91 @@ export class LevelsPage {
   }
 
   async ionViewWillEnter() {
-    await this.generateLevels();
-    await this.loadLevelProgress();
+    await this.caricaLivelliConProgressi();
   }
 
+  /**
+   * Carica numeri livelli e progressi in un unico passaggio.
+   * La griglia resta nascosta finché non abbiamo dati completi, così evitiamo
+   * il flash iniziale della card livello 1 non ancora aggiornata.
+   */
+  async caricaLivelliConProgressi() {
+    this.caricamentoLivelli = true;
+
+    try {
+      const caricamentoMinimo = this.attendiCaricamentoMinimoLivelli();
+      const user = await firstValueFrom(this.auth.user$);
+
+      const [numbers, completedLevelNumbers] = await Promise.all([
+        this.questionsService.getDifficultyLevelNumbers(
+          this.categoryId,
+          this.difficultyId,
+        ),
+        user
+          ? this.progressService.getCompletedLevelNumbers(
+              user.uid,
+              this.categoryId,
+              this.difficultyId,
+            )
+          : Promise.resolve([] as number[]),
+        caricamentoMinimo,
+      ]);
+
+      this.levels = numbers.map((number, index) => {
+        const completed = completedLevelNumbers.includes(number);
+
+        const wasCompletedBefore =
+          this.previousCompletedLevelNumbers.includes(number);
+
+        const justCompleted = completed && !wasCompletedBefore;
+        const previousLevelNumber = numbers[index - 1];
+
+        const unlocked =
+          index === 0 || completedLevelNumbers.includes(previousLevelNumber);
+
+        return {
+          number,
+          completed,
+          locked: !unlocked,
+          justCompleted,
+        };
+      });
+
+      this.previousCompletedLevelNumbers = [...completedLevelNumbers];
+
+      setTimeout(() => {
+        this.levels = this.levels.map((level) => ({
+          ...level,
+          justCompleted: false,
+        }));
+      }, 1400);
+    } finally {
+      this.caricamentoLivelli = false;
+    }
+  }
+
+  /**
+   * Mantiene visibile il loader per un tempo minimo.
+   * Così evitiamo l'effetto flash quando Firebase risponde molto velocemente.
+   */
+  private attendiCaricamentoMinimoLivelli(): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  /**
+   * Compatibilità: se qualche punto della pagina richiama ancora generateLevels,
+   * ora usiamo il caricamento completo per evitare stati intermedi.
+   */
   async generateLevels() {
-    const numbers = await this.questionsService.getDifficultyLevelNumbers(
-      this.categoryId,
-      this.difficultyId,
-    );
-
-    this.levels = numbers.map((number, index) => ({
-      number,
-      locked: index !== 0,
-      completed: false,
-    }));
+    await this.caricaLivelliConProgressi();
   }
 
+  /**
+   * Compatibilità: mantiene il vecchio nome, ma non aggiorna più la griglia
+   * separatamente dai livelli per evitare il flash visivo.
+   */
   async loadLevelProgress() {
-    const user = await firstValueFrom(this.auth.user$);
-
-    if (!user) return;
-
-    // L'ospite anonimo ha livelli completati salvati come ogni altro profilo.
-    const completedLevelNumbers =
-      await this.progressService.getCompletedLevelNumbers(
-        user.uid,
-        this.categoryId,
-        this.difficultyId,
-      );
-
-    this.levels = this.levels.map((level, index) => {
-      const completed = completedLevelNumbers.includes(level.number);
-
-      const wasCompletedBefore = this.previousCompletedLevelNumbers.includes(
-        level.number,
-      );
-
-      const justCompleted = completed && !wasCompletedBefore;
-
-      const previousLevel = this.levels[index - 1];
-
-      const unlocked =
-        index === 0 || completedLevelNumbers.includes(previousLevel.number);
-
-      return {
-        ...level,
-        completed,
-        locked: !unlocked,
-        justCompleted,
-      };
-    });
-
-    this.previousCompletedLevelNumbers = [...completedLevelNumbers];
-
-    setTimeout(() => {
-      this.levels = this.levels.map((level) => ({
-        ...level,
-        justCompleted: false,
-      }));
-    }, 1400);
+    await this.caricaLivelliConProgressi();
   }
 
   openLevel(level: LevelModel) {
