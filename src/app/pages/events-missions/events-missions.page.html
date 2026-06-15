@@ -133,6 +133,18 @@
         <small>TurtleCoins</small>
       </div>
 
+      @if (!finalMissionRewardDoubled) {
+      <button
+        type="button"
+        class="final-mission-double-button"
+        [disabled]="finalMissionRewardDoubleLoading"
+        (click)="doubleFinalMissionReward()"
+      >
+        @if (finalMissionRewardDoubleLoading) { Video in corso... } @else { ▶
+        Guarda video e raddoppia }
+      </button>
+      }
+
       <button
         type="button"
         class="final-mission-button"

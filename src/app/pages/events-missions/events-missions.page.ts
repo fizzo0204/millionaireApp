@@ -8,6 +8,7 @@ import {
 import { Subscription } from 'rxjs';
 import { AdsService } from 'src/app/services/ads.service';
 import { DailyEventsService } from 'src/app/services/daily-events.service';
+import { DailyMissionService } from 'src/app/services/daily-mission.service';
 import { HapticsService } from 'src/app/services/haptics.service';
 import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 
@@ -21,6 +22,7 @@ import { NavigationTransitionService } from 'src/app/services/navigation-transit
 export class EventsMissionsPage implements OnInit, OnDestroy {
   private navigation = inject(NavigationTransitionService);
   private dailyEventsService = inject(DailyEventsService);
+  private dailyMissionService = inject(DailyMissionService);
   private ads = inject(AdsService);
   private haptics = inject(HapticsService);
 
@@ -31,6 +33,8 @@ export class EventsMissionsPage implements OnInit, OnDestroy {
   recentlySwitchedMissionId: string | null = null;
   showFinalMissionRewardModal = false;
   finalMissionRewardCoins = 0;
+  finalMissionRewardDoubleLoading = false;
+  finalMissionRewardDoubled = false;
   missions: DailyMissionView[] = [];
   private claimAnimationTimer?: ReturnType<typeof setTimeout>;
   private switchAnimationTimer?: ReturnType<typeof setTimeout>;
@@ -163,6 +167,37 @@ export class EventsMissionsPage implements OnInit, OnDestroy {
     }
   }
 
+  // Permette di raddoppiare il premio finale delle 7 missioni giornaliere
+  // guardando un video. Il raddoppio è salvato su Firestore e può avvenire
+  // una sola volta al giorno.
+  async doubleFinalMissionReward(): Promise<void> {
+    if (
+      this.finalMissionRewardDoubleLoading ||
+      this.finalMissionRewardDoubled ||
+      !this.showFinalMissionRewardModal
+    ) {
+      return;
+    }
+
+    this.finalMissionRewardDoubleLoading = true;
+
+    try {
+      const rewarded = await this.ads.showRewardedAd();
+
+      if (!rewarded) return;
+
+      const result = await this.dailyMissionService.doubleFinalMissionsReward();
+
+      if (result.extraCoins > 0) {
+        this.finalMissionRewardCoins = result.totalRewardCoins;
+        this.finalMissionRewardDoubled = true;
+        void this.haptics.success();
+      }
+    } finally {
+      this.finalMissionRewardDoubleLoading = false;
+    }
+  }
+
   closeFinalMissionReward(): void {
     this.showFinalMissionRewardModal = false;
   }
@@ -277,6 +312,8 @@ export class EventsMissionsPage implements OnInit, OnDestroy {
   // le missioni giornaliere.
   private showFinalMissionReward(coins: number): void {
     this.finalMissionRewardCoins = coins;
+    this.finalMissionRewardDoubled = coins > 25;
+    this.finalMissionRewardDoubleLoading = false;
     this.showFinalMissionRewardModal = true;
     void this.haptics.success();
   }

@@ -69,6 +69,8 @@ export interface DailyEventsData {
   missionsFinalReward: {
     claimedDate: string | null;
     claimedAt?: unknown | null;
+    doubledDate?: string | null;
+    doubledAt?: unknown | null;
     rewardCoins?: number;
   };
   dailyChallenge: {

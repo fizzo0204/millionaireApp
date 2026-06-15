@@ -330,6 +330,8 @@ export class DailyMissionService {
           dailyEvents.missionsFinalReward = {
             claimedDate: this.todayKey,
             claimedAt: new Date().toISOString(),
+            doubledDate: null,
+            doubledAt: null,
             rewardCoins: finalRewardCoins,
           };
         }
@@ -417,6 +419,75 @@ export class DailyMissionService {
     return {
       finalRewardCoins,
       finalRewardClaimed,
+      notificationCount: updatedDailyEvents
+        ? this.getNotificationCountFromData(updatedDailyEvents)
+        : null,
+    };
+  }
+
+  // Raddoppia il premio finale delle 7 missioni giornaliere.
+  // Può essere usato una sola volta al giorno, dopo il riscatto del forziere finale.
+  async doubleFinalMissionsReward(): Promise<{
+    extraCoins: number;
+    totalRewardCoins: number;
+    notificationCount: number | null;
+  }> {
+    const user = await firstValueFrom(this.auth.user$);
+
+    if (!user) {
+      return { extraCoins: 0, totalRewardCoins: 0, notificationCount: null };
+    }
+
+    const userRef = doc(this.firestore, `users/${user.uid}`);
+    let updatedDailyEvents: DailyEventsData | null = null;
+    let extraCoins = 0;
+    let totalRewardCoins = 0;
+
+    await this.runFirestore(() =>
+      runTransaction(this.firestore, async (transaction) => {
+        const snapshot = await transaction.get(userRef);
+
+        if (!snapshot.exists()) return;
+
+        const data = snapshot.data();
+        const dailyEvents = this.normalizeDailyEventsData(data['dailyEvents']);
+
+        const canDouble =
+          dailyEvents.missionsFinalReward.claimedDate === this.todayKey &&
+          dailyEvents.missionsFinalReward.doubledDate !== this.todayKey;
+
+        if (!canDouble) return;
+
+        const stats = data['stats'] ?? {};
+        const currentCoins =
+          typeof stats?.coins === 'number'
+            ? stats.coins
+            : this.userStatsService.defaultStats.coins;
+
+        extraCoins = this.finalMissionsRewardCoins;
+        totalRewardCoins =
+          (dailyEvents.missionsFinalReward.rewardCoins ??
+            this.finalMissionsRewardCoins) + extraCoins;
+
+        dailyEvents.missionsFinalReward = {
+          ...dailyEvents.missionsFinalReward,
+          doubledDate: this.todayKey,
+          doubledAt: new Date().toISOString(),
+          rewardCoins: totalRewardCoins,
+        };
+
+        updatedDailyEvents = dailyEvents;
+
+        transaction.update(userRef, {
+          dailyEvents,
+          'stats.coins': currentCoins + extraCoins,
+        });
+      }),
+    );
+
+    return {
+      extraCoins,
+      totalRewardCoins,
       notificationCount: updatedDailyEvents
         ? this.getNotificationCountFromData(updatedDailyEvents)
         : null,
@@ -512,6 +583,8 @@ export class DailyMissionService {
       missionsFinalReward: {
         claimedDate: null,
         claimedAt: null,
+        doubledDate: null,
+        doubledAt: null,
         rewardCoins: 0,
       },
       wheel: {

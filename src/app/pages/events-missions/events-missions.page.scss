@@ -610,6 +610,48 @@ ion-content.event-detail-content {
     0 14px 24px rgba(0, 0, 0, 0.28);
 }
 
+.final-mission-button + .final-mission-button {
+  margin-top: 12px;
+}
+
+.final-mission-double-button {
+  width: 100%;
+  min-height: 44px;
+  margin: 18px 0 14px;
+  border: 2px solid rgba(250, 204, 21, 0.7);
+  border-radius: 16px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff7cc;
+  background: linear-gradient(180deg, #b75cff, #8b3dff);
+  font-size: 0.84rem;
+  font-weight: 1000;
+  box-shadow:
+    0 5px 0 rgba(96, 24, 180, 0.8),
+    0 10px 18px rgba(126, 34, 206, 0.28);
+  animation: finalMissionDoublePulse 1.45s ease-in-out infinite;
+}
+
+.final-mission-double-button:disabled {
+  opacity: 0.65;
+  animation: none;
+}
+
+@keyframes finalMissionDoublePulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  50% {
+    transform: scale(1.03);
+    filter: brightness(1.08);
+  }
+}
+
 @keyframes finalMissionIn {
   from {
     opacity: 0;
