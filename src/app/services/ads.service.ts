@@ -8,6 +8,7 @@ import {
   AdMobRewardItem,
   RewardAdPluginEvents,
 } from '@capacitor-community/admob';
+import { App } from '@capacitor/app';
 import { AudioService } from './audio';
 import { ADS_CONFIG } from '../config/ads.config';
 import { PluginListenerHandle } from '@capacitor/core';
@@ -23,6 +24,7 @@ export class AdsService {
   private bannerOperationId = 0;
   private adMobInitialized = false;
   private initializePromise?: Promise<boolean>;
+  private rewardedAdInProgress = false;
 
   readonly rewardedAdCompleted$ =
     this.rewardedAdCompletedSubject.asObservable();
@@ -114,59 +116,66 @@ export class AdsService {
   }
 
   async showRewardedAd(): Promise<boolean> {
+    if (this.rewardedAdInProgress) return false;
+
+    this.rewardedAdInProgress = true;
+
     let hasReward = false;
-    let adWasShown = false;
     let finished = false;
 
-    let showedListener: PluginListenerHandle | undefined;
     let rewardedListener: PluginListenerHandle | undefined;
     let dismissedListener: PluginListenerHandle | undefined;
     let failedListener: PluginListenerHandle | undefined;
-    let showTimeout: ReturnType<typeof setTimeout> | undefined;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+
+    const cleanup = async () => {
+      if (timeout) {
+        clearTimeout(timeout);
+        timeout = undefined;
+      }
+
+      await rewardedListener?.remove();
+      await dismissedListener?.remove();
+      await failedListener?.remove();
+
+      rewardedListener = undefined;
+      dismissedListener = undefined;
+      failedListener = undefined;
+    };
 
     try {
+      const initialized = await this.initialize();
+
+      if (!initialized) return false;
+
       const options: RewardAdOptions = {
         adId: ADS_CONFIG.rewarded.adId,
       };
+
+      await this.audioService.pauseMusic();
 
       const resultPromise = new Promise<boolean>(async (resolve) => {
         const finish = async (result: boolean) => {
           if (finished) return;
 
           finished = true;
+          await cleanup();
 
-          if (showTimeout) {
-            clearTimeout(showTimeout);
-            showTimeout = undefined;
-          }
-
+          /*
+           * Fix rewarded video: su alcuni device l'evento della reward arriva
+           * mentre la pubblicita e ancora sopra l'app. Aspettiamo quindi che
+           * l'app torni davvero attiva prima di far partire ruota, premi o UI.
+           */
+          await this.waitAppActiveAfterAd();
+          await this.wait(350);
           await this.audioService.playMusic();
 
           if (result) {
             this.rewardedAdCompletedSubject.next();
           }
 
-          showedListener?.remove();
-          rewardedListener?.remove();
-          dismissedListener?.remove();
-          failedListener?.remove();
-
           resolve(result);
         };
-
-        showedListener = await AdMob.addListener(
-          RewardAdPluginEvents.Showed,
-          () => {
-            adWasShown = true;
-
-            if (showTimeout) {
-              clearTimeout(showTimeout);
-              showTimeout = undefined;
-            }
-
-            this.audioService.pauseMusic();
-          },
-        );
 
         rewardedListener = await AdMob.addListener(
           RewardAdPluginEvents.Rewarded,
@@ -191,11 +200,9 @@ export class AdsService {
           },
         );
 
-        showTimeout = setTimeout(() => {
-          if (!adWasShown) {
-            finish(false);
-          }
-        }, 30000);
+        timeout = setTimeout(() => {
+          void finish(false);
+        }, 60000);
       });
 
       await AdMob.prepareRewardVideoAd(options);
@@ -204,20 +211,37 @@ export class AdsService {
       return await resultPromise;
     } catch (err) {
       console.error('❌ Errore rewarded video:', err);
-
-      if (showTimeout) {
-        clearTimeout(showTimeout);
-        showTimeout = undefined;
-      }
-
-      showedListener?.remove();
-      rewardedListener?.remove();
-      dismissedListener?.remove();
-      failedListener?.remove();
-
+      await cleanup();
       await this.audioService.playMusic();
-
       return false;
+    } finally {
+      this.rewardedAdInProgress = false;
     }
+  }
+
+  // Aspetta che l'app sia tornata in foreground dopo la pubblicita.
+  private async waitAppActiveAfterAd(): Promise<void> {
+    const state = await App.getState().catch(() => ({ isActive: true }));
+
+    if (state.isActive) return;
+
+    await new Promise<void>(async (resolve) => {
+      let listener: PluginListenerHandle | undefined;
+
+      listener = await App.addListener(
+        'appStateChange',
+        async ({ isActive }) => {
+          if (!isActive) return;
+
+          await listener?.remove();
+          resolve();
+        },
+      );
+    });
+  }
+
+  // Utility interna per piccoli ritardi controllati dopo la chiusura dell'ad.
+  private wait(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
