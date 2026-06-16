@@ -11,9 +11,7 @@
         <div class="avatar">
           @if (getSelectedAvatarImageSrc(); as avatarImage) {
           <img class="avatar-image" [src]="avatarImage" alt="Avatar" />
-          } @else {
-          {{ getSelectedAvatarIcon(user, profile$ | async) }}
-          }
+          } @else { {{ getSelectedAvatarIcon(user, profile$ | async) }} }
         </div>
 
         <div class="edit-badge">
@@ -44,8 +42,8 @@
           <span>Livello massimo</span>
           } @else {
           <span>
-            {{ getCurrentLevelXp(realStats.xp) }} /
-            {{ getNextLevelXp(realStats.xp) }} XP
+            {{ getCurrentLevelXp(realStats.xp) }} / {{
+            getNextLevelXp(realStats.xp) }} XP
           </span>
           }
         </div>
@@ -58,6 +56,46 @@
         </div>
       </div>
     </div>
+
+    <!-- PROSSIMO AVATAR -->
+    @if (getNextBaseAvatar(realStats.level); as nextAvatar) {
+    <button class="next-avatar-card" type="button" (click)="openAvatarModal()">
+      <div class="next-avatar-copy">
+        <span>Prossimo sblocco</span>
+        <h3>{{ nextAvatar.label }}</h3>
+
+        <p>
+          @if (getLevelsUntilAvatar(nextAvatar, realStats.level) === 1) { Ti
+          manca solo 1 livello } @else { Ti mancano {{
+          getLevelsUntilAvatar(nextAvatar, realStats.level) }} livelli }
+        </p>
+
+        <div class="next-avatar-progress">
+          <div
+            [style.width.%]="getNextAvatarProgressPercent(nextAvatar, realStats.level)"
+          ></div>
+        </div>
+      </div>
+
+      <div class="next-avatar-preview">
+        @if (getAvatarImageSrc(nextAvatar.id); as avatarImage) {
+        <img [src]="avatarImage" [alt]="nextAvatar.label" />
+        } @else { {{ nextAvatar.icon }} }
+
+        <small>Liv. {{ nextAvatar.minLevel }}</small>
+      </div>
+    </button>
+    } @else {
+    <div class="next-avatar-card completed">
+      <div class="next-avatar-copy">
+        <span>Collezione base completa</span>
+        <h3>Tutti gli avatar livello sbloccati!</h3>
+        <p>Continua con daily reward, ruota ed eventi speciali.</p>
+      </div>
+
+      <div class="next-avatar-preview completed-icon">👑</div>
+    </div>
+    }
 
     <!-- STATS -->
     <div class="section-row">
@@ -197,9 +235,7 @@
             <div class="avatar-option-icon premium-icon special-icon-card">
               @if (getAvatarImageSrc(avatar.id); as avatarImage) {
               <img [src]="avatarImage" [alt]="avatar.label" />
-              } @else {
-              {{ avatar.icon }}
-              }
+              } @else { {{ avatar.icon }} }
             </div>
 
             <strong>{{ avatar.label }}</strong>
@@ -230,9 +266,7 @@
             <div class="avatar-option-icon premium-icon">
               @if (getAvatarImageSrc(avatar.id); as avatarImage) {
               <img [src]="avatarImage" [alt]="avatar.label" />
-              } @else {
-              {{ getAvatarIcon(avatar.id, user, profile$ | async) }}
-              }
+              } @else { {{ getAvatarIcon(avatar.id, user, profile$ | async) }} }
             </div>
 
             <strong>{{ avatar.label }}</strong>
@@ -267,9 +301,7 @@
             <div class="avatar-option-icon premium-icon daily-icon-card">
               @if (getAvatarImageSrc(avatar.id); as avatarImage) {
               <img [src]="avatarImage" [alt]="avatar.label" />
-              } @else {
-              {{ avatar.icon }}
-              }
+              } @else { {{ avatar.icon }} }
             </div>
 
             <strong>{{ avatar.label }}</strong>
@@ -304,9 +336,7 @@
             <div class="avatar-option-icon premium-icon tutorial-icon-card">
               @if (getAvatarImageSrc(avatar.id); as avatarImage) {
               <img [src]="avatarImage" [alt]="avatar.label" />
-              } @else {
-              {{ avatar.icon }}
-              }
+              } @else { {{ avatar.icon }} }
             </div>
 
             <strong>{{ avatar.label }}</strong>
@@ -341,9 +371,7 @@
             <div class="avatar-option-icon premium-icon epic-icon-card">
               @if (getAvatarImageSrc(avatar.id); as avatarImage) {
               <img [src]="avatarImage" [alt]="avatar.label" />
-              } @else {
-              {{ avatar.icon }}
-              }
+              } @else { {{ avatar.icon }} }
             </div>
 
             <strong>{{ avatar.label }}</strong>
@@ -396,8 +424,8 @@
       <h3>Tutti i trofei</h3>
 
       <div class="achievement-grid full">
-        @for (achievement of getAlignedAchievements(realStats, profile$ | async);
-        track achievement.id) {
+        @for (achievement of getAlignedAchievements(realStats, profile$ |
+        async); track achievement.id) {
         <div class="achievement-card" [class.locked]="!achievement.completed">
           <div class="achievement-icon">{{ achievement.icon }}</div>
 

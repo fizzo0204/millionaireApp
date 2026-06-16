@@ -165,6 +165,36 @@ export class ProfilePage {
     return 'Principiante';
   }
 
+  // Recupera il prossimo avatar base bloccato che l'utente potrà sbloccare salendo di livello.
+  // Serve a dare un obiettivo visibile direttamente nel profilo.
+  getNextBaseAvatar(currentLevel: number): AvatarModel | null {
+    return (
+      this.baseAvatars
+        .filter((avatar) => (avatar.minLevel ?? 1) > currentLevel)
+        .sort(
+          (first, second) => (first.minLevel ?? 1) - (second.minLevel ?? 1),
+        )[0] ?? null
+    );
+  }
+
+  // Calcola quanti livelli mancano allo sblocco del prossimo avatar.
+  getLevelsUntilAvatar(avatar: AvatarModel, currentLevel: number): number {
+    return Math.max(0, (avatar.minLevel ?? 1) - currentLevel);
+  }
+
+  // Mostra una piccola progressione verso il prossimo avatar.
+  // Non usa XP, ma il rapporto tra livello attuale e livello richiesto.
+  getNextAvatarProgressPercent(
+    avatar: AvatarModel,
+    currentLevel: number,
+  ): number {
+    const targetLevel = avatar.minLevel ?? 1;
+
+    if (targetLevel <= 1) return 100;
+
+    return Math.min(100, Math.round((currentLevel / targetLevel) * 100));
+  }
+
   getStats(
     realStats: AppUserProfile['stats'],
     profile?: AppUserProfile | null,
