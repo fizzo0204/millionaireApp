@@ -18,7 +18,11 @@
   border: 1px solid rgba(255, 230, 70, 0.78);
   border-radius: 18px;
   background:
-    radial-gradient(circle at 18% 20%, rgba(255, 230, 70, 0.24), transparent 34%),
+    radial-gradient(
+      circle at 18% 20%,
+      rgba(255, 230, 70, 0.24),
+      transparent 34%
+    ),
     linear-gradient(135deg, rgba(6, 44, 88, 0.98), rgba(4, 23, 51, 0.98));
   box-shadow:
     0 16px 32px rgba(0, 0, 0, 0.34),
@@ -80,7 +84,7 @@
 .achievement-copy strong {
   display: block;
   margin-top: 3px;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 900;
   line-height: 1.05;
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.22);
