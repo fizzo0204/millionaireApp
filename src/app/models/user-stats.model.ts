@@ -1,5 +1,6 @@
 import { DifficultyId } from './difficulty.model';
 import { UserAuthProfile } from './auth.model';
+import { AchievementRarity } from './achievement.model';
 
 export interface UserStats {
   quizPlayed: number;
@@ -37,6 +38,22 @@ export interface UserArcadeData {
   lastCompletedAt: unknown;
 }
 
+export interface UserAchievementTitle {
+  id: string;
+  icon: string;
+  label: string;
+  rarity: AchievementRarity;
+  achievementId: string;
+}
+
+export interface UserAchievementsData {
+  claimedRewards: string[];
+  unlockedTitles: UserAchievementTitle[];
+  selectedTitle: string | null;
+  unlockedFrames: string[];
+  unlockedBadges: string[];
+}
+
 export interface AppUserProfile {
   uid: string;
   displayName: string | null;
@@ -50,6 +67,7 @@ export interface AppUserProfile {
   auth?: UserAuthProfile;
   onboarding?: UserOnboardingData;
   arcade?: UserArcadeData;
+  achievements?: UserAchievementsData;
 }
 
 export interface QuizHistoryItem {

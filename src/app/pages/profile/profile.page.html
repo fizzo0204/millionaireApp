@@ -1,6 +1,6 @@
 <ion-content
   class="profile-content"
-  [class.modal-open]="showAvatarModal || showAchievementsModal || showSpecialIntroModal"
+  [class.modal-open]="showAvatarModal || showAchievementsModal || showSpecialIntroModal || showAchievementRewardModal"
 >
   @if (profileStats$ | async; as realStats) {
   <div class="page-fade">
@@ -21,6 +21,14 @@
 
       <div class="profile-info">
         <h2>{{ getPlayerName(user, profile$ | async) }}</h2>
+
+        @if (getCurrentPlayerTitle(realStats, profile$ | async); as playerTitle)
+        {
+        <div [ngClass]="getPlayerTitleClass(playerTitle)">
+          {{ playerTitle.label }}
+        </div>
+        }
+
         <p>{{ joinDate$ | async }}</p>
       </div>
     </div>
@@ -57,46 +65,6 @@
       </div>
     </div>
 
-    <!-- PROSSIMO AVATAR -->
-    @if (getNextBaseAvatar(realStats.level); as nextAvatar) {
-    <button class="next-avatar-card" type="button" (click)="openAvatarModal()">
-      <div class="next-avatar-copy">
-        <span>Prossimo sblocco</span>
-        <h3>{{ nextAvatar.label }}</h3>
-
-        <p>
-          @if (getLevelsUntilAvatar(nextAvatar, realStats.level) === 1) { Ti
-          manca solo 1 livello } @else { Ti mancano {{
-          getLevelsUntilAvatar(nextAvatar, realStats.level) }} livelli }
-        </p>
-
-        <div class="next-avatar-progress">
-          <div
-            [style.width.%]="getNextAvatarProgressPercent(nextAvatar, realStats.level)"
-          ></div>
-        </div>
-      </div>
-
-      <div class="next-avatar-preview">
-        @if (getAvatarImageSrc(nextAvatar.id); as avatarImage) {
-        <img [src]="avatarImage" [alt]="nextAvatar.label" />
-        } @else { {{ nextAvatar.icon }} }
-
-        <small>Liv. {{ nextAvatar.minLevel }}</small>
-      </div>
-    </button>
-    } @else {
-    <div class="next-avatar-card completed">
-      <div class="next-avatar-copy">
-        <span>Collezione base completa</span>
-        <h3>Tutti gli avatar livello sbloccati!</h3>
-        <p>Continua con daily reward, ruota ed eventi speciali.</p>
-      </div>
-
-      <div class="next-avatar-preview completed-icon">👑</div>
-    </div>
-    }
-
     <!-- STATS -->
     <div class="section-row">
       <h3>Statistiche</h3>
@@ -126,10 +94,10 @@
       <div
         class="achievement-card"
         [ngClass]="[
-  achievement.rarity,
-  achievement.completed ? 'completed' : 'locked',
-  isAchievementAlmostCompleted(achievement) ? 'near-complete' : ''
-]"
+          achievement.rarity,
+          achievement.completed ? 'completed' : 'locked',
+          isAchievementAlmostCompleted(achievement) ? 'near-complete' : ''
+        ]"
       >
         <div class="achievement-icon">{{ achievement.icon }}</div>
         <div class="achievement-rarity">
@@ -139,7 +107,17 @@
         <h4>{{ achievement.title }}</h4>
         <p>{{ achievement.description }}</p>
 
-        @if (achievement.completed) {
+        @if (canClaimAchievementReward(achievement)) {
+        <button
+          type="button"
+          class="achievement-claim"
+          [disabled]="achievementClaimLoadingId === achievement.id"
+          (click)="claimAchievementReward(achievement)"
+        >
+          @if (achievementClaimLoadingId === achievement.id) { ... } @else {
+          Riscatta }
+        </button>
+        } @else if (achievement.completed) {
         <div class="achievement-status">
           <ion-icon name="checkmark-circle"></ion-icon>
         </div>
@@ -446,8 +424,8 @@
         <div class="achievements-summary-bar">
           <span
             [style.width.%]="
-        getAchievementsCompletionPercent(realStats, profile$ | async)
-      "
+              getAchievementsCompletionPercent(realStats, profile$ | async)
+            "
           ></span>
         </div>
 
@@ -463,10 +441,10 @@
         <div
           class="achievement-card"
           [ngClass]="[
-  achievement.rarity,
-  achievement.completed ? 'completed' : 'locked',
-  isAchievementAlmostCompleted(achievement) ? 'near-complete' : ''
-]"
+            achievement.rarity,
+            achievement.completed ? 'completed' : 'locked',
+            isAchievementAlmostCompleted(achievement) ? 'near-complete' : ''
+          ]"
         >
           <div class="achievement-icon">{{ achievement.icon }}</div>
           <div class="achievement-rarity">
@@ -476,7 +454,17 @@
           <h4>{{ achievement.title }}</h4>
           <p>{{ achievement.description }}</p>
 
-          @if (achievement.completed) {
+          @if (canClaimAchievementReward(achievement)) {
+          <button
+            type="button"
+            class="achievement-claim"
+            [disabled]="achievementClaimLoadingId === achievement.id"
+            (click)="claimAchievementReward(achievement)"
+          >
+            @if (achievementClaimLoadingId === achievement.id) { ... } @else {
+            Riscatta }
+          </button>
+          } @else if (achievement.completed) {
           <div class="achievement-status">
             <ion-icon name="checkmark-circle"></ion-icon>
           </div>
@@ -491,5 +479,27 @@
       </div>
     </div>
   </div>
-  } }
+  } } @if (showAchievementRewardModal && claimedAchievementTitle) {
+  <div class="avatar-modal-backdrop">
+    <div class="achievement-reward-modal">
+      <div class="achievement-reward-glow"></div>
+
+      <div [class]="getPlayerTitleClass(claimedAchievementTitle)">
+        <span>{{ claimedAchievementTitle.icon }}</span>
+        {{ claimedAchievementTitle.label }}
+      </div>
+
+      <h3>Titolo sbloccato!</h3>
+      <p>Hai riscattato il trofeo e ottenuto un nuovo titolo profilo.</p>
+
+      <button
+        type="button"
+        class="achievement-reward-button"
+        (click)="closeAchievementRewardModal()"
+      >
+        Fantastico!
+      </button>
+    </div>
+  </div>
+  }
 </ion-content>

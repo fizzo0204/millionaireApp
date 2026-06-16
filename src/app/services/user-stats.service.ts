@@ -1,10 +1,24 @@
-import { Injectable, inject } from '@angular/core';
+import {
+  EnvironmentInjector,
+  Injectable,
+  inject,
+  runInInjectionContext,
+} from '@angular/core';
 import { User } from 'firebase/auth';
 import { Observable } from 'rxjs';
+import {
+  Firestore,
+  doc,
+  getDoc,
+  runTransaction,
+  updateDoc,
+} from '@angular/fire/firestore';
 
 import {
   AppUserProfile,
   QuizHistoryItem,
+  UserAchievementsData,
+  UserAchievementTitle,
   UserArcadeData,
   UserAvatarData,
   UserOnboardingData,
@@ -36,6 +50,8 @@ export class UserStatsService {
   private avatarData = inject(UserAvatarDataService);
   private quizData = inject(UserQuizDataService);
   private debugData = inject(UserDebugDataService);
+  private firestore = inject(Firestore);
+  private injector = inject(EnvironmentInjector);
 
   readonly progressSubcollectionNames = [
     'completedLevels',
@@ -81,6 +97,14 @@ export class UserStatsService {
     totalLevelsCompleted: 0,
     lastPlayedAt: null,
     lastCompletedAt: null,
+  };
+
+  readonly defaultAchievements: UserAchievementsData = {
+    claimedRewards: [],
+    unlockedTitles: [],
+    selectedTitle: null,
+    unlockedFrames: [],
+    unlockedBadges: [],
   };
 
   // Crea o aggiorna il documento principale dell'utente su Firestore.
@@ -288,6 +312,123 @@ export class UserStatsService {
       currentLevel,
       requestedCoinsReward,
     );
+  }
+
+  // Recupera i dati cosmetici legati ai trofei dal documento utente.
+  async getAchievementsData(uid: string): Promise<UserAchievementsData> {
+    const userRef = doc(this.firestore, `users/${uid}`);
+    const snapshot = await this.runFirestore(() => getDoc(userRef));
+
+    if (!snapshot.exists()) {
+      return this.defaultAchievements;
+    }
+
+    return this.normalizeAchievementsData(snapshot.data()['achievements']);
+  }
+
+  // Riscatta la ricompensa di un trofeo completato.
+  // Al momento la ricompensa supportata e il titolo profilo, salvato su Firestore.
+  async claimAchievementTitleReward(
+    uid: string,
+    achievementId: string,
+    title: UserAchievementTitle,
+  ): Promise<UserAchievementsData | null> {
+    const userRef = doc(this.firestore, `users/${uid}`);
+
+    return this.runFirestore(() =>
+      runTransaction(this.firestore, async (transaction) => {
+        const snapshot = await transaction.get(userRef);
+
+        if (!snapshot.exists()) return null;
+
+        const currentData = snapshot.data();
+        const achievements = this.normalizeAchievementsData(
+          currentData['achievements'],
+        );
+
+        if (achievements.claimedRewards.includes(achievementId)) {
+          return achievements;
+        }
+
+        const unlockedTitles = achievements.unlockedTitles.some(
+          (item) => item.id === title.id,
+        )
+          ? achievements.unlockedTitles
+          : [...achievements.unlockedTitles, title];
+
+        const nextAchievements: UserAchievementsData = {
+          ...achievements,
+          claimedRewards: [...achievements.claimedRewards, achievementId],
+          unlockedTitles,
+          selectedTitle: achievements.selectedTitle ?? title.id,
+        };
+
+        transaction.update(userRef, {
+          achievements: nextAchievements,
+        });
+
+        return nextAchievements;
+      }),
+    );
+  }
+
+  // Aggiorna il titolo mostrato nel profilo.
+  async selectProfileTitle(uid: string, titleId: string | null): Promise<void> {
+    const achievements = await this.getAchievementsData(uid);
+
+    if (
+      titleId &&
+      !achievements.unlockedTitles.some((title) => title.id === titleId)
+    ) {
+      return;
+    }
+
+    const userRef = doc(this.firestore, `users/${uid}`);
+
+    await this.runFirestore(() =>
+      updateDoc(userRef, {
+        'achievements.selectedTitle': titleId,
+      }),
+    );
+  }
+
+  private normalizeAchievementsData(data: unknown): UserAchievementsData {
+    const raw = data as Partial<UserAchievementsData> | null | undefined;
+
+    return {
+      claimedRewards: Array.isArray(raw?.claimedRewards)
+        ? raw.claimedRewards.filter(
+            (id): id is string => typeof id === 'string',
+          )
+        : [],
+      unlockedTitles: Array.isArray(raw?.unlockedTitles)
+        ? raw.unlockedTitles.filter(
+            (title): title is UserAchievementTitle =>
+              !!title &&
+              typeof title.id === 'string' &&
+              typeof title.icon === 'string' &&
+              typeof title.label === 'string' &&
+              typeof title.rarity === 'string' &&
+              typeof title.achievementId === 'string',
+          )
+        : [],
+      selectedTitle:
+        typeof raw?.selectedTitle === 'string' ? raw.selectedTitle : null,
+      unlockedFrames: Array.isArray(raw?.unlockedFrames)
+        ? raw.unlockedFrames.filter(
+            (id): id is string => typeof id === 'string',
+          )
+        : [],
+      unlockedBadges: Array.isArray(raw?.unlockedBadges)
+        ? raw.unlockedBadges.filter(
+            (id): id is string => typeof id === 'string',
+          )
+        : [],
+    };
+  }
+
+  private runFirestore<T>(operation: () => T): T {
+    return runInInjectionContext(this.injector, operation);
   }
 
   // Elimina completamente i dati profilo e le sottocollezioni principali.

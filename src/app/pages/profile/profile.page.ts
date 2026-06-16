@@ -14,7 +14,10 @@ import {
 import { UserStatsService } from 'src/app/services/user-stats.service';
 import { DailyRewardService } from 'src/app/services/daily-reward.service';
 import { AuthService } from 'src/app/services/auth.service';
-import { AchievementModel } from 'src/app/models/achievement.model';
+import {
+  AchievementModel,
+  AchievementRarity,
+} from 'src/app/models/achievement.model';
 import { ProfileStatModel } from 'src/app/models/profile-stat.model';
 import { AVATARS } from 'src/app/data/avatars.data';
 import {
@@ -25,6 +28,7 @@ import { AvatarModel } from 'src/app/models/avatar.model';
 import {
   AppUserProfile,
   QuizHistoryItem,
+  UserAchievementTitle,
 } from 'src/app/models/user-stats.model';
 import { getLevelProgress } from 'src/app/utils/level-progress.util';
 import { SpecialAvatarIntroModalComponent } from 'src/app/components/special-avatar-intro-modal/special-avatar-intro-modal.component';
@@ -83,6 +87,9 @@ export class ProfilePage {
   specialIntroAvatarId = '';
   specialIntroAvatarLabel = '';
   specialIntroAvatarImageSrc: string | null = null;
+  achievementClaimLoadingId: string | null = null;
+  showAchievementRewardModal = false;
+  claimedAchievementTitle: UserAchievementTitle | null = null;
 
   readonly avatars: AvatarModel[] = [...AVATARS];
 
@@ -163,36 +170,6 @@ export class ProfilePage {
     if (level >= 7) return 'Quiz Master';
     if (level >= 4) return 'Esperto';
     return 'Principiante';
-  }
-
-  // Recupera il prossimo avatar base bloccato che l'utente potrà sbloccare salendo di livello.
-  // Serve a dare un obiettivo visibile direttamente nel profilo.
-  getNextBaseAvatar(currentLevel: number): AvatarModel | null {
-    return (
-      this.baseAvatars
-        .filter((avatar) => (avatar.minLevel ?? 1) > currentLevel)
-        .sort(
-          (first, second) => (first.minLevel ?? 1) - (second.minLevel ?? 1),
-        )[0] ?? null
-    );
-  }
-
-  // Calcola quanti livelli mancano allo sblocco del prossimo avatar.
-  getLevelsUntilAvatar(avatar: AvatarModel, currentLevel: number): number {
-    return Math.max(0, (avatar.minLevel ?? 1) - currentLevel);
-  }
-
-  // Mostra una piccola progressione verso il prossimo avatar.
-  // Non usa XP, ma il rapporto tra livello attuale e livello richiesto.
-  getNextAvatarProgressPercent(
-    avatar: AvatarModel,
-    currentLevel: number,
-  ): number {
-    const targetLevel = avatar.minLevel ?? 1;
-
-    if (targetLevel <= 1) return 100;
-
-    return Math.min(100, Math.round((currentLevel / targetLevel) * 100));
   }
 
   getStats(
@@ -404,6 +381,7 @@ export class ProfilePage {
     if (achievement.metric === 'accuracy') {
       return this.buildAccuracyAchievement(
         achievement,
+        profile,
         totalAnswers,
         correctPercentage,
       );
@@ -412,21 +390,18 @@ export class ProfilePage {
     const value = this.getAchievementValue(achievement, realStats, profile);
     const completed = value >= achievement.target;
 
-    return {
-      id: achievement.id,
-      icon: completed ? achievement.icon : '🔒',
-      title: achievement.title,
-      description: achievement.description,
+    return this.createAchievementView(
+      achievement,
+      profile,
       completed,
-      progress: this.formatAchievementProgress(achievement, value),
-      progressValue: this.getProgressValue(value, achievement.target),
-      reward: achievement.reward,
-      rarity: achievement.rarity,
-    };
+      this.formatAchievementProgress(achievement, value),
+      this.getProgressValue(value, achievement.target),
+    );
   }
 
   private buildAccuracyAchievement(
     achievement: AchievementDefinition,
+    profile: AppUserProfile | null | undefined,
     totalAnswers: number,
     correctPercentage: number,
   ): AchievementModel {
@@ -438,6 +413,29 @@ export class ProfilePage {
       ? `${correctPercentage}/${achievement.target}%`
       : `${totalAnswers}/${minAnswers} risposte`;
 
+    return this.createAchievementView(
+      achievement,
+      profile,
+      completed,
+      progress,
+      hasEnoughAnswers
+        ? this.getProgressValue(correctPercentage, achievement.target)
+        : this.getProgressValue(totalAnswers, minAnswers),
+    );
+  }
+
+  private createAchievementView(
+    achievement: AchievementDefinition,
+    profile: AppUserProfile | null | undefined,
+    completed: boolean,
+    progress: string,
+    progressValue: number,
+  ): AchievementModel {
+    const rewardClaimed = this.isAchievementRewardClaimed(
+      achievement.id,
+      profile,
+    );
+
     return {
       id: achievement.id,
       icon: completed ? achievement.icon : '🔒',
@@ -445,11 +443,12 @@ export class ProfilePage {
       description: achievement.description,
       completed,
       progress,
-      progressValue: hasEnoughAnswers
-        ? this.getProgressValue(correctPercentage, achievement.target)
-        : this.getProgressValue(totalAnswers, minAnswers),
+      progressValue,
       reward: achievement.reward,
       rarity: achievement.rarity,
+      rewardClaimed,
+      rewardAvailable:
+        completed && !rewardClaimed && achievement.reward.type === 'title',
     };
   }
 
@@ -561,6 +560,189 @@ export class ProfilePage {
     currentLevel: number,
   ): boolean {
     return currentLevel >= (minLevel ?? 1);
+  }
+
+  // Restituisce l'etichetta leggibile della rarità del trofeo.
+  getAchievementRarityLabel(rarity?: AchievementRarity): string {
+    switch (rarity) {
+      case 'bronze':
+        return 'Bronzo';
+      case 'silver':
+        return 'Argento';
+      case 'gold':
+        return 'Oro';
+      case 'epic':
+        return 'Epico';
+      case 'legendary':
+        return 'Leggenda';
+      default:
+        return 'Trofeo';
+    }
+  }
+
+  // Evidenzia i trofei bloccati vicini al completamento.
+  isAchievementAlmostCompleted(achievement: AchievementModel): boolean {
+    return (
+      !achievement.completed &&
+      typeof achievement.progressValue === 'number' &&
+      achievement.progressValue >= 75
+    );
+  }
+
+  // Numero totale di trofei disponibili.
+  getTotalAchievementsCount(): number {
+    return ACHIEVEMENTS.length;
+  }
+
+  // Numero di trofei sbloccati.
+  getUnlockedAchievementsCount(
+    realStats: AppUserProfile['stats'],
+    profile?: AppUserProfile | null,
+  ): number {
+    return this.getAlignedAchievements(realStats, profile).filter(
+      (achievement) => achievement.completed,
+    ).length;
+  }
+
+  // Percentuale completamento collezione trofei.
+  getAchievementsCompletionPercent(
+    realStats: AppUserProfile['stats'],
+    profile?: AppUserProfile | null,
+  ): number {
+    const total = this.getTotalAchievementsCount();
+
+    if (total === 0) return 0;
+
+    return Math.round(
+      (this.getUnlockedAchievementsCount(realStats, profile) / total) * 100,
+    );
+  }
+
+  // Recupera il titolo profilo selezionato su Firestore.
+  // selectedTitle è la fonte principale; unlockedTitles serve solo come primo recupero.
+  // Se per qualche motivo unlockedTitles non è ancora allineato, ricostruiamo il titolo
+  // dai dati statici dei trofei, evitando che il titolo non venga mostrato.
+  getCurrentPlayerTitle(
+    _realStats: AppUserProfile['stats'],
+    profile?: AppUserProfile | null,
+  ): UserAchievementTitle | null {
+    const selectedTitleId = profile?.achievements?.selectedTitle;
+
+    if (!selectedTitleId) return null;
+
+    const unlockedTitle = profile?.achievements?.unlockedTitles?.find(
+      (title) => title.id === selectedTitleId,
+    );
+
+    if (unlockedTitle) return unlockedTitle;
+
+    const achievementWithTitle = ACHIEVEMENTS.find(
+      (achievement) =>
+        achievement.reward?.type === 'title' &&
+        achievement.reward.titleId === selectedTitleId,
+    );
+
+    const reward = achievementWithTitle?.reward;
+
+    if (
+      !achievementWithTitle ||
+      !reward ||
+      reward.type !== 'title' ||
+      !reward.titleId ||
+      !reward.titleIcon ||
+      !reward.titleLabel ||
+      !reward.titleRarity
+    ) {
+      return null;
+    }
+
+    return {
+      id: reward.titleId,
+      icon: reward.titleIcon,
+      label: reward.titleLabel,
+      rarity: reward.titleRarity,
+      achievementId: achievementWithTitle.id,
+    };
+  }
+
+  getPlayerTitleClass(title: UserAchievementTitle): string {
+    return `player-title ${title.rarity}`;
+  }
+
+  canClaimAchievementReward(achievement: AchievementModel): boolean {
+    return achievement.rewardAvailable === true;
+  }
+
+  getAchievementRewardTitle(
+    achievement: AchievementModel,
+  ): UserAchievementTitle | null {
+    const reward = achievement.reward;
+
+    if (
+      !achievement.id ||
+      !reward ||
+      reward.type !== 'title' ||
+      !reward.titleId ||
+      !reward.titleIcon ||
+      !reward.titleLabel ||
+      !reward.titleRarity
+    ) {
+      return null;
+    }
+
+    return {
+      id: reward.titleId,
+      icon: reward.titleIcon,
+      label: reward.titleLabel,
+      rarity: reward.titleRarity,
+      achievementId: achievement.id,
+    };
+  }
+
+  async claimAchievementReward(achievement: AchievementModel): Promise<void> {
+    if (
+      !this.canClaimAchievementReward(achievement) ||
+      !achievement.id ||
+      this.achievementClaimLoadingId
+    ) {
+      return;
+    }
+
+    const user = await firstValueFrom(this.user$);
+    const titleReward = this.getAchievementRewardTitle(achievement);
+
+    if (!user || !titleReward) return;
+
+    this.achievementClaimLoadingId = achievement.id;
+
+    try {
+      const result = await this.userStatsService.claimAchievementTitleReward(
+        user.uid,
+        achievement.id,
+        titleReward,
+      );
+
+      if (!result) return;
+
+      this.claimedAchievementTitle = titleReward;
+      this.showAchievementRewardModal = true;
+    } finally {
+      this.achievementClaimLoadingId = null;
+    }
+  }
+
+  closeAchievementRewardModal(): void {
+    this.showAchievementRewardModal = false;
+    this.claimedAchievementTitle = null;
+  }
+
+  private isAchievementRewardClaimed(
+    achievementId: string,
+    profile?: AppUserProfile | null,
+  ): boolean {
+    return (
+      profile?.achievements?.claimedRewards?.includes(achievementId) === true
+    );
   }
 
   async openAvatarModal() {
@@ -748,61 +930,5 @@ export class ProfilePage {
     }
 
     void Keyboard.hide().catch(() => undefined);
-  }
-
-  // Numero totale di trofei disponibili.
-  getTotalAchievementsCount(): number {
-    return ACHIEVEMENTS.length;
-  }
-
-  // Numero di trofei sbloccati.
-  getUnlockedAchievementsCount(
-    realStats: AppUserProfile['stats'],
-    profile?: AppUserProfile | null,
-  ): number {
-    return this.getAlignedAchievements(realStats, profile).filter(
-      (achievement) => achievement.completed,
-    ).length;
-  }
-
-  // Percentuale completamento collezione trofei.
-  getAchievementsCompletionPercent(
-    realStats: AppUserProfile['stats'],
-    profile?: AppUserProfile | null,
-  ): number {
-    const total = this.getTotalAchievementsCount();
-
-    if (total === 0) return 0;
-
-    return Math.round(
-      (this.getUnlockedAchievementsCount(realStats, profile) / total) * 100,
-    );
-  }
-
-  // Restituisce l'etichetta leggibile della rarità del trofeo.
-  getAchievementRarityLabel(rarity?: string): string {
-    switch (rarity) {
-      case 'bronze':
-        return 'Bronzo';
-      case 'silver':
-        return 'Argento';
-      case 'gold':
-        return 'Oro';
-      case 'epic':
-        return 'Epico';
-      case 'legendary':
-        return 'Leggenda';
-      default:
-        return 'Trofeo';
-    }
-  }
-
-  // Evidenzia i trofei bloccati vicini al completamento.
-  isAchievementAlmostCompleted(achievement: AchievementModel): boolean {
-    return (
-      !achievement.completed &&
-      typeof achievement.progressValue === 'number' &&
-      achievement.progressValue >= 75
-    );
   }
 }

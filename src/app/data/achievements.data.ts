@@ -25,10 +25,19 @@ export interface AchievementDefinition {
   rarity: AchievementRarity;
 }
 
-const PENDING_REWARD: AchievementRewardModel = {
-  type: 'pending',
-  label: 'Premio da definire',
-};
+const createTitleReward = (
+  titleId: string,
+  titleIcon: string,
+  titleLabel: string,
+  titleRarity: AchievementRarity,
+): AchievementRewardModel => ({
+  type: 'title',
+  label: `Titolo: ${titleLabel}`,
+  titleId,
+  titleIcon,
+  titleLabel,
+  titleRarity,
+});
 
 export const ACHIEVEMENTS: AchievementDefinition[] = [
   {
@@ -38,7 +47,12 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Gioca il tuo primo quiz',
     metric: 'quizPlayed',
     target: 1,
-    reward: PENDING_REWARD,
+    reward: createTitleReward(
+      'title_esploratore',
+      '🐢',
+      'Esploratore',
+      'bronze',
+    ),
     rarity: 'bronze',
   },
   {
@@ -48,7 +62,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Gioca 10 quiz',
     metric: 'quizPlayed',
     target: 10,
-    reward: PENDING_REWARD,
+    reward: createTitleReward('title_curioso', '🚀', 'Curioso', 'bronze'),
     rarity: 'bronze',
   },
   {
@@ -58,7 +72,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Gioca 50 quiz',
     metric: 'quizPlayed',
     target: 50,
-    reward: PENDING_REWARD,
+    reward: createTitleReward('title_studioso', '📚', 'Studioso', 'silver'),
     rarity: 'silver',
   },
   {
@@ -68,7 +82,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Gioca 100 quiz',
     metric: 'quizPlayed',
     target: 100,
-    reward: PENDING_REWARD,
+    reward: createTitleReward('title_quiz_master', '🏆', 'Quiz Master', 'gold'),
     rarity: 'gold',
   },
   {
@@ -78,7 +92,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Gioca 250 quiz',
     metric: 'quizPlayed',
     target: 250,
-    reward: PENDING_REWARD,
+    reward: createTitleReward('title_veterano', '💎', 'Veterano', 'silver'),
     rarity: 'silver',
   },
   {
@@ -88,7 +102,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Dai 25 risposte corrette',
     metric: 'correctAnswers',
     target: 25,
-    reward: PENDING_REWARD,
+    reward: createTitleReward('title_mira_calda', '🎯', 'Mira Calda', 'bronze'),
     rarity: 'bronze',
   },
   {
@@ -98,7 +112,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Dai 100 risposte corrette',
     metric: 'correctAnswers',
     target: 100,
-    reward: PENDING_REWARD,
+    reward: createTitleReward('title_preciso', '⚡', 'Preciso', 'silver'),
     rarity: 'silver',
   },
   {
@@ -108,8 +122,13 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Dai 500 risposte corrette',
     metric: 'correctAnswers',
     target: 500,
-    reward: PENDING_REWARD,
-    rarity: 'epic',
+    reward: createTitleReward(
+      'title_mente_rapida',
+      '🧠',
+      'Mente Rapida',
+      'gold',
+    ),
+    rarity: 'gold',
   },
   {
     id: 'correct_1000',
@@ -118,7 +137,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Dai 1000 risposte corrette',
     metric: 'correctAnswers',
     target: 1000,
-    reward: PENDING_REWARD,
+    reward: createTitleReward('title_sapiente', '🌟', 'Sapiente', 'epic'),
     rarity: 'epic',
   },
   {
@@ -128,7 +147,12 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Raggiungi il livello 5',
     metric: 'level',
     target: 5,
-    reward: PENDING_REWARD,
+    reward: createTitleReward(
+      'title_avventuriero',
+      '🛡️',
+      'Avventuriero',
+      'bronze',
+    ),
     rarity: 'bronze',
   },
   {
@@ -138,7 +162,12 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Raggiungi il livello 10',
     metric: 'level',
     target: 10,
-    reward: PENDING_REWARD,
+    reward: createTitleReward(
+      'title_maestro_quiz',
+      '🏆',
+      'Maestro Quiz',
+      'silver',
+    ),
     rarity: 'silver',
   },
   {
@@ -148,8 +177,8 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Raggiungi il livello 25',
     metric: 'level',
     target: 25,
-    reward: PENDING_REWARD,
-    rarity: 'silver',
+    reward: createTitleReward('title_campione', '🏰', 'Campione', 'gold'),
+    rarity: 'gold',
   },
   {
     id: 'level_50',
@@ -158,7 +187,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Raggiungi il livello 50',
     metric: 'level',
     target: 50,
-    reward: PENDING_REWARD,
+    reward: createTitleReward('title_leggenda', '💫', 'Leggenda', 'epic'),
     rarity: 'epic',
   },
   {
@@ -168,7 +197,12 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Raggiungi il livello 100',
     metric: 'level',
     target: 100,
-    reward: PENDING_REWARD,
+    reward: createTitleReward(
+      'title_mito_turtlemind',
+      '🌌',
+      'Mito TurtleMind',
+      'legendary',
+    ),
     rarity: 'legendary',
   },
   {
@@ -178,8 +212,8 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Accumula 1000 XP',
     metric: 'xp',
     target: 1000,
-    reward: PENDING_REWARD,
-    rarity: 'silver',
+    reward: createTitleReward('title_scintilla', '✨', 'Scintilla', 'bronze'),
+    rarity: 'bronze',
   },
   {
     id: 'xp_5000',
@@ -188,8 +222,13 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Accumula 5000 XP',
     metric: 'xp',
     target: 5000,
-    reward: PENDING_REWARD,
-    rarity: 'silver',
+    reward: createTitleReward(
+      'title_energia_pura',
+      '💥',
+      'Energia Pura',
+      'gold',
+    ),
+    rarity: 'gold',
   },
   {
     id: 'xp_15000',
@@ -198,7 +237,12 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Accumula 15000 XP',
     metric: 'xp',
     target: 15000,
-    reward: PENDING_REWARD,
+    reward: createTitleReward(
+      'title_aura_brillante',
+      '🔮',
+      'Aura Brillante',
+      'epic',
+    ),
     rarity: 'epic',
   },
   {
@@ -208,7 +252,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Gioca per 3 giorni di fila',
     metric: 'streakDays',
     target: 3,
-    reward: PENDING_REWARD,
+    reward: createTitleReward('title_costante', '📆', 'Costante', 'bronze'),
     rarity: 'bronze',
   },
   {
@@ -218,7 +262,12 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Gioca per 7 giorni di fila',
     metric: 'streakDays',
     target: 7,
-    reward: PENDING_REWARD,
+    reward: createTitleReward(
+      'title_settimana_oro',
+      '🌈',
+      'Settimana d’Oro',
+      'silver',
+    ),
     rarity: 'silver',
   },
   {
@@ -228,7 +277,12 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Gioca per 30 giorni di fila',
     metric: 'streakDays',
     target: 30,
-    reward: PENDING_REWARD,
+    reward: createTitleReward(
+      'title_inarrestabile',
+      '☀️',
+      'Inarrestabile',
+      'epic',
+    ),
     rarity: 'epic',
   },
   {
@@ -239,7 +293,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'accuracy',
     target: 70,
     minAnswers: 50,
-    reward: PENDING_REWARD,
+    reward: createTitleReward('title_mano_ferma', '🎯', 'Mano Ferma', 'silver'),
     rarity: 'silver',
   },
   {
@@ -250,8 +304,8 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'accuracy',
     target: 80,
     minAnswers: 100,
-    reward: PENDING_REWARD,
-    rarity: 'silver',
+    reward: createTitleReward('title_cecchino', '🏹', 'Cecchino', 'gold'),
+    rarity: 'gold',
   },
   {
     id: 'accuracy_90',
@@ -261,7 +315,12 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'accuracy',
     target: 90,
     minAnswers: 200,
-    reward: PENDING_REWARD,
+    reward: createTitleReward(
+      'title_genio_lucido',
+      '🧩',
+      'Genio Lucido',
+      'epic',
+    ),
     rarity: 'epic',
   },
   {
@@ -271,7 +330,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Sblocca il tuo primo avatar speciale',
     metric: 'avatarsUnlocked',
     target: 1,
-    reward: PENDING_REWARD,
+    reward: createTitleReward('title_nuovo_look', '🎭', 'Nuovo Look', 'bronze'),
     rarity: 'bronze',
   },
   {
@@ -281,7 +340,12 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Sblocca 5 avatar speciali',
     metric: 'avatarsUnlocked',
     target: 5,
-    reward: PENDING_REWARD,
+    reward: createTitleReward(
+      'title_collezionista',
+      '🎨',
+      'Collezionista',
+      'silver',
+    ),
     rarity: 'silver',
   },
   {
@@ -291,8 +355,13 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Sblocca 10 avatar speciali',
     metric: 'avatarsUnlocked',
     target: 10,
-    reward: PENDING_REWARD,
-    rarity: 'silver',
+    reward: createTitleReward(
+      'title_galleria_viva',
+      '🖼️',
+      'Galleria Viva',
+      'gold',
+    ),
+    rarity: 'gold',
   },
   {
     id: 'tutorial_completed',
@@ -301,7 +370,12 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: 'Completa il tutorial iniziale',
     metric: 'tutorialCompleted',
     target: 1,
-    reward: PENDING_REWARD,
+    reward: createTitleReward(
+      'title_allievo_saggio',
+      '🐢',
+      'Allievo Saggio',
+      'bronze',
+    ),
     rarity: 'bronze',
   },
 ];

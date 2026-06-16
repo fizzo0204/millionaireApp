@@ -1,4 +1,9 @@
-export type AchievementRewardType = 'pending' | 'coins' | 'xp' | 'avatar';
+export type AchievementRewardType =
+  | 'pending'
+  | 'coins'
+  | 'xp'
+  | 'avatar'
+  | 'title';
 export type AchievementRarity =
   | 'bronze'
   | 'silver'
@@ -11,6 +16,10 @@ export interface AchievementRewardModel {
   label: string;
   amount?: number;
   avatarId?: string;
+  titleId?: string;
+  titleIcon?: string;
+  titleLabel?: string;
+  titleRarity?: AchievementRarity;
 }
 
 export interface AchievementModel {
@@ -23,4 +32,6 @@ export interface AchievementModel {
   progressValue?: number;
   reward?: AchievementRewardModel;
   rarity?: AchievementRarity;
+  rewardClaimed?: boolean;
+  rewardAvailable?: boolean;
 }

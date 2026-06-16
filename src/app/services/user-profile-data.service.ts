@@ -23,6 +23,7 @@ import { Observable, map } from 'rxjs';
 
 import {
   AppUserProfile,
+  UserAchievementsData,
   UserArcadeData,
   UserAvatarData,
   UserOnboardingData,
@@ -92,6 +93,14 @@ export class UserProfileDataService {
     lastCompletedAt: null,
   };
 
+  readonly defaultAchievements: UserAchievementsData = {
+    claimedRewards: [],
+    unlockedTitles: [],
+    selectedTitle: null,
+    unlockedFrames: [],
+    unlockedBadges: [],
+  };
+
   private getProviderIds(user: User): AppAuthProviderId[] {
     const providerIds = user.providerData
       .map((provider) => provider.providerId as AppAuthProviderId)
@@ -142,6 +151,7 @@ export class UserProfileDataService {
           avatar: this.defaultAvatar,
           onboarding: this.defaultOnboarding,
           arcade: this.defaultArcade,
+          achievements: this.defaultAchievements,
           auth: authProfile,
         }),
       );
@@ -199,6 +209,10 @@ export class UserProfileDataService {
 
     if (!data['arcade']) {
       updates['arcade'] = this.defaultArcade;
+    }
+
+    if (!data['achievements']) {
+      updates['achievements'] = this.defaultAchievements;
     }
 
     updates['auth.providerIds'] = authProfile.providerIds;
@@ -503,6 +517,10 @@ export class UserProfileDataService {
 
           return {
             ...profile,
+            achievements: {
+              ...this.defaultAchievements,
+              ...(profile.achievements ?? {}),
+            },
             stats: {
               ...profile.stats,
               level: getLevelFromXp(profile.stats.xp),

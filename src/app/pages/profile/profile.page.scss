@@ -266,130 +266,6 @@
     0 8px 18px rgba(0, 0, 0, 0.22);
 }
 
-.achievement-card.bronze {
-  border-color: rgba(205, 127, 50, 0.72);
-}
-
-.achievement-card.silver {
-  border-color: rgba(192, 192, 192, 0.72);
-}
-
-.achievement-card.gold {
-  border-color: rgba(255, 215, 0, 0.78);
-}
-
-.achievement-card.epic {
-  border-color: rgba(177, 76, 255, 0.78);
-}
-
-.achievement-card.legendary {
-  border-color: rgba(255, 77, 77, 0.82);
-}
-
-.achievement-card.completed.bronze {
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
-    0 0 16px rgba(205, 127, 50, 0.36),
-    0 8px 18px rgba(0, 0, 0, 0.22);
-}
-
-.achievement-card.completed.silver {
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
-    0 0 16px rgba(192, 192, 192, 0.34),
-    0 8px 18px rgba(0, 0, 0, 0.22);
-}
-
-.achievement-card.completed.gold {
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
-    0 0 18px rgba(255, 215, 0, 0.46),
-    0 8px 18px rgba(0, 0, 0, 0.22);
-}
-
-.achievement-card.completed.epic {
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
-    0 0 22px rgba(177, 76, 255, 0.56),
-    0 8px 18px rgba(0, 0, 0, 0.22);
-}
-
-.achievement-card.completed.legendary {
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
-    0 0 26px rgba(255, 77, 77, 0.58),
-    0 0 38px rgba(255, 234, 0, 0.18),
-    0 8px 18px rgba(0, 0, 0, 0.22);
-}
-
-.achievement-rarity {
-  margin: -2px 0 5px;
-  border-radius: 999px;
-  padding: 3px 7px;
-  font-size: 0.48rem;
-  font-weight: 1000;
-  text-transform: uppercase;
-  color: #04111f;
-  background: #ffea00;
-}
-
-.achievement-card.bronze .achievement-rarity {
-  background: linear-gradient(180deg, #f59e0b, #92400e);
-  color: #fff7ed;
-}
-
-.achievement-card.silver .achievement-rarity {
-  background: linear-gradient(180deg, #e5e7eb, #64748b);
-  color: #0f172a;
-}
-
-.achievement-card.gold .achievement-rarity {
-  background: linear-gradient(180deg, #ffea00, #f59e0b);
-  color: #241a00;
-}
-
-.achievement-card.epic .achievement-rarity {
-  background: linear-gradient(180deg, #d8b4fe, #7e22ce);
-  color: #fff;
-}
-
-.achievement-card.legendary .achievement-rarity {
-  background: linear-gradient(135deg, #ffea00, #ff5260, #7e22ce);
-  color: #fff;
-}
-
-.achievement-card.near-complete {
-  border-color: rgba(255, 234, 0, 0.9);
-
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
-    0 0 14px rgba(255, 234, 0, 0.22),
-    0 0 26px rgba(255, 234, 0, 0.12),
-    0 8px 18px rgba(0, 0, 0, 0.22);
-
-  animation: achievementPulse 2.4s infinite ease-in-out;
-}
-
-@keyframes achievementPulse {
-  0% {
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.06),
-      0 0 10px rgba(255, 234, 0, 0.12);
-  }
-
-  50% {
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.06),
-      0 0 18px rgba(255, 234, 0, 0.26);
-  }
-
-  100% {
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.06),
-      0 0 10px rgba(255, 234, 0, 0.12);
-  }
-}
-
 .achievement-card.locked {
   opacity: 0.68;
 }
@@ -1100,172 +976,176 @@
   color: #7dd3fc !important;
 }
 
-/* PROSSIMO AVATAR */
-.next-avatar-card {
-  position: relative;
-  overflow: hidden;
-  width: 100%;
-  margin: 16px 0 18px;
-  border: 1px solid rgba(255, 234, 0, 0.28);
-  border-radius: 24px;
-  padding: 15px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 94px;
-  gap: 12px;
-  align-items: center;
-  text-align: left;
-  color: #fff;
-  background:
-    radial-gradient(
-      circle at 82% 22%,
-      rgba(255, 234, 0, 0.24),
-      transparent 34%
-    ),
-    linear-gradient(135deg, rgba(126, 34, 206, 0.72), rgba(7, 44, 82, 0.94));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 12px 28px rgba(0, 0, 0, 0.28),
-    0 0 22px rgba(126, 34, 206, 0.22);
-}
-
-.next-avatar-card::before {
-  content: "";
-  position: absolute;
-  inset: -45%;
-  background: conic-gradient(
-    from 120deg,
-    transparent,
-    rgba(255, 234, 0, 0.18),
-    transparent 32%
-  );
-  animation: nextAvatarGlow 7s linear infinite;
-}
-
-.next-avatar-card > * {
-  position: relative;
-  z-index: 2;
-}
-
-.next-avatar-copy span {
-  display: inline-flex;
-  margin-bottom: 5px;
+/* TITOLI PROFILO */
+.player-title {
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 6px;
   border-radius: 999px;
   padding: 5px 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #04111f;
+  background: linear-gradient(180deg, #ffea00, #ffc400);
+  font-size: 0.68rem;
+  line-height: 1;
+  font-weight: 1000;
+  text-transform: uppercase;
+  box-shadow: 0 0 14px rgba(255, 234, 0, 0.24);
+}
+
+.player-title span {
+  font-size: 0.78rem;
+}
+
+.player-title.bronze {
+  color: #fff7ed;
+  background: linear-gradient(180deg, #f59e0b, #92400e);
+}
+
+.player-title.silver {
+  color: #0f172a;
+  background: linear-gradient(180deg, #e5e7eb, #64748b);
+}
+
+.player-title.gold {
+  color: #241a00;
+  background: linear-gradient(180deg, #ffea00, #f59e0b);
+}
+
+.player-title.epic {
+  color: #fff;
+  background: linear-gradient(180deg, #d8b4fe, #7e22ce);
+}
+
+.player-title.legendary {
+  color: #fff;
+  background: linear-gradient(135deg, #ffea00, #ff5260, #7e22ce);
+  box-shadow:
+    0 0 18px rgba(255, 234, 0, 0.28),
+    0 0 26px rgba(126, 34, 206, 0.22);
+}
+
+/* RARITÀ TROFEI */
+.achievement-card.bronze {
+  border-color: rgba(205, 127, 50, 0.72);
+}
+
+.achievement-card.silver {
+  border-color: rgba(192, 192, 192, 0.72);
+}
+
+.achievement-card.gold {
+  border-color: rgba(255, 215, 0, 0.78);
+}
+
+.achievement-card.epic {
+  border-color: rgba(177, 76, 255, 0.78);
+}
+
+.achievement-card.legendary {
+  border-color: rgba(255, 77, 77, 0.82);
+}
+
+.achievement-card.completed.bronze {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 0 16px rgba(205, 127, 50, 0.36),
+    0 8px 18px rgba(0, 0, 0, 0.22);
+}
+
+.achievement-card.completed.silver {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 0 16px rgba(192, 192, 192, 0.34),
+    0 8px 18px rgba(0, 0, 0, 0.22);
+}
+
+.achievement-card.completed.gold {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 0 18px rgba(255, 215, 0, 0.46),
+    0 8px 18px rgba(0, 0, 0, 0.22);
+}
+
+.achievement-card.completed.epic {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 0 22px rgba(177, 76, 255, 0.56),
+    0 8px 18px rgba(0, 0, 0, 0.22);
+}
+
+.achievement-card.completed.legendary {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 0 26px rgba(255, 77, 77, 0.58),
+    0 0 38px rgba(255, 234, 0, 0.18),
+    0 8px 18px rgba(0, 0, 0, 0.22);
+}
+
+.achievement-rarity {
+  margin: -2px 0 5px;
+  border-radius: 999px;
+  padding: 3px 7px;
+  font-size: 0.48rem;
+  font-weight: 1000;
+  text-transform: uppercase;
+  color: #04111f;
+  background: #ffea00;
+}
+
+.achievement-card.bronze .achievement-rarity {
+  background: linear-gradient(180deg, #f59e0b, #92400e);
+  color: #fff7ed;
+}
+
+.achievement-card.silver .achievement-rarity {
+  background: linear-gradient(180deg, #e5e7eb, #64748b);
+  color: #0f172a;
+}
+
+.achievement-card.gold .achievement-rarity {
+  background: linear-gradient(180deg, #ffea00, #f59e0b);
+  color: #241a00;
+}
+
+.achievement-card.epic .achievement-rarity {
+  background: linear-gradient(180deg, #d8b4fe, #7e22ce);
+  color: #fff;
+}
+
+.achievement-card.legendary .achievement-rarity {
+  background: linear-gradient(135deg, #ffea00, #ff5260, #7e22ce);
+  color: #fff;
+}
+
+.achievement-card.near-complete {
+  border-color: rgba(255, 234, 0, 0.9);
+}
+
+/* RISCATTO TROFEI */
+.achievement-claim {
+  width: 100%;
+  min-height: 30px;
+  margin-top: auto;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 8px;
   color: #04111f;
   background: linear-gradient(180deg, #ffea00, #ffc400);
   font-size: 0.62rem;
   font-weight: 1000;
-  text-transform: uppercase;
-}
-
-.next-avatar-copy h3 {
-  margin: 0;
-  color: #ffea00;
-  font-size: 1.1rem;
-  line-height: 1.05;
-  font-weight: 1000;
-  text-shadow:
-    0 2px 0 rgba(129, 90, 0, 0.58),
-    0 0 14px rgba(255, 234, 0, 0.28);
-}
-
-.next-avatar-copy p {
-  margin: 6px 0 10px;
-  color: #dbeafe;
-  font-size: 0.78rem;
-  line-height: 1.25;
-  font-weight: 850;
-}
-
-.next-avatar-progress {
-  overflow: hidden;
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(2, 8, 23, 0.48);
-}
-
-.next-avatar-progress div {
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #ffea00, #22c55e);
-  transition: width 0.28s ease;
-}
-
-.next-avatar-preview {
-  position: relative;
-  min-height: 98px;
-  border-radius: 22px;
-  display: grid;
-  place-items: center;
-  background: rgba(2, 8, 23, 0.34);
-  border: 1px solid rgba(255, 234, 0, 0.22);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
-    0 0 18px rgba(255, 234, 0, 0.18);
+    0 4px 0 rgba(129, 90, 0, 0.72),
+    0 8px 14px rgba(0, 0, 0, 0.22);
 }
 
-.next-avatar-preview img {
-  width: 78px;
-  height: 78px;
-  object-fit: contain;
-  filter: drop-shadow(0 0 12px rgba(255, 234, 0, 0.26));
+.achievement-claim:disabled {
+  opacity: 0.72;
 }
 
-.next-avatar-preview small {
-  position: absolute;
-  right: 7px;
-  bottom: 7px;
-  border-radius: 999px;
-  padding: 4px 7px;
-  color: #04111f;
-  background: #ffea00;
-  font-size: 0.6rem;
-  font-weight: 1000;
-}
-
-.next-avatar-card.completed {
-  grid-template-columns: 1fr 72px;
-  border-color: rgba(34, 197, 94, 0.34);
-  background:
-    radial-gradient(
-      circle at 84% 22%,
-      rgba(34, 197, 94, 0.24),
-      transparent 34%
-    ),
-    linear-gradient(135deg, rgba(14, 165, 233, 0.38), rgba(7, 44, 82, 0.94));
-}
-
-.completed-icon {
-  min-height: 72px;
-  font-size: 2.2rem;
-}
-
-@keyframes nextAvatarGlow {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (max-width: 390px) {
-  .next-avatar-card {
-    grid-template-columns: minmax(0, 1fr) 84px;
-    padding: 13px;
-  }
-
-  .next-avatar-preview {
-    min-height: 88px;
-  }
-
-  .next-avatar-preview img {
-    width: 68px;
-    height: 68px;
-  }
-
-  .next-avatar-copy h3 {
-    font-size: 1rem;
-  }
-}
-
+/* RIEPILOGO TROFEI */
 .achievements-summary {
   margin: 12px 0 18px;
   padding: 14px;
@@ -1281,17 +1161,17 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
+}
 
-  span {
-    color: #dbeafe;
-    font-weight: 800;
-    font-size: 0.78rem;
-  }
+.achievements-summary-top span {
+  color: #dbeafe;
+  font-weight: 800;
+  font-size: 0.78rem;
+}
 
-  strong {
-    color: #ffea00;
-    font-weight: 900;
-  }
+.achievements-summary-top strong {
+  color: #ffea00;
+  font-weight: 900;
 }
 
 .achievements-summary-bar {
@@ -1313,4 +1193,83 @@
   margin-top: 8px;
   color: #dbeafe;
   font-weight: 700;
+}
+
+/* MODALE TITOLO SBLOCCATO */
+.achievement-reward-modal {
+  position: relative;
+  overflow: hidden;
+  width: min(100%, 330px);
+  border-radius: 28px;
+  padding: 26px 20px 20px;
+  text-align: center;
+  color: #fff;
+  background:
+    radial-gradient(circle at top, rgba(255, 234, 0, 0.24), transparent 36%),
+    linear-gradient(180deg, #0f4cbd, #061d48);
+  border: 1px solid rgba(255, 234, 0, 0.34);
+  box-shadow:
+    0 0 34px rgba(255, 234, 0, 0.24),
+    0 22px 44px rgba(0, 0, 0, 0.5);
+  animation: modalPop 320ms cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+
+.achievement-reward-glow {
+  position: absolute;
+  inset: -80px;
+  background:
+    radial-gradient(circle, rgba(255, 234, 0, 0.26), transparent 34%),
+    conic-gradient(
+      from 0deg,
+      transparent,
+      rgba(255, 234, 0, 0.2),
+      transparent,
+      rgba(56, 189, 248, 0.18),
+      transparent
+    );
+  animation: nextAvatarGlow 8s linear infinite;
+}
+
+.achievement-reward-modal > *:not(.achievement-reward-glow) {
+  position: relative;
+  z-index: 2;
+}
+
+.achievement-reward-modal .player-title {
+  margin: 0 auto 16px;
+  font-size: 0.82rem;
+  padding: 9px 13px;
+}
+
+.achievement-reward-modal h3 {
+  margin: 0 0 8px;
+  color: #ffea00;
+  font-size: 1.35rem;
+  font-weight: 1000;
+  text-shadow:
+    0 2px 0 rgba(129, 90, 0, 0.65),
+    0 0 18px rgba(255, 234, 0, 0.34);
+}
+
+.achievement-reward-modal p {
+  margin: 0 auto 18px;
+  max-width: 260px;
+  color: #dbeafe;
+  font-size: 0.86rem;
+  line-height: 1.35;
+  font-weight: 800;
+}
+
+.achievement-reward-button {
+  width: 100%;
+  border: 0;
+  border-radius: 18px;
+  padding: 13px;
+  color: #04111f;
+  background: linear-gradient(180deg, #ffea00, #ffc400);
+  font-size: 0.9rem;
+  font-weight: 1000;
+  box-shadow:
+    0 8px 0 rgba(129, 90, 0, 0.72),
+    0 14px 24px rgba(0, 0, 0, 0.28);
 }
