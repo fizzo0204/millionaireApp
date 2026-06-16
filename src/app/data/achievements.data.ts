@@ -1,4 +1,7 @@
-import { AchievementRewardModel } from '../models/achievement.model';
+import {
+  AchievementRewardModel,
+  AchievementRarity,
+} from '../models/achievement.model';
 
 export type AchievementMetric =
   | 'quizPlayed'
@@ -19,6 +22,7 @@ export interface AchievementDefinition {
   target: number;
   minAnswers?: number;
   reward: AchievementRewardModel;
+  rarity: AchievementRarity;
 }
 
 const PENDING_REWARD: AchievementRewardModel = {
@@ -35,6 +39,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'quizPlayed',
     target: 1,
     reward: PENDING_REWARD,
+    rarity: 'bronze',
   },
   {
     id: 'quiz_10',
@@ -44,6 +49,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'quizPlayed',
     target: 10,
     reward: PENDING_REWARD,
+    rarity: 'bronze',
   },
   {
     id: 'quiz_50',
@@ -53,6 +59,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'quizPlayed',
     target: 50,
     reward: PENDING_REWARD,
+    rarity: 'silver',
   },
   {
     id: 'quiz_100',
@@ -62,6 +69,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'quizPlayed',
     target: 100,
     reward: PENDING_REWARD,
+    rarity: 'gold',
   },
   {
     id: 'quiz_250',
@@ -71,6 +79,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'quizPlayed',
     target: 250,
     reward: PENDING_REWARD,
+    rarity: 'silver',
   },
   {
     id: 'correct_25',
@@ -80,6 +89,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'correctAnswers',
     target: 25,
     reward: PENDING_REWARD,
+    rarity: 'bronze',
   },
   {
     id: 'correct_100',
@@ -89,6 +99,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'correctAnswers',
     target: 100,
     reward: PENDING_REWARD,
+    rarity: 'silver',
   },
   {
     id: 'correct_500',
@@ -98,6 +109,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'correctAnswers',
     target: 500,
     reward: PENDING_REWARD,
+    rarity: 'epic',
   },
   {
     id: 'correct_1000',
@@ -107,6 +119,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'correctAnswers',
     target: 1000,
     reward: PENDING_REWARD,
+    rarity: 'epic',
   },
   {
     id: 'level_5',
@@ -116,6 +129,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'level',
     target: 5,
     reward: PENDING_REWARD,
+    rarity: 'bronze',
   },
   {
     id: 'level_10',
@@ -125,6 +139,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'level',
     target: 10,
     reward: PENDING_REWARD,
+    rarity: 'silver',
   },
   {
     id: 'level_25',
@@ -134,6 +149,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'level',
     target: 25,
     reward: PENDING_REWARD,
+    rarity: 'silver',
   },
   {
     id: 'level_50',
@@ -143,6 +159,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'level',
     target: 50,
     reward: PENDING_REWARD,
+    rarity: 'epic',
   },
   {
     id: 'level_100',
@@ -152,6 +169,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'level',
     target: 100,
     reward: PENDING_REWARD,
+    rarity: 'legendary',
   },
   {
     id: 'xp_1000',
@@ -161,6 +179,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'xp',
     target: 1000,
     reward: PENDING_REWARD,
+    rarity: 'silver',
   },
   {
     id: 'xp_5000',
@@ -170,6 +189,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'xp',
     target: 5000,
     reward: PENDING_REWARD,
+    rarity: 'silver',
   },
   {
     id: 'xp_15000',
@@ -179,6 +199,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'xp',
     target: 15000,
     reward: PENDING_REWARD,
+    rarity: 'epic',
   },
   {
     id: 'streak_3',
@@ -188,6 +209,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'streakDays',
     target: 3,
     reward: PENDING_REWARD,
+    rarity: 'bronze',
   },
   {
     id: 'streak_7',
@@ -197,6 +219,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'streakDays',
     target: 7,
     reward: PENDING_REWARD,
+    rarity: 'silver',
   },
   {
     id: 'streak_30',
@@ -206,6 +229,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'streakDays',
     target: 30,
     reward: PENDING_REWARD,
+    rarity: 'epic',
   },
   {
     id: 'accuracy_70',
@@ -216,6 +240,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     target: 70,
     minAnswers: 50,
     reward: PENDING_REWARD,
+    rarity: 'silver',
   },
   {
     id: 'accuracy_80',
@@ -226,6 +251,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     target: 80,
     minAnswers: 100,
     reward: PENDING_REWARD,
+    rarity: 'silver',
   },
   {
     id: 'accuracy_90',
@@ -236,6 +262,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     target: 90,
     minAnswers: 200,
     reward: PENDING_REWARD,
+    rarity: 'epic',
   },
   {
     id: 'avatar_1',
@@ -245,6 +272,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'avatarsUnlocked',
     target: 1,
     reward: PENDING_REWARD,
+    rarity: 'bronze',
   },
   {
     id: 'avatar_5',
@@ -254,6 +282,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'avatarsUnlocked',
     target: 5,
     reward: PENDING_REWARD,
+    rarity: 'silver',
   },
   {
     id: 'avatar_10',
@@ -263,6 +292,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'avatarsUnlocked',
     target: 10,
     reward: PENDING_REWARD,
+    rarity: 'silver',
   },
   {
     id: 'tutorial_completed',
@@ -272,5 +302,6 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     metric: 'tutorialCompleted',
     target: 1,
     reward: PENDING_REWARD,
+    rarity: 'bronze',
   },
 ];

@@ -123,8 +123,18 @@
     <div class="achievement-grid">
       @for (achievement of getFeaturedAchievements(realStats, profile$ | async);
       track achievement.id) {
-      <div class="achievement-card" [class.locked]="!achievement.completed">
+      <div
+        class="achievement-card"
+        [ngClass]="[
+  achievement.rarity,
+  achievement.completed ? 'completed' : 'locked',
+  isAchievementAlmostCompleted(achievement) ? 'near-complete' : ''
+]"
+      >
         <div class="achievement-icon">{{ achievement.icon }}</div>
+        <div class="achievement-rarity">
+          {{ getAchievementRarityLabel(achievement.rarity) }}
+        </div>
 
         <h4>{{ achievement.title }}</h4>
         <p>{{ achievement.description }}</p>
@@ -423,11 +433,45 @@
 
       <h3>Tutti i trofei</h3>
 
+      <div class="achievements-summary">
+        <div class="achievements-summary-top">
+          <span>Collezione trofei</span>
+
+          <strong>
+            {{ getUnlockedAchievementsCount(realStats, profile$ | async) }} / {{
+            getTotalAchievementsCount() }}
+          </strong>
+        </div>
+
+        <div class="achievements-summary-bar">
+          <span
+            [style.width.%]="
+        getAchievementsCompletionPercent(realStats, profile$ | async)
+      "
+          ></span>
+        </div>
+
+        <small>
+          {{ getAchievementsCompletionPercent(realStats, profile$ | async) }}%
+          completato
+        </small>
+      </div>
+
       <div class="achievement-grid full">
         @for (achievement of getAlignedAchievements(realStats, profile$ |
         async); track achievement.id) {
-        <div class="achievement-card" [class.locked]="!achievement.completed">
+        <div
+          class="achievement-card"
+          [ngClass]="[
+  achievement.rarity,
+  achievement.completed ? 'completed' : 'locked',
+  isAchievementAlmostCompleted(achievement) ? 'near-complete' : ''
+]"
+        >
           <div class="achievement-icon">{{ achievement.icon }}</div>
+          <div class="achievement-rarity">
+            {{ getAchievementRarityLabel(achievement.rarity) }}
+          </div>
 
           <h4>{{ achievement.title }}</h4>
           <p>{{ achievement.description }}</p>

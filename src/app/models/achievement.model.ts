@@ -1,4 +1,10 @@
 export type AchievementRewardType = 'pending' | 'coins' | 'xp' | 'avatar';
+export type AchievementRarity =
+  | 'bronze'
+  | 'silver'
+  | 'gold'
+  | 'epic'
+  | 'legendary';
 
 export interface AchievementRewardModel {
   type: AchievementRewardType;
@@ -16,4 +22,5 @@ export interface AchievementModel {
   progress?: string;
   progressValue?: number;
   reward?: AchievementRewardModel;
+  rarity?: AchievementRarity;
 }

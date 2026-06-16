@@ -421,6 +421,7 @@ export class ProfilePage {
       progress: this.formatAchievementProgress(achievement, value),
       progressValue: this.getProgressValue(value, achievement.target),
       reward: achievement.reward,
+      rarity: achievement.rarity,
     };
   }
 
@@ -448,6 +449,7 @@ export class ProfilePage {
         ? this.getProgressValue(correctPercentage, achievement.target)
         : this.getProgressValue(totalAnswers, minAnswers),
       reward: achievement.reward,
+      rarity: achievement.rarity,
     };
   }
 
@@ -746,5 +748,61 @@ export class ProfilePage {
     }
 
     void Keyboard.hide().catch(() => undefined);
+  }
+
+  // Numero totale di trofei disponibili.
+  getTotalAchievementsCount(): number {
+    return ACHIEVEMENTS.length;
+  }
+
+  // Numero di trofei sbloccati.
+  getUnlockedAchievementsCount(
+    realStats: AppUserProfile['stats'],
+    profile?: AppUserProfile | null,
+  ): number {
+    return this.getAlignedAchievements(realStats, profile).filter(
+      (achievement) => achievement.completed,
+    ).length;
+  }
+
+  // Percentuale completamento collezione trofei.
+  getAchievementsCompletionPercent(
+    realStats: AppUserProfile['stats'],
+    profile?: AppUserProfile | null,
+  ): number {
+    const total = this.getTotalAchievementsCount();
+
+    if (total === 0) return 0;
+
+    return Math.round(
+      (this.getUnlockedAchievementsCount(realStats, profile) / total) * 100,
+    );
+  }
+
+  // Restituisce l'etichetta leggibile della rarità del trofeo.
+  getAchievementRarityLabel(rarity?: string): string {
+    switch (rarity) {
+      case 'bronze':
+        return 'Bronzo';
+      case 'silver':
+        return 'Argento';
+      case 'gold':
+        return 'Oro';
+      case 'epic':
+        return 'Epico';
+      case 'legendary':
+        return 'Leggenda';
+      default:
+        return 'Trofeo';
+    }
+  }
+
+  // Evidenzia i trofei bloccati vicini al completamento.
+  isAchievementAlmostCompleted(achievement: AchievementModel): boolean {
+    return (
+      !achievement.completed &&
+      typeof achievement.progressValue === 'number' &&
+      achievement.progressValue >= 75
+    );
   }
 }
