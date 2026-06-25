@@ -11,11 +11,7 @@
         [class.coin-pulse]="coinRewardPulse"
       >
         <span>
-          <img
-            class="coin-icon big"
-            src="assets/ui/coin-turtle.webp"
-            alt="Coins"
-          />
+          <img class="coin-icon big" [src]="coinIconPath" alt="Coins" />
         </span>
 
         <div class="coin-float" *ngIf="coinRewardPulse">+10</div>
@@ -43,8 +39,10 @@
       </div>
     </div>
 
-    <section class="premium-section">
-      <div class="section-title">
+    <section class="premium-section premium-box">
+      <div class="premium-label">Acquista</div>
+
+      <div class="section-title compact">
         <h3>Forzieri Premium</h3>
         <span>Premi garantiti</span>
       </div>
@@ -56,7 +54,13 @@
 
         <div class="legendary-content">
           <div class="legendary-left">
-            <div class="chest-emoji legendary">👑</div>
+            <div class="legendary-chest-frame">
+              <img
+                src="assets/ui/epic-chest-reward.webp"
+                alt="Forziere Leggendario"
+                class="legendary-chest-image"
+              />
+            </div>
           </div>
 
           <div class="legendary-right">
@@ -70,7 +74,7 @@
               <div class="reward-line">
                 <img
                   class="reward-coin-icon"
-                  src="assets/ui/coin-turtle.webp"
+                  [src]="coinIconPath"
                   alt="Coins"
                 />
                 <strong>400</strong>
@@ -118,13 +122,9 @@
 
           <div class="reward-list">
             <div class="reward-line">
-              <img
-                class="reward-coin-icon"
-                src="assets/ui/coin-turtle.webp"
-                alt="Coins"
-              />
+              <img class="reward-coin-icon" [src]="coinIconPath" alt="Coins" />
               <strong>50</strong>
-              <span>Coins</span>
+              <span>TurtleCoins</span>
             </div>
 
             <div class="reward-line">
@@ -154,18 +154,14 @@
 
           <div class="chest-text">
             <h4>Maestro</h4>
-            <p>Coins, XP e un avatar Daily garantito.</p>
+            <p>TurtleCoins, XP e un avatar Daily garantito.</p>
           </div>
 
           <div class="reward-list">
             <div class="reward-line">
-              <img
-                class="reward-coin-icon"
-                src="assets/ui/coin-turtle.webp"
-                alt="Coins"
-              />
+              <img class="reward-coin-icon" [src]="coinIconPath" alt="Coins" />
               <strong>150</strong>
-              <span>Coins</span>
+              <span>TurtleCoins</span>
             </div>
 
             <div class="reward-line">
@@ -194,22 +190,20 @@
       </div>
     </section>
 
-    <section class="free-section">
-      <div class="section-title">
+    <section class="free-section video-rewards-box">
+      <div class="video-rewards-label">Ricompense video</div>
+
+      <div class="section-title compact">
         <h3>Ricompense gratis</h3>
         <span>Guarda un video</span>
       </div>
 
-      <div class="shop-grid">
-        <div class="shop-card coins-card">
+      <div class="free-rewards-row">
+        <div class="shop-card coins-card mini-free-card">
           <div class="badge">Gratis</div>
 
           <div class="shop-icon">
-            <img
-              class="coin-icon huge"
-              src="assets/ui/coin-turtle.webp"
-              alt="Coins"
-            />
+            <img class="coin-icon huge" [src]="coinIconPath" alt="Coins" />
           </div>
 
           <div class="shop-text">
@@ -231,7 +225,7 @@
 
         @let lives = lives$ | async; @if (lives !== null && lives !== undefined)
         {
-        <div class="shop-card life-card">
+        <div class="shop-card life-card mini-free-card">
           <div class="badge" [class.full]="lives >= maxLives">
             {{ lives >= maxLives ? "Pieno" : "Gratis" }}
           </div>
@@ -240,7 +234,6 @@
 
           <div class="shop-text">
             <h3>+1 Vita</h3>
-
             <p>
               Guarda un video e recupera una vita.
               <br />
@@ -263,4 +256,51 @@
       </div>
     </section>
   </div>
+
+  @if (purchasePreview) {
+  <div class="purchase-backdrop" (click)="annullaAcquistoModale()">
+    <div class="purchase-modal" (click)="$event.stopPropagation()">
+      <div class="purchase-glow"></div>
+
+      <h3>{{ purchasePreview.config.titolo }}</h3>
+      <div class="purchase-price">{{ purchasePreview.config.prezzo }}</div>
+
+      <p class="purchase-subtitle">Riceverai</p>
+
+      <div class="purchase-rewards">
+        <div class="purchase-row">
+          <img [src]="coinIconPath" alt="TurtleCoins" class="purchase-coin" />
+          <strong>{{ purchasePreview.coinsFinali }}</strong>
+          <span>TurtleCoins</span>
+        </div>
+
+        <div class="purchase-row">
+          <span class="purchase-symbol">⭐</span>
+          <strong>{{ purchasePreview.xpFinali }}</strong>
+          <span>XP</span>
+        </div>
+
+        @for (row of purchaseAvatarRows; track row) {
+        <div class="purchase-row avatar-row">
+          <span class="purchase-symbol">🎭</span>
+          <span>{{ row }}</span>
+        </div>
+        }
+      </div>
+
+      <div class="purchase-actions">
+        <ion-button fill="clear" (click)="annullaAcquistoModale()">
+          Annulla
+        </ion-button>
+
+        <ion-button
+          class="confirm-purchase-button"
+          (click)="confermaAcquistoModale()"
+        >
+          Continua
+        </ion-button>
+      </div>
+    </div>
+  </div>
+  }
 </ion-content>

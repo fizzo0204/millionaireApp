@@ -29,6 +29,10 @@ export class ShopPage implements OnInit, OnDestroy {
 
   chestLoading: TipoForziere | null = null;
 
+  purchasePreview: AnteprimaForziere | null = null;
+  purchaseAvatarRows: string[] = [];
+  private purchaseConfirmResolver?: (value: boolean) => void;
+
   private previousLives?: number;
   readonly maxLives = 5;
   readonly coinIconPath = 'assets/ui/coin-turtle.webp';
@@ -96,80 +100,62 @@ export class ShopPage implements OnInit, OnDestroy {
     }
   }
 
-  // Mostra la modale prima del pagamento, inclusa la variante con fallback se gli avatar sono finiti.
+  // Mostra la modale custom prima del pagamento.
   private async mostraConfermaForziere(
     anteprima: AnteprimaForziere,
   ): Promise<boolean> {
-    const messaggioAvatar = this.getMessaggioAvatarAnteprima(anteprima);
+    this.purchasePreview = anteprima;
+    this.purchaseAvatarRows = this.getRigheAvatarAnteprima(anteprima);
 
-    const alert = await this.alertController.create({
-      header: anteprima.config.titolo,
-      subHeader: anteprima.config.prezzo,
-      message: `
-        <div class="shop-alert-content">
-          <p>Riceverai:</p>
-          <ul>
-            <li>
-              <img class="alert-coin-icon" src="${this.coinIconPath}" alt="Coins" />
-              <strong>${anteprima.coinsFinali}</strong> TurtleCoins
-            </li>
-            <li>⭐ <strong>${anteprima.xpFinali}</strong> XP</li>
-            ${messaggioAvatar}
-          </ul>
-        </div>
-      `,
-      buttons: [
-        {
-          text: 'Annulla',
-          role: 'cancel',
-        },
-        {
-          text: 'Continua',
-          role: 'confirm',
-        },
-      ],
-      cssClass: anteprima.usaFallbackCoins
-        ? 'shop-alert fallback-alert'
-        : 'shop-alert',
+    return new Promise<boolean>((resolve) => {
+      this.purchaseConfirmResolver = resolve;
     });
-
-    await alert.present();
-
-    const result = await alert.onDidDismiss();
-    return result.role === 'confirm';
   }
 
-  // Crea il testo della modale per avatar garantito o coins sostitutive.
-  private getMessaggioAvatarAnteprima(anteprima: AnteprimaForziere): string {
+  // Conferma l'acquisto dalla modale custom.
+  confermaAcquistoModale() {
+    this.purchaseConfirmResolver?.(true);
+    this.chiudiModaleAcquisto();
+  }
+
+  // Annulla l'acquisto dalla modale custom.
+  annullaAcquistoModale() {
+    this.purchaseConfirmResolver?.(false);
+    this.chiudiModaleAcquisto();
+  }
+
+  // Chiude e pulisce la modale custom.
+  private chiudiModaleAcquisto() {
+    this.purchasePreview = null;
+    this.purchaseAvatarRows = [];
+    this.purchaseConfirmResolver = undefined;
+  }
+
+  // Crea le righe testuali per avatar garantito o coins sostitutive.
+  private getRigheAvatarAnteprima(anteprima: AnteprimaForziere): string[] {
     if (!anteprima.haAvatarGarantito) {
-      return '';
+      return [];
     }
 
     if (anteprima.usaFallbackCoins) {
-      return `
-        <li class="fallback-row">
-          Hai già tutti gli avatar disponibili: riceverai monete bonus al posto dell'avatar.
-        </li>
-      `;
+      return [
+        'Hai già tutti gli avatar disponibili.',
+        'Riceverai monete bonus al posto dell’avatar.',
+      ];
     }
 
     const tipoAvatar =
       anteprima.config.avatarSource === 'epic' ? 'Epico' : 'Daily';
 
-    return `
-      <li>
-        🎭 <strong>1 Avatar ${tipoAvatar}</strong> non posseduto
-      </li>
-      <li class="small-row">
-        Disponibili: ${anteprima.avatarDisponibili}/${anteprima.avatarTotali}
-      </li>
-    `;
+    return [
+      `1 Avatar ${tipoAvatar} non posseduto`,
+      `Disponibili: ${anteprima.avatarDisponibili}/${anteprima.avatarTotali}`,
+    ];
   }
 
   // Placeholder temporaneo: qui collegheremo Google Play Billing.
   private async avviaPagamentoPlaceholder(productId: string): Promise<boolean> {
     console.log('Pagamento placeholder per productId:', productId);
-
     return true;
   }
 
@@ -181,25 +167,20 @@ export class ShopPage implements OnInit, OnDestroy {
     avatarLabel?: string,
     fallbackUsato = false,
   ) {
-    const avatarMessage = avatarLabel
-      ? `<p>🎭 Nuovo avatar: <strong>${avatarLabel}</strong></p>`
-      : fallbackUsato
-        ? `<p>🎉 Avatar già tutti sbloccati: hai ricevuto monete bonus!</p>`
-        : '';
-
     const alert = await this.alertController.create({
       header: 'Forziere aperto!',
       subHeader: titolo,
-      message: `
-        <div class="shop-alert-content reward">
-          <p>
-            <img class="alert-coin-icon" src="${this.coinIconPath}" alt="Coins" />
-            <strong>+${coins}</strong> TurtleCoins
-          </p>
-          <p>⭐ <strong>+${xp}</strong> XP</p>
-          ${avatarMessage}
-        </div>
-      `,
+      message: [
+        `🪙 +${coins} TurtleCoins`,
+        `⭐ +${xp} XP`,
+        avatarLabel
+          ? `🎭 Nuovo avatar: ${avatarLabel}`
+          : fallbackUsato
+            ? `🎉 Avatar già tutti sbloccati: hai ricevuto monete bonus!`
+            : '',
+      ]
+        .filter(Boolean)
+        .join('\n'),
       buttons: ['Fantastico!'],
       cssClass: 'shop-alert reward-alert',
     });
