@@ -800,8 +800,13 @@ export class QuizPage implements OnInit, OnDestroy {
     this.stopTimer();
     this.navigatingAway = true;
 
-    if (this.dailyChallengeMode || this.arcadeMode) {
+    if (this.dailyChallengeMode) {
       this.goToExitPage();
+      return;
+    }
+
+    if (this.arcadeMode) {
+      await this.loseArcadeLifeAndExit();
       return;
     }
 

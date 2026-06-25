@@ -372,11 +372,10 @@
 
       <p>
         @if (dailyChallengeMode) { Puoi tornare agli eventi senza consumare
-        vite. La run giornaliera resta interrotta. } @else if (arcadeMode) {
-        Puoi uscire e tornare alla scalata senza perdere vite. La scalata
-        ripartirà dal livello {{ displayLevelNumber }}. } @else { Se abbandoni
-        il quiz perderai una vita. Puoi restare e continuare con il timer
-        attuale. }
+        vite. La run giornaliera resta interrotta. } @else if (arcadeMode) { Se
+        abbandoni questo livello perderai una vita. Puoi restare e continuare
+        con il timer attuale. } @else { Se abbandoni il quiz perderai una vita.
+        Puoi restare e continuare con il timer attuale. }
       </p>
 
       <div class="wrong-actions">
@@ -386,7 +385,7 @@
 
         <button class="life-btn" type="button" (click)="confirmExitQuiz()">
           @if (dailyChallengeMode) { Torna agli eventi } @else if (arcadeMode) {
-          Torna alla scalata } @else { Esci e perdi una vita }
+          Torna alla scalata e perdi una vita } @else { Esci e perdi una vita }
         </button>
       </div>
     </div>
