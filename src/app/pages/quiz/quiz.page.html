@@ -58,7 +58,7 @@
         }
       </div>
     </div>
-    } @if (loading && currentQuestion) {
+    } @if (loading) {
     <app-game-loader
       icon="🎯"
       [title]="arcadeMode ? 'Preparazione Scalata...' : 'Preparazione quiz...'"
@@ -374,7 +374,7 @@
         @if (dailyChallengeMode) { Puoi tornare agli eventi senza consumare
         vite. La run giornaliera resta interrotta. } @else if (arcadeMode) {
         Puoi uscire e tornare alla scalata senza perdere vite. La scalata
-        ripartira dal livello {{ displayLevelNumber }}. } @else { Se abbandoni
+        ripartirà dal livello {{ displayLevelNumber }}. } @else { Se abbandoni
         il quiz perderai una vita. Puoi restare e continuare con il timer
         attuale. }
       </p>
