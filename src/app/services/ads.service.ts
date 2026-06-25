@@ -115,7 +115,7 @@ export class AdsService {
     }
   }
 
-  async showRewardedAd(): Promise<boolean> {
+  async showRewardedAd(countForDailyMission = true): Promise<boolean> {
     if (this.rewardedAdInProgress) return false;
 
     this.rewardedAdInProgress = true;
@@ -170,7 +170,7 @@ export class AdsService {
           await this.wait(350);
           await this.audioService.playMusic();
 
-          if (result) {
+          if (result && countForDailyMission) {
             this.rewardedAdCompletedSubject.next();
           }
 

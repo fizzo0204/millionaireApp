@@ -142,7 +142,7 @@ export class EventsMissionsPage implements OnInit, OnDestroy {
        * un video premio prima di generare una nuova missione.
        */
       if (mission.switchRequiresAd) {
-        const rewarded = await this.ads.showRewardedAd();
+        const rewarded = await this.ads.showRewardedAd(false);
 
         if (!rewarded) {
           return;
