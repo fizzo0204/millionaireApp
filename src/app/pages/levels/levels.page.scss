@@ -661,3 +661,60 @@ app-game-loader {
   display: block;
   min-height: 52vh;
 }
+
+.levels-empty-state {
+  margin: 22px 12px 0;
+  padding: 28px 20px;
+  text-align: center;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+}
+
+.empty-icon {
+  width: 74px;
+  height: 74px;
+  margin: 0 auto 14px;
+  display: grid;
+  place-items: center;
+  font-size: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2dd4ff, #8b5cf6);
+  box-shadow: 0 0 28px rgba(45, 212, 255, 0.45);
+}
+
+.levels-empty-state h2 {
+  margin: 0 0 10px;
+  font-size: 24px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.levels-empty-state p {
+  margin: 0 auto 22px;
+  max-width: 280px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.empty-action-btn {
+  width: 100%;
+  max-width: 260px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  color: #ffffff;
+  font-weight: 900;
+  background: linear-gradient(135deg, #ffbf1b, #ff7a1a);
+  box-shadow: 0 10px 22px rgba(255, 122, 26, 0.34);
+}
+
+.empty-action-btn ion-icon {
+  font-size: 20px;
+}

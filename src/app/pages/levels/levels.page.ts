@@ -178,6 +178,10 @@ export class LevelsPage {
     this.animateAndNavigate(`/difficulty/${this.categoryId}`);
   }
 
+  goBackNoLevel() {
+    this.animateAndNavigate('/home?view=categories');
+  }
+
   setupLabels() {
     const categories: Record<
       string,

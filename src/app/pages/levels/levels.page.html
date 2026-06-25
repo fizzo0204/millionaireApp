@@ -21,7 +21,6 @@
 
         <div class="category-badge" [ngClass]="categoryClass">
           <div class="category-badge-icon">{{ categoryIcon }}</div>
-
           <div class="category-badge-name">{{ categoryTitle }}</div>
         </div>
       </div>
@@ -33,6 +32,22 @@
       title="Caricamento livelli..."
       subtitle="Stiamo aggiornando i tuoi progressi"
     ></app-game-loader>
+    } @else if (levels.length === 0) {
+    <div class="empty-state levels-empty-state">
+      <div class="empty-icon">🧪</div>
+
+      <h2>Nuove domande in arrivo!</h2>
+
+      <p>
+        Questa modalità non è ancora disponibile. Stiamo preparando nuovi
+        livelli e tante domande interessanti.
+      </p>
+
+      <button class="empty-action-btn" type="button" (click)="goBackNoLevel()">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+        Torna alle categorie
+      </button>
+    </div>
     } @else {
     <div class="levels-grid">
       @for (level of levels; track level.number) {
@@ -43,10 +58,10 @@
         [class.completed]="level.completed"
         [class.just-completed]="level.justCompleted"
         [class.new-unlocked]="
-    !level.locked &&
-    !level.completed &&
-    level.number === firstPlayableLevel
-  "
+          !level.locked &&
+          !level.completed &&
+          level.number === firstPlayableLevel
+        "
         [disabled]="level.locked"
         (click)="openLevel(level)"
       >
@@ -68,6 +83,7 @@
     </div>
     }
   </div>
+
   @if (showNoLivesModal) {
   <div class="no-lives-backdrop">
     <div class="no-lives-modal">

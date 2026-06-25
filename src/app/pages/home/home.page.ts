@@ -83,16 +83,19 @@ export class HomePage implements OnInit, OnDestroy {
     const view = this.route.snapshot.queryParamMap.get('view');
 
     if (view === 'categories') {
-      this.showCategories();
+      this.activeView = 'categories';
+      this.ui.hideBottomNavForInnerPage();
 
       void this.router.navigate([], {
         relativeTo: this.route,
         queryParams: {},
         replaceUrl: true,
       });
-    } else {
-      this.showMenu();
+
+      return;
     }
+
+    this.showMenu();
 
     const tutorialOpened =
       await this.tutorialService.openHomeTutorialIfNeeded();

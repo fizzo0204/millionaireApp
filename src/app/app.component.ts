@@ -244,7 +244,12 @@ export class AppComponent implements OnDestroy {
       cleanUrl.startsWith(route),
     );
 
-    if (!this.hideBottomNav) {
+    const isHome = cleanUrl === '/home';
+
+    if (
+      !this.hideBottomNav &&
+      (!isHome || !this.ui.hideBottomNavForSubpage())
+    ) {
       this.ui.showBottomNavForInnerPage();
     }
 
