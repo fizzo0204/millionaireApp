@@ -147,7 +147,12 @@ export class DifficultyPage {
   private getPreviousDifficultyId(
     difficultyId: DifficultyModel['id'],
   ): DifficultyModel['id'] | null {
-    const order: DifficultyModel['id'][] = ['easy', 'medium', 'hard', 'extreme'];
+    const order: DifficultyModel['id'][] = [
+      'easy',
+      'medium',
+      'hard',
+      'extreme',
+    ];
     const currentIndex = order.indexOf(difficultyId);
 
     return order[currentIndex - 1] ?? null;
@@ -165,7 +170,7 @@ export class DifficultyPage {
   }
 
   goBack() {
-    this.animateAndNavigate('/home');
+    this.animateAndNavigate('/home?view=categories');
   }
 
   selectDifficulty(difficulty: DifficultyModel) {

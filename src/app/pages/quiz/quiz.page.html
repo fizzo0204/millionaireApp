@@ -58,7 +58,7 @@
         }
       </div>
     </div>
-    } @if (loading) {
+    } @if (loading && currentQuestion) {
     <app-game-loader
       icon="🎯"
       [title]="arcadeMode ? 'Preparazione Scalata...' : 'Preparazione quiz...'"

@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { Observable, Subscription, map, of, switchMap } from 'rxjs';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { UserStatsService } from 'src/app/services/user-stats.service';
 import { AuthService } from 'src/app/services/auth.service';
 import { AdsService } from 'src/app/services/ads.service';
@@ -62,6 +62,7 @@ export class HomePage implements OnInit, OnDestroy {
     private tutorialService: TutorialService,
     private navigation: NavigationTransitionService,
     private ui: UiService,
+    private route: ActivatedRoute,
   ) {
     this.coins$ = this.coinsService.coins$;
     this.lives$ = this.livesService.lives$;
@@ -79,13 +80,20 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   async ionViewWillEnter() {
-    this.activeView = 'menu';
-    this.ui.showBottomNavForInnerPage();
+    const view = this.route.snapshot.queryParamMap.get('view');
 
-    /*
-     * Il login non blocca piu il gioco. Quando l'ospite torna in home,
-     * ogni tanto proponiamo il salvataggio cloud con Google/Facebook.
-     */
+    if (view === 'categories') {
+      this.showCategories();
+
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: {},
+        replaceUrl: true,
+      });
+    } else {
+      this.showMenu();
+    }
+
     const tutorialOpened =
       await this.tutorialService.openHomeTutorialIfNeeded();
 
