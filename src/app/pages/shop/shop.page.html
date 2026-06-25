@@ -2,7 +2,7 @@
   <div class="page-fade">
     <div class="shop-header">
       <h2>🛒 Negozio</h2>
-      <p>Guarda brevi video e ottieni ricompense gratis</p>
+      <p>Forzieri, ricompense e potenziamenti per TurtleMind</p>
     </div>
 
     <div class="wallet-row">
@@ -43,65 +43,224 @@
       </div>
     </div>
 
-    <div class="shop-grid">
-      <div class="shop-card coins-card">
-        <div class="badge">Gratis</div>
-
-        <div class="shop-icon">
-          <img
-            class="coin-icon huge"
-            src="assets/ui/coin-turtle.webp"
-            alt="Coins"
-          />
-        </div>
-
-        <div class="shop-text">
-          <h3>+10 TurtleCoins</h3>
-          <p>Guarda un video e ricevi subito 10 TurtleCoins.</p>
-        </div>
-
-        <ion-button
-          expand="block"
-          class="shop-button"
-          (click)="watchCoinsAd()"
-          [disabled]="coinsLoading || lifeLoading"
-        >
-          @if (!coinsLoading) { 🎁 Guarda video } @else {
-          <ion-spinner name="dots"></ion-spinner>
-          }
-        </ion-button>
+    <section class="premium-section">
+      <div class="section-title">
+        <h3>Forzieri Premium</h3>
+        <span>Premi garantiti</span>
       </div>
 
-      @let lives = lives$ | async; @if (lives !== null && lives !== undefined) {
-      <div class="shop-card life-card">
-        <div class="badge" [class.full]="lives >= maxLives">
-          {{ lives >= maxLives ? "Pieno" : "Gratis" }}
+      <div class="chest-card legendary-chest">
+        <div class="legendary-aura"></div>
+        <div class="legendary-stars"></div>
+        <div class="chest-badge epic">Miglior valore</div>
+
+        <div class="legendary-content">
+          <div class="legendary-left">
+            <div class="chest-emoji legendary">👑</div>
+          </div>
+
+          <div class="legendary-right">
+            <h4>Forziere Leggendario</h4>
+            <p>
+              Il premio più raro: tanti TurtleCoins, XP e un avatar Epico non
+              posseduto.
+            </p>
+
+            <div class="reward-list legendary-list">
+              <div class="reward-line">
+                <img
+                  class="reward-coin-icon"
+                  src="assets/ui/coin-turtle.webp"
+                  alt="Coins"
+                />
+                <strong>400</strong>
+                <span>TurtleCoins</span>
+              </div>
+
+              <div class="reward-line">
+                <span class="reward-symbol">⭐</span>
+                <strong>400</strong>
+                <span>XP</span>
+              </div>
+
+              <div class="reward-line">
+                <span class="reward-symbol">🔥</span>
+                <strong>Avatar Epico</strong>
+                <span>garantito</span>
+              </div>
+            </div>
+
+            <ion-button
+              expand="block"
+              class="chest-button legendary-button"
+              (click)="compraForziere('leggendario')"
+              [disabled]="!!chestLoading || coinsLoading || lifeLoading"
+            >
+              @if (chestLoading !== 'leggendario') { €4,99 } @else {
+              <ion-spinner name="dots"></ion-spinner>
+              }
+            </ion-button>
+          </div>
         </div>
-
-        <div class="shop-icon">❤️</div>
-
-        <div class="shop-text">
-          <h3>+1 Vita</h3>
-
-          <p>
-            Guarda un video e recupera una vita.
-            <br />
-            <strong>{{ lives }}/{{ maxLives }}</strong> vite disponibili.
-          </p>
-        </div>
-
-        <ion-button
-          expand="block"
-          class="shop-button"
-          (click)="watchLifeAd()"
-          [disabled]="lifeLoading || coinsLoading || lives >= maxLives"
-        >
-          @if (!lifeLoading) { 🎁 Guarda video } @else {
-          <ion-spinner name="dots"></ion-spinner>
-          }
-        </ion-button>
       </div>
-      }
-    </div>
+
+      <div class="chests-top-grid">
+        <div class="chest-card traveler-chest">
+          <div class="chest-shine"></div>
+          <div class="chest-badge bronze">Starter</div>
+
+          <div class="chest-emoji">🧳</div>
+
+          <div class="chest-text">
+            <h4>Viaggiatore</h4>
+            <p>Il pacchetto perfetto per iniziare.</p>
+          </div>
+
+          <div class="reward-list">
+            <div class="reward-line">
+              <img
+                class="reward-coin-icon"
+                src="assets/ui/coin-turtle.webp"
+                alt="Coins"
+              />
+              <strong>50</strong>
+              <span>Coins</span>
+            </div>
+
+            <div class="reward-line">
+              <span class="reward-symbol">⭐</span>
+              <strong>50</strong>
+              <span>XP</span>
+            </div>
+          </div>
+
+          <ion-button
+            expand="block"
+            class="chest-button"
+            (click)="compraForziere('viaggiatore')"
+            [disabled]="!!chestLoading || coinsLoading || lifeLoading"
+          >
+            @if (chestLoading !== 'viaggiatore') { €1,99 } @else {
+            <ion-spinner name="dots"></ion-spinner>
+            }
+          </ion-button>
+        </div>
+
+        <div class="chest-card master-chest">
+          <div class="chest-shine"></div>
+          <div class="chest-badge gold">Più scelto</div>
+
+          <div class="chest-emoji">🎁</div>
+
+          <div class="chest-text">
+            <h4>Maestro</h4>
+            <p>Coins, XP e un avatar Daily garantito.</p>
+          </div>
+
+          <div class="reward-list">
+            <div class="reward-line">
+              <img
+                class="reward-coin-icon"
+                src="assets/ui/coin-turtle.webp"
+                alt="Coins"
+              />
+              <strong>150</strong>
+              <span>Coins</span>
+            </div>
+
+            <div class="reward-line">
+              <span class="reward-symbol">⭐</span>
+              <strong>150</strong>
+              <span>XP</span>
+            </div>
+
+            <div class="reward-line">
+              <span class="reward-symbol">🎭</span>
+              <strong>Avatar Daily</strong>
+            </div>
+          </div>
+
+          <ion-button
+            expand="block"
+            class="chest-button"
+            (click)="compraForziere('maestro')"
+            [disabled]="!!chestLoading || coinsLoading || lifeLoading"
+          >
+            @if (chestLoading !== 'maestro') { €2,99 } @else {
+            <ion-spinner name="dots"></ion-spinner>
+            }
+          </ion-button>
+        </div>
+      </div>
+    </section>
+
+    <section class="free-section">
+      <div class="section-title">
+        <h3>Ricompense gratis</h3>
+        <span>Guarda un video</span>
+      </div>
+
+      <div class="shop-grid">
+        <div class="shop-card coins-card">
+          <div class="badge">Gratis</div>
+
+          <div class="shop-icon">
+            <img
+              class="coin-icon huge"
+              src="assets/ui/coin-turtle.webp"
+              alt="Coins"
+            />
+          </div>
+
+          <div class="shop-text">
+            <h3>+10 TurtleCoins</h3>
+            <p>Guarda un video e ricevi subito 10 TurtleCoins.</p>
+          </div>
+
+          <ion-button
+            expand="block"
+            class="shop-button"
+            (click)="watchCoinsAd()"
+            [disabled]="coinsLoading || lifeLoading || !!chestLoading"
+          >
+            @if (!coinsLoading) { 🎁 Guarda video } @else {
+            <ion-spinner name="dots"></ion-spinner>
+            }
+          </ion-button>
+        </div>
+
+        @let lives = lives$ | async; @if (lives !== null && lives !== undefined)
+        {
+        <div class="shop-card life-card">
+          <div class="badge" [class.full]="lives >= maxLives">
+            {{ lives >= maxLives ? "Pieno" : "Gratis" }}
+          </div>
+
+          <div class="shop-icon">❤️</div>
+
+          <div class="shop-text">
+            <h3>+1 Vita</h3>
+
+            <p>
+              Guarda un video e recupera una vita.
+              <br />
+              <strong>{{ lives }}/{{ maxLives }}</strong> vite disponibili.
+            </p>
+          </div>
+
+          <ion-button
+            expand="block"
+            class="shop-button"
+            (click)="watchLifeAd()"
+            [disabled]="lifeLoading || coinsLoading || lives >= maxLives || !!chestLoading"
+          >
+            @if (!lifeLoading) { 🎁 Guarda video } @else {
+            <ion-spinner name="dots"></ion-spinner>
+            }
+          </ion-button>
+        </div>
+        }
+      </div>
+    </section>
   </div>
 </ion-content>
