@@ -58,6 +58,7 @@ export class QuizPage implements OnInit, OnDestroy {
   private adInProgress = false;
   private lifeLostForLeaving = false;
   private navigatingAway = false;
+  private questionEntranceTimer?: ReturnType<typeof setTimeout>;
   levelAlreadyCompleted = false;
   rewardDoubleLoading = false;
   rewardDoubled = false;
@@ -111,6 +112,7 @@ export class QuizPage implements OnInit, OnDestroy {
   fiftyAnimatingAnswers: number[] = [];
   audienceReveal = false;
   helpResultAnimating = false;
+  questionEntryActive = false;
 
   loading = true;
   answered = false;
@@ -622,6 +624,7 @@ export class QuizPage implements OnInit, OnDestroy {
     this.fiftyAnimatingAnswers = [];
     this.helpResultAnimating = false;
     this.questionTransition = 'idle';
+    this.questionEntryActive = false;
     this.lifeLostForLeaving = false;
     this.timeLeft = this.maxTime;
   }
@@ -887,7 +890,29 @@ export class QuizPage implements OnInit, OnDestroy {
       void this.dailyEventsService.trackDailyChallengeQuestion();
     }
 
+    this.playQuestionEntrance();
     this.startTimer();
+  }
+
+  /*
+   * Fa entrare con eleganza la card della nuova domanda.
+   * L'effetto viene riattivato a ogni nuova domanda normale, ma non durante
+   * il cambio domanda, che conserva la propria transizione cinematografica.
+   */
+  private playQuestionEntrance() {
+    if (this.questionEntranceTimer) {
+      clearTimeout(this.questionEntranceTimer);
+    }
+
+    this.questionEntryActive = false;
+
+    this.questionEntranceTimer = setTimeout(() => {
+      if (this.currentQuestion && this.questionTransition === 'idle') {
+        this.questionEntryActive = true;
+      }
+
+      this.questionEntranceTimer = undefined;
+    }, 20);
   }
 
   startTimer() {
@@ -1185,6 +1210,10 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    if (this.questionEntranceTimer) {
+      clearTimeout(this.questionEntranceTimer);
+    }
+
     this.stopTimer();
     this.appStateListener?.remove();
   }

@@ -155,6 +155,9 @@
       <div
         class="question-card"
         [class.question-success]="answered && isCorrect"
+        [class.question-entry]="
+          questionEntryActive && questionTransition === 'idle'
+        "
       >
         @if (answered && isCorrect && !dailyChallengeMode) {
         <div class="xp-float">{{ correctRewardLabel }}</div>
