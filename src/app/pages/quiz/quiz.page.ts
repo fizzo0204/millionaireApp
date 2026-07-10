@@ -718,7 +718,7 @@ export class QuizPage implements OnInit, OnDestroy {
    * solo il parametro della rotta. Per questo non ci limitiamo a navigare, ma
    * aggiorniamo anche lo stato interno della pagina e ricarichiamo subito domande/progressi.
    */
-  async vaiAlLivelloSuccessivoDiretto() {
+  async vaiAllaDomandaSuccessivaDiretta() {
     const prossimoLivello = this.numeroLivelloSuccessivoDiretto;
 
     if (!this.mostraPulsanteLivelloSuccessivo || !prossimoLivello) {
