@@ -113,6 +113,7 @@ export class QuizPage implements OnInit, OnDestroy {
   audienceReveal = false;
   helpResultAnimating = false;
   questionEntryActive = false;
+  answersEntryActive = false;
 
   loading = true;
   answered = false;
@@ -625,6 +626,7 @@ export class QuizPage implements OnInit, OnDestroy {
     this.helpResultAnimating = false;
     this.questionTransition = 'idle';
     this.questionEntryActive = false;
+    this.answersEntryActive = false;
     this.lifeLostForLeaving = false;
     this.timeLeft = this.maxTime;
   }
@@ -895,9 +897,9 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   /*
-   * Fa entrare con eleganza la card della nuova domanda.
-   * L'effetto viene riattivato a ogni nuova domanda normale, ma non durante
-   * il cambio domanda, che conserva la propria transizione cinematografica.
+   * Fa entrare con eleganza la card della nuova domanda e, subito dopo,
+   * le risposte in rapida sequenza. Il cambio domanda conserva invece
+   * la propria transizione cinematografica dedicata.
    */
   private playQuestionEntrance() {
     if (this.questionEntranceTimer) {
@@ -905,10 +907,12 @@ export class QuizPage implements OnInit, OnDestroy {
     }
 
     this.questionEntryActive = false;
+    this.answersEntryActive = false;
 
     this.questionEntranceTimer = setTimeout(() => {
       if (this.currentQuestion && this.questionTransition === 'idle') {
         this.questionEntryActive = true;
+        this.answersEntryActive = true;
       }
 
       this.questionEntranceTimer = undefined;

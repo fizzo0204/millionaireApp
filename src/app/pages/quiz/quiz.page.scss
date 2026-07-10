@@ -1878,11 +1878,34 @@
   }
 }
 
+/* =========================================================
+   ANSWERS ENTRY WOW
+   Un solo keyframe e un delay calcolato mantengono l'effetto leggero.
+========================================================= */
+
+.answers-list.answers-entry .answer-card {
+  animation: answerCardEntrance 300ms cubic-bezier(0.16, 1.08, 0.3, 1) both;
+  animation-delay: calc(95ms + var(--answer-order) * 38ms);
+}
+
+@keyframes answerCardEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(13px) scale(0.975);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 /* Mantiene l'esperienza accessibile per chi riduce le animazioni di sistema. */
 @media (prefers-reduced-motion: reduce) {
   .question-card.question-entry,
   .question-card.question-entry::before,
   .question-card.question-entry h1,
+  .answers-list.answers-entry .answer-card,
   .question-stage.question-leaving,
   .question-stage.question-entering,
   .question-stage.question-entering .answer-card,

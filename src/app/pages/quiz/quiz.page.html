@@ -166,10 +166,16 @@
         <h1>{{ currentQuestion.question }}</h1>
       </div>
 
-      <div class="answers-list">
+      <div
+        class="answers-list"
+        [class.answers-entry]="
+          answersEntryActive && questionTransition === 'idle'
+        "
+      >
         @for (answer of currentQuestion.answers; track i; let i = $index) {
         <button
           class="answer-card"
+          [style.--answer-order]="i"
           type="button"
           [class.hidden]="hiddenAnswers.includes(i)"
           [class.fifty-eliminating]="fiftyAnimatingAnswers.includes(i)"
