@@ -509,7 +509,17 @@ export class QuizPage implements OnInit, OnDestroy {
       return;
     }
 
-    if (risultato.esito !== 'ok') return;
+    if (risultato.esito !== 'ok') {
+      /*
+       * Se il cambio domanda non trova una domanda alternativa,
+       * riprendiamo timer e audio della domanda originale.
+       */
+      if (helpId === 'switch') {
+        this.resumeTimer();
+      }
+
+      return;
+    }
 
     this.usedHelps.push(helpId);
 
@@ -1097,7 +1107,14 @@ export class QuizPage implements OnInit, OnDestroy {
     this.helpAnimation = helpId;
     await this.wait(1600);
     this.helpAnimation = null;
-    this.resumeTimer();
+    /*
+     * Per 50:50 e pubblico riprendiamo la domanda corrente.
+     * Per il cambio domanda, invece, sarà startCurrentQuestion()
+     * a riavviare timer e musichetta quando la nuova domanda sarà pronta.
+     */
+    if (helpId !== 'switch') {
+      this.resumeTimer();
+    }
   }
 
   ngOnDestroy() {
