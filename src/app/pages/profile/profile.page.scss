@@ -898,6 +898,7 @@
     transparent
   );
   animation: epicRotate 7s linear infinite;
+  pointer-events: none;
 }
 
 .epic-avatar {
