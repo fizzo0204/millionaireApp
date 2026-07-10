@@ -734,6 +734,16 @@ export class QuizPage implements OnInit, OnDestroy {
     this.showExitModal = false;
     this.navigatingAway = false;
 
+    // Il livello successivo è una nuova partita:
+    // gli aiuti devono tornare disponibili.
+    this.usedHelps = [];
+    this.helpAnimation = null;
+
+    // Pulizia preventiva degli effetti prodotti dagli aiuti.
+    this.hiddenAnswers = [];
+    this.showAudienceHint = false;
+    this.audiencePercentages = [15, 20, 50, 15];
+
     this.levelNumber = prossimoLivello;
 
     void this.router.navigateByUrl(
