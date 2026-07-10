@@ -106,6 +106,12 @@ export class QuizPage implements OnInit, OnDestroy {
   usedHelps: HelpId[] = [];
   helpAnimation: HelpId | null = null;
 
+  // Stati grafici dedicati agli effetti WOW degli aiuti.
+  questionTransition: 'idle' | 'leaving' | 'entering' = 'idle';
+  fiftyAnimatingAnswers: number[] = [];
+  audienceReveal = false;
+  helpResultAnimating = false;
+
   loading = true;
   answered = false;
   isCorrect = false;
@@ -523,17 +529,22 @@ export class QuizPage implements OnInit, OnDestroy {
 
     this.usedHelps.push(helpId);
 
+    /*
+     * Ogni aiuto conserva la logica esistente, ma applica il risultato
+     * con una breve animazione dedicata e senza alterare timer o ricompense.
+     */
     if (risultato.risposteDaNascondere) {
-      this.hiddenAnswers = risultato.risposteDaNascondere;
+      await this.applicaEffettoCinquantaECinquanta(
+        risultato.risposteDaNascondere,
+      );
     }
 
     if (risultato.percentualiPubblico) {
-      this.showAudienceHint = true;
-      this.audiencePercentages = risultato.percentualiPubblico;
+      await this.applicaEffettoPubblico(risultato.percentualiPubblico);
     }
 
     if (risultato.nuovaDomanda) {
-      this.applicaNuovaDomanda(risultato.nuovaDomanda);
+      await this.applicaNuovaDomanda(risultato.nuovaDomanda);
     }
   }
 
@@ -607,6 +618,10 @@ export class QuizPage implements OnInit, OnDestroy {
     this.showTimeModal = false;
     this.showExitModal = false;
     this.showAudienceHint = false;
+    this.audienceReveal = false;
+    this.fiftyAnimatingAnswers = [];
+    this.helpResultAnimating = false;
+    this.questionTransition = 'idle';
     this.lifeLostForLeaving = false;
     this.timeLeft = this.maxTime;
   }
@@ -751,7 +766,11 @@ export class QuizPage implements OnInit, OnDestroy {
 
     // Pulizia preventiva degli effetti prodotti dagli aiuti.
     this.hiddenAnswers = [];
+    this.fiftyAnimatingAnswers = [];
     this.showAudienceHint = false;
+    this.audienceReveal = false;
+    this.helpResultAnimating = false;
+    this.questionTransition = 'idle';
     this.audiencePercentages = [15, 20, 50, 15];
 
     this.levelNumber = prossimoLivello;
@@ -1073,23 +1092,74 @@ export class QuizPage implements OnInit, OnDestroy {
 
       if (!nuovaDomanda) return;
 
-      this.applicaNuovaDomanda(nuovaDomanda);
+      await this.applicaNuovaDomanda(nuovaDomanda);
     } finally {
       this.switchingQuestion = false;
     }
   }
 
   // Applica una nuova domanda alla modalità corrente e riavvia lo stato della domanda.
-  private applicaNuovaDomanda(nuovaDomanda: QuestionModel) {
+  private async applicaNuovaDomanda(nuovaDomanda: QuestionModel) {
+    this.helpResultAnimating = true;
+    this.questionTransition = 'leaving';
+
+    // La vecchia domanda esce prima di sostituire realmente i dati.
+    await this.wait(280);
+
     if (this.dailyChallengeMode) {
       this.questions[this.currentIndex] = nuovaDomanda;
-      this.startCurrentQuestion();
-      return;
+    } else {
+      this.questions = [nuovaDomanda];
+      this.currentIndex = 0;
     }
 
-    this.questions = [nuovaDomanda];
-    this.currentIndex = 0;
-    this.startCurrentQuestion();
+    /*
+     * Puliamo lo stato senza avviare subito il timer: la nuova domanda
+     * entra prima in scena e solo quando è visibile ripartono countdown e audio.
+     */
+    this.resetQuestionState();
+    this.helpResultAnimating = true;
+    this.questionTransition = 'entering';
+
+    await this.wait(420);
+
+    this.questionTransition = 'idle';
+    this.helpResultAnimating = false;
+    this.startTimer();
+  }
+
+  // Fa tremare e dissolvere le due risposte eliminate prima di nasconderle.
+  private async applicaEffettoCinquantaECinquanta(
+    risposteDaNascondere: number[],
+  ) {
+    this.helpResultAnimating = true;
+    this.fiftyAnimatingAnswers = [...risposteDaNascondere];
+
+    await this.wait(620);
+
+    this.hiddenAnswers = [...risposteDaNascondere];
+    this.fiftyAnimatingAnswers = [];
+    this.helpResultAnimating = false;
+    this.haptics.light();
+    this.resumeTimer();
+  }
+
+  // Mostra il responso del pubblico facendo crescere progressivamente le barre.
+  private async applicaEffettoPubblico(percentuali: number[]) {
+    this.helpResultAnimating = true;
+    this.audiencePercentages = [...percentuali];
+    this.audienceReveal = false;
+    this.showAudienceHint = true;
+
+    // Un frame di attesa permette al browser di renderizzare le barre a zero.
+    await this.wait(40);
+    this.audienceReveal = true;
+
+    await this.wait(760);
+
+    this.helpResultAnimating = false;
+    this.haptics.light();
+    this.resumeTimer();
   }
 
   private pauseTimer() {
@@ -1108,13 +1178,10 @@ export class QuizPage implements OnInit, OnDestroy {
     await this.wait(1600);
     this.helpAnimation = null;
     /*
-     * Per 50:50 e pubblico riprendiamo la domanda corrente.
-     * Per il cambio domanda, invece, sarà startCurrentQuestion()
-     * a riavviare timer e musichetta quando la nuova domanda sarà pronta.
+     * Timer e audio restano sospesi anche durante l'effetto finale:
+     * 50:50 e pubblico li riprendono dopo aver mostrato il risultato,
+     * mentre il cambio domanda li riavvia quando la nuova domanda è visibile.
      */
-    if (helpId !== 'switch') {
-      this.resumeTimer();
-    }
   }
 
   ngOnDestroy() {

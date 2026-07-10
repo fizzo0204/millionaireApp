@@ -3,6 +3,17 @@
     @if (helpAnimation) {
     <div class="help-animation-backdrop">
       <div class="help-animation-card" [ngClass]="helpAnimation">
+        <div class="help-orbit help-orbit-one"></div>
+        <div class="help-orbit help-orbit-two"></div>
+        <div class="help-sparkles" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+
         @if (helpAnimation === 'fifty') {
         <div class="help-animation-icon">50:50</div>
         <h2>Taglio tattico!</h2>
@@ -135,59 +146,76 @@
       <div class="progress-fill" [style.width.%]="progressPercent"></div>
     </div>
 
-    <div class="question-card" [class.question-success]="answered && isCorrect">
-      @if (answered && isCorrect && !dailyChallengeMode) {
-      <div class="xp-float">{{ correctRewardLabel }}</div>
-      }
+    <div
+      class="question-stage"
+      [class.question-leaving]="questionTransition === 'leaving'"
+      [class.question-entering]="questionTransition === 'entering'"
+      [class.help-result-animating]="helpResultAnimating"
+    >
+      <div
+        class="question-card"
+        [class.question-success]="answered && isCorrect"
+      >
+        @if (answered && isCorrect && !dailyChallengeMode) {
+        <div class="xp-float">{{ correctRewardLabel }}</div>
+        }
 
-      <h1>{{ currentQuestion.question }}</h1>
-    </div>
+        <h1>{{ currentQuestion.question }}</h1>
+      </div>
 
-    <div class="answers-list">
-      @for (answer of currentQuestion.answers; track i; let i = $index) {
-      <button
-        class="answer-card"
-        type="button"
-        [class.hidden]="hiddenAnswers.includes(i)"
-        [class.correct]="getAnswerClass(i) === 'correct'"
-        [class.correct-pop]="
+      <div class="answers-list">
+        @for (answer of currentQuestion.answers; track i; let i = $index) {
+        <button
+          class="answer-card"
+          type="button"
+          [class.hidden]="hiddenAnswers.includes(i)"
+          [class.fifty-eliminating]="fiftyAnimatingAnswers.includes(i)"
+          [class.correct]="getAnswerClass(i) === 'correct'"
+          [class.correct-pop]="
     answered &&
     i === selectedAnswerIndex &&
     i === currentQuestion.correctIndex
   "
-        [class.wrong]="getAnswerClass(i) === 'wrong'"
-        [class.wrong-shake]="
+          [class.wrong]="getAnswerClass(i) === 'wrong'"
+          [class.wrong-shake]="
     answered &&
     i === selectedAnswerIndex &&
     i !== currentQuestion.correctIndex
   "
-        (click)="selectAnswer(i)"
-      >
-        <span class="answer-letter">{{ answerLetters[i] }}</span>
-        <span class="answer-text">{{ answer }}</span>
-      </button>
-      }
-    </div>
-
-    @if (showAudienceHint) {
-    <div class="audience-box">
-      <h3>👥 Il pubblico pensa...</h3>
-
-      <div class="audience-bars">
-        @for (percent of audiencePercentages; track $index; let i = $index) {
-        <div class="audience-row">
-          <span>{{ answerLetters[i] }}</span>
-
-          <div class="audience-track">
-            <div class="audience-fill" [style.width.%]="percent"></div>
-          </div>
-
-          <strong>{{ percent }}%</strong>
-        </div>
+          (click)="selectAnswer(i)"
+        >
+          <span class="answer-letter">{{ answerLetters[i] }}</span>
+          <span class="answer-text">{{ answer }}</span>
+        </button>
         }
       </div>
+
+      @if (showAudienceHint) {
+      <div class="audience-box" [class.reveal]="audienceReveal">
+        <h3>👥 Il pubblico pensa...</h3>
+
+        <div class="audience-bars">
+          @for (percent of audiencePercentages; track $index; let i = $index) {
+          <div class="audience-row">
+            <span>{{ answerLetters[i] }}</span>
+
+            <div class="audience-track">
+              <div
+                class="audience-fill"
+                [style.width.%]="audienceReveal ? percent : 0"
+                [style.transition-delay.ms]="i * 90"
+              ></div>
+            </div>
+
+            <strong [style.animation-delay.ms]="i * 90">
+              {{ percent }}%
+            </strong>
+          </div>
+          }
+        </div>
+      </div>
+      }
     </div>
-    }
 
     <div class="helps-title">Aiuti disponibili</div>
 
@@ -197,7 +225,14 @@
         class="help-card"
         type="button"
         [class.used]="usedHelps.includes(help.id)"
-        [disabled]="usedHelps.includes(help.id) || answered || showTimeModal || !!helpAnimation"
+        [disabled]="
+          usedHelps.includes(help.id) ||
+          answered ||
+          showTimeModal ||
+          !!helpAnimation ||
+          helpResultAnimating ||
+          switchingQuestion
+        "
         (click)="useHelp(help.id)"
       >
         <div class="help-icon">{{ help.icon }}</div>

@@ -1211,3 +1211,636 @@
     filter: drop-shadow(0 0 18px rgba(255, 234, 0, 0.65));
   }
 }
+
+/* =========================================================
+   HELP WOW EFFECTS
+   Le animazioni lavorano solo sull'area domanda/risposte:
+   topbar, timer, progressione e resto della pagina restano fermi.
+========================================================= */
+
+.question-stage {
+  position: relative;
+  isolation: isolate;
+  transform-origin: center;
+  will-change: transform, opacity, filter;
+}
+
+.question-stage.help-result-animating {
+  pointer-events: none;
+}
+
+.question-stage.question-leaving {
+  animation: questionStageLeave 280ms cubic-bezier(0.55, 0.08, 0.68, 0.53) both;
+}
+
+.question-stage.question-entering {
+  animation: questionStageEnter 420ms cubic-bezier(0.16, 1.22, 0.3, 1) both;
+}
+
+.question-stage.question-entering .answer-card {
+  animation: answerEnterStagger 390ms cubic-bezier(0.16, 1.18, 0.3, 1) both;
+}
+
+.question-stage.question-entering .answer-card:nth-child(1) {
+  animation-delay: 35ms;
+}
+
+.question-stage.question-entering .answer-card:nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.question-stage.question-entering .answer-card:nth-child(3) {
+  animation-delay: 105ms;
+}
+
+.question-stage.question-entering .answer-card:nth-child(4) {
+  animation-delay: 140ms;
+}
+
+@keyframes questionStageLeave {
+  0% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+  }
+
+  35% {
+    opacity: 0.92;
+    transform: translateX(-10px) scale(0.992);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(-72px) scale(0.955) rotateY(5deg);
+    filter: blur(3px);
+  }
+}
+
+@keyframes questionStageEnter {
+  0% {
+    opacity: 0;
+    transform: translateX(76px) scale(0.95) rotateY(-5deg);
+    filter: blur(3px);
+  }
+
+  62% {
+    opacity: 1;
+    transform: translateX(-7px) scale(1.012) rotateY(0);
+    filter: blur(0);
+  }
+
+  82% {
+    transform: translateX(3px) scale(0.998);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes answerEnterStagger {
+  from {
+    opacity: 0;
+    transform: translateX(32px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* 50:50: le due risposte errate vengono colpite, tremano e si dissolvono. */
+.answer-card.fifty-eliminating {
+  z-index: 2;
+  pointer-events: none;
+  animation: fiftyAnswerEliminate 620ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.answer-card.fifty-eliminating::after {
+  content: "✕";
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(145deg, #fb7185, #dc2626);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 0 0 0 rgba(251, 113, 133, 0.65),
+    0 0 22px rgba(239, 68, 68, 0.58);
+  transform: translateY(-50%) scale(0);
+  animation: fiftyCrossImpact 620ms cubic-bezier(0.16, 1.28, 0.3, 1) both;
+}
+
+.answer-card {
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes fiftyAnswerEliminate {
+  0% {
+    opacity: 1;
+    transform: translateX(0) rotate(0) scale(1);
+    filter: brightness(1);
+  }
+
+  12% {
+    transform: translateX(-7px) rotate(-0.7deg);
+  }
+
+  24% {
+    transform: translateX(7px) rotate(0.7deg);
+  }
+
+  36% {
+    opacity: 1;
+    transform: translateX(-5px) rotate(-0.5deg) scale(1.015);
+    filter: brightness(1.35);
+  }
+
+  50% {
+    transform: translateX(4px) rotate(0.4deg) scale(0.995);
+  }
+
+  72% {
+    opacity: 0.55;
+    transform: translateX(-18px) translateY(8px) rotate(-2deg) scale(0.97);
+    filter: saturate(0.35) brightness(0.8);
+  }
+
+  100% {
+    opacity: 0.18;
+    transform: translateX(-46px) translateY(22px) rotate(-5deg) scale(0.91);
+    filter: saturate(0) blur(1.5px);
+  }
+}
+
+@keyframes fiftyCrossImpact {
+  0%,
+  22% {
+    opacity: 0;
+    transform: translateY(-50%) scale(0) rotate(-25deg);
+  }
+
+  40% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.18) rotate(7deg);
+    box-shadow:
+      0 0 0 12px rgba(251, 113, 133, 0),
+      0 0 28px rgba(239, 68, 68, 0.72);
+  }
+
+  64% {
+    transform: translateY(-50%) scale(0.95) rotate(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.78);
+  }
+}
+
+/* Pubblico: il pannello sale, le righe entrano e le barre si riempiono in sequenza. */
+.audience-box {
+  position: relative;
+  overflow: hidden;
+  transform-origin: top center;
+}
+
+.audience-box::before {
+  content: "";
+  position: absolute;
+  inset: -60% -20%;
+  pointer-events: none;
+  opacity: 0;
+  background: conic-gradient(
+    from 90deg,
+    transparent,
+    rgba(34, 211, 238, 0.13),
+    transparent 28%,
+    rgba(96, 165, 250, 0.12),
+    transparent 56%
+  );
+}
+
+.audience-box.reveal {
+  animation: audiencePanelReveal 520ms cubic-bezier(0.16, 1.2, 0.3, 1) both;
+  box-shadow:
+    0 0 26px rgba(34, 211, 238, 0.2),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+}
+
+.audience-box.reveal::before {
+  animation: audienceScan 1.35s ease-out both;
+}
+
+.audience-box.reveal h3 {
+  animation: audienceTitleReveal 480ms cubic-bezier(0.16, 1.24, 0.3, 1) both;
+}
+
+.audience-box.reveal .audience-row {
+  animation: audienceRowReveal 430ms cubic-bezier(0.16, 1.18, 0.3, 1) both;
+}
+
+.audience-box.reveal .audience-row:nth-child(1) {
+  animation-delay: 40ms;
+}
+
+.audience-box.reveal .audience-row:nth-child(2) {
+  animation-delay: 130ms;
+}
+
+.audience-box.reveal .audience-row:nth-child(3) {
+  animation-delay: 220ms;
+}
+
+.audience-box.reveal .audience-row:nth-child(4) {
+  animation-delay: 310ms;
+}
+
+.audience-fill {
+  position: relative;
+  overflow: hidden;
+  transition: width 680ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.audience-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.72),
+    transparent
+  );
+  transform: translateX(-110%);
+}
+
+.audience-box.reveal .audience-fill::after {
+  animation: audienceBarShine 820ms ease-out 180ms both;
+}
+
+.audience-box.reveal .audience-row strong {
+  color: #67e8f9;
+  animation: audiencePercentPop 420ms cubic-bezier(0.16, 1.35, 0.3, 1) both;
+  text-shadow: 0 0 12px rgba(34, 211, 238, 0.42);
+}
+
+@keyframes audiencePanelReveal {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes audienceTitleReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes audienceRowReveal {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes audiencePercentPop {
+  from {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+
+  72% {
+    opacity: 1;
+    transform: scale(1.16);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes audienceBarShine {
+  to {
+    transform: translateX(115%);
+  }
+}
+
+@keyframes audienceScan {
+  0% {
+    opacity: 0;
+    transform: rotate(0deg) scale(0.7);
+  }
+
+  35% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: rotate(120deg) scale(1.2);
+  }
+}
+
+/* Overlay aiuti: orbite, scintille e identità visiva diversa per ogni potere. */
+.help-animation-backdrop {
+  overflow: hidden;
+  animation: helpBackdropIn 260ms ease-out both;
+}
+
+.help-animation-backdrop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      circle at 18% 22%,
+      rgba(96, 165, 250, 0.15),
+      transparent 22%
+    ),
+    radial-gradient(
+      circle at 82% 74%,
+      rgba(168, 85, 247, 0.14),
+      transparent 24%
+    );
+  animation: helpBackdropBreath 1.6s ease-in-out infinite;
+}
+
+.help-animation-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.help-animation-card::before {
+  content: "";
+  position: absolute;
+  inset: -85%;
+  z-index: -2;
+  opacity: 0.72;
+  background: conic-gradient(
+    transparent,
+    rgba(255, 255, 255, 0.16),
+    transparent 24%,
+    rgba(96, 165, 250, 0.22),
+    transparent 52%
+  );
+  animation: helpEnergySpin 4.8s linear infinite;
+}
+
+.help-animation-card::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: -1;
+  border-radius: 27px;
+  background: inherit;
+}
+
+.help-animation-card.fifty {
+  background:
+    radial-gradient(circle at 50% 5%, rgba(255, 234, 0, 0.34), transparent 36%),
+    radial-gradient(circle at top, #1551c9, #061d48);
+  box-shadow:
+    0 0 0 1px rgba(255, 234, 0, 0.18),
+    0 0 42px rgba(59, 130, 246, 0.46);
+}
+
+.help-animation-card.switch .help-animation-icon {
+  animation: switchIconSpin 780ms cubic-bezier(0.55, 0.05, 0.36, 1) infinite;
+}
+
+.help-animation-card.audience .help-animation-icon {
+  animation: audienceIconWave 720ms ease-in-out infinite;
+}
+
+.help-animation-card.fifty .help-animation-icon {
+  animation: fiftyIconCut 820ms cubic-bezier(0.16, 1.2, 0.3, 1) infinite;
+}
+
+.help-orbit {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: -1;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  pointer-events: none;
+}
+
+.help-orbit-one {
+  width: 230px;
+  height: 230px;
+  margin: -115px 0 0 -115px;
+  animation: helpOrbitSpin 4s linear infinite;
+}
+
+.help-orbit-two {
+  width: 176px;
+  height: 176px;
+  margin: -88px 0 0 -88px;
+  border-style: dashed;
+  animation: helpOrbitSpin 3.1s linear infinite reverse;
+}
+
+.help-sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.help-sparkles span {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #fff;
+  opacity: 0;
+  box-shadow: 0 0 12px currentColor;
+  animation: helpSparkleFloat 1.45s ease-in-out infinite;
+}
+
+.help-sparkles span:nth-child(1) {
+  left: 15%;
+  top: 26%;
+  animation-delay: 80ms;
+}
+
+.help-sparkles span:nth-child(2) {
+  right: 16%;
+  top: 19%;
+  animation-delay: 340ms;
+}
+
+.help-sparkles span:nth-child(3) {
+  left: 24%;
+  bottom: 21%;
+  animation-delay: 610ms;
+}
+
+.help-sparkles span:nth-child(4) {
+  right: 22%;
+  bottom: 18%;
+  animation-delay: 880ms;
+}
+
+.help-sparkles span:nth-child(5) {
+  left: 48%;
+  top: 12%;
+  animation-delay: 1020ms;
+}
+
+.help-sparkles span:nth-child(6) {
+  right: 8%;
+  top: 52%;
+  animation-delay: 1210ms;
+}
+
+@keyframes helpBackdropIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+
+  to {
+    opacity: 1;
+    backdrop-filter: blur(10px);
+  }
+}
+
+@keyframes helpBackdropBreath {
+  50% {
+    filter: brightness(1.18);
+    transform: scale(1.03);
+  }
+}
+
+@keyframes helpEnergySpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes helpOrbitSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes helpSparkleFloat {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.45);
+  }
+
+  45% {
+    opacity: 0.92;
+    transform: translateY(-5px) scale(1.2);
+  }
+
+  72% {
+    opacity: 0.42;
+    transform: translateY(-15px) scale(0.82);
+  }
+}
+
+@keyframes switchIconSpin {
+  0% {
+    transform: rotate(0deg) scale(0.96);
+  }
+
+  55% {
+    transform: rotate(205deg) scale(1.16);
+  }
+
+  100% {
+    transform: rotate(360deg) scale(0.96);
+  }
+}
+
+@keyframes audienceIconWave {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg) scale(1);
+  }
+
+  50% {
+    transform: translateY(-7px) rotate(3deg) scale(1.13);
+  }
+}
+
+@keyframes fiftyIconCut {
+  0%,
+  100% {
+    transform: scale(1) rotate(0);
+    letter-spacing: 0;
+  }
+
+  45% {
+    transform: scale(1.14) rotate(-2deg);
+    letter-spacing: 2px;
+    filter: drop-shadow(0 0 20px rgba(255, 234, 0, 0.72));
+  }
+
+  62% {
+    transform: scale(0.96) rotate(2deg);
+  }
+}
+
+/* Mantiene l'esperienza accessibile per chi riduce le animazioni di sistema. */
+@media (prefers-reduced-motion: reduce) {
+  .question-stage.question-leaving,
+  .question-stage.question-entering,
+  .question-stage.question-entering .answer-card,
+  .answer-card.fifty-eliminating,
+  .answer-card.fifty-eliminating::after,
+  .audience-box.reveal,
+  .audience-box.reveal::before,
+  .audience-box.reveal h3,
+  .audience-box.reveal .audience-row,
+  .audience-box.reveal .audience-row strong,
+  .audience-box.reveal .audience-fill::after,
+  .help-animation-backdrop,
+  .help-animation-backdrop::before,
+  .help-animation-card::before,
+  .help-animation-card .help-animation-icon,
+  .help-orbit,
+  .help-sparkles span {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+
+  .audience-fill {
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+}
