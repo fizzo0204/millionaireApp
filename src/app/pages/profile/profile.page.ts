@@ -91,6 +91,12 @@ export class ProfilePage {
   showAchievementRewardModal = false;
   claimedAchievementTitle: UserAchievementTitle | null = null;
 
+  // --- TITOLO PROFILO ---
+  showTitleModal = false;
+  titleSaving = false;
+  unlockedTitles: UserAchievementTitle[] = [];
+  tempSelectedTitle: string | null = null;
+
   readonly avatars: AvatarModel[] = [...AVATARS];
 
   private readonly specialNicknameAvatarIds: Record<string, string[]> = {
@@ -669,6 +675,13 @@ export class ProfilePage {
     return `player-title ${title.rarity}`;
   }
 
+  // Elenco dei titoli sbloccati da mostrare nella modale di selezione.
+  getUnlockedTitlesList(
+    profile?: AppUserProfile | null,
+  ): UserAchievementTitle[] {
+    return profile?.achievements?.unlockedTitles ?? [];
+  }
+
   canClaimAchievementReward(achievement: AchievementModel): boolean {
     return achievement.rewardAvailable === true;
   }
@@ -832,6 +845,48 @@ export class ProfilePage {
   closeSpecialIntroModal() {
     this.showSpecialIntroModal = false;
     this.specialIntroMessage = '';
+  }
+
+  // --- TITOLO PROFILO ---
+
+  async openTitleModal() {
+    const profile = await firstValueFrom(this.profile$);
+
+    this.unlockedTitles = profile?.achievements?.unlockedTitles ?? [];
+    this.tempSelectedTitle = profile?.achievements?.selectedTitle ?? null;
+    this.showTitleModal = true;
+  }
+
+  async closeTitleModal(saveChanges = false) {
+    if (saveChanges) {
+      await this.saveTitle();
+      return;
+    }
+
+    this.showTitleModal = false;
+  }
+
+  chooseTempTitle(titleId: string | null) {
+    this.tempSelectedTitle = titleId;
+  }
+
+  async saveTitle() {
+    const user = await firstValueFrom(this.user$);
+
+    if (!user) return;
+
+    this.titleSaving = true;
+
+    try {
+      await this.userStatsService.selectProfileTitle(
+        user.uid,
+        this.tempSelectedTitle,
+      );
+
+      this.showTitleModal = false;
+    } finally {
+      this.titleSaving = false;
+    }
   }
 
   private getJoinDate(createdAt: unknown): string {

@@ -24,9 +24,25 @@
 
         @if (getCurrentPlayerTitle(realStats, profile$ | async); as playerTitle)
         {
-        <div [ngClass]="getPlayerTitleClass(playerTitle)">
-          {{ playerTitle.label }}
-        </div>
+        <button
+          type="button"
+          class="player-title-btn"
+          (click)="openTitleModal()"
+        >
+          <span [ngClass]="getPlayerTitleClass(playerTitle)">
+            {{ playerTitle.label }}
+          </span>
+          <ion-icon name="create-outline" class="player-title-edit"></ion-icon>
+        </button>
+        } @else if ((profile$ | async)?.achievements?.unlockedTitles?.length) {
+        <button
+          type="button"
+          class="player-title-btn choose-title-btn"
+          (click)="openTitleModal()"
+        >
+          <span class="player-title-placeholder">Scegli un titolo</span>
+          <ion-icon name="create-outline" class="player-title-edit"></ion-icon>
+        </button>
         }
 
         <p>{{ joinDate$ | async }}</p>
@@ -476,6 +492,70 @@
           }
         </div>
         }
+      </div>
+    </div>
+  </div>
+  } @if (showTitleModal) {
+  <div class="avatar-modal-backdrop" (click)="closeTitleModal()">
+    <div class="avatar-modal title-modal" (click)="$event.stopPropagation()">
+      <button
+        class="modal-close-btn"
+        type="button"
+        [disabled]="titleSaving"
+        (click)="closeTitleModal(true)"
+      >
+        <ion-icon name="close-outline"></ion-icon>
+      </button>
+
+      <div class="avatar-modal-header">
+        <div class="avatar-modal-icon">🏷️</div>
+        <h2>Scegli Titolo</h2>
+        <p>Mostra il titolo che preferisci sul profilo</p>
+      </div>
+
+      <div class="title-grid">
+        <button
+          type="button"
+          class="title-option none-option"
+          [class.active]="tempSelectedTitle === null"
+          (click)="chooseTempTitle(null)"
+        >
+          <span class="title-option-icon">🚫</span>
+          <strong>Nessuno</strong>
+        </button>
+
+        @for (title of unlockedTitles; track title.id) {
+        <button
+          type="button"
+          class="title-option"
+          [ngClass]="title.rarity"
+          [class.active]="tempSelectedTitle === title.id"
+          (click)="chooseTempTitle(title.id)"
+        >
+          <span class="title-option-icon">{{ title.icon }}</span>
+          <strong>{{ title.label }}</strong>
+        </button>
+        }
+      </div>
+
+      <div class="avatar-actions premium-actions">
+        <button
+          class="cancel-btn"
+          type="button"
+          [disabled]="titleSaving"
+          (click)="closeTitleModal()"
+        >
+          Annulla
+        </button>
+
+        <button
+          class="save-btn"
+          type="button"
+          [disabled]="titleSaving"
+          (click)="saveTitle()"
+        >
+          @if (titleSaving) { Salvataggio... } @else { Salva }
+        </button>
       </div>
     </div>
   </div>

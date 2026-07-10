@@ -1274,3 +1274,104 @@
     0 8px 0 rgba(129, 90, 0, 0.72),
     0 14px 24px rgba(0, 0, 0, 0.28);
 }
+
+/* TITOLO PROFILO - SELEZIONE */
+.player-title-btn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  cursor: pointer;
+}
+
+.player-title-edit {
+  color: #93c5fd;
+  font-size: 0.85rem;
+}
+
+.choose-title-btn .player-title-placeholder {
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: #dbeafe;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.title-modal {
+  max-width: 335px;
+}
+
+.title-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 4px 0 6px;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.title-option {
+  min-height: 64px;
+  padding: 10px 8px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #fff;
+  background: rgba(7, 44, 82, 0.9);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.title-option.active {
+  box-shadow:
+    inset 0 0 0 2px #ffea00,
+    0 0 16px rgba(255, 234, 0, 0.35);
+  border-color: rgba(255, 234, 0, 0.6);
+  transform: translateY(-2px);
+}
+
+.title-option-icon {
+  font-size: 1.15rem;
+}
+
+.title-option strong {
+  font-size: 0.66rem;
+  font-weight: 900;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.title-option.none-option strong {
+  color: #94a3b8;
+}
+
+.title-option.bronze {
+  border-color: rgba(205, 127, 50, 0.5);
+}
+
+.title-option.silver {
+  border-color: rgba(192, 192, 192, 0.5);
+}
+
+.title-option.gold {
+  border-color: rgba(255, 215, 0, 0.55);
+}
+
+.title-option.epic {
+  border-color: rgba(177, 76, 255, 0.55);
+}
+
+.title-option.legendary {
+  border-color: rgba(255, 77, 77, 0.6);
+}
