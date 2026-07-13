@@ -112,49 +112,6 @@
     </section>
     }
   </div>
-
-  @if (false && showFinalMissionRewardModal) {
-  <div class="final-mission-backdrop">
-    <div class="final-mission-modal">
-      <div class="final-mission-glow"></div>
-
-      <div class="final-mission-chest">
-        <img src="assets/ui/epic-chest-reward.webp" alt="Forziere missioni" />
-      </div>
-
-      <span>Missioni completate</span>
-      <h2>Forziere giornaliero!</h2>
-
-      <p>Hai riscattato tutte le missioni di oggi. Ecco il premio finale.</p>
-
-      <div class="final-mission-reward">
-        <img src="assets/ui/coin-turtle.webp" alt="TurtleCoins" />
-        <strong>+{{ finalMissionRewardCoins }}</strong>
-        <small>TurtleCoins</small>
-      </div>
-
-      @if (!finalMissionRewardDoubled) {
-      <button
-        type="button"
-        class="final-mission-double-button"
-        [disabled]="finalMissionRewardDoubleLoading"
-        (click)="doubleFinalMissionReward()"
-      >
-        @if (finalMissionRewardDoubleLoading) { Video in corso... } @else { ▶
-        Guarda video e raddoppia }
-      </button>
-      }
-
-      <button
-        type="button"
-        class="final-mission-button"
-        (click)="closeFinalMissionReward()"
-      >
-        Fantastico!
-      </button>
-    </div>
-  </div>
-  }
 </ion-content>
 @if (showFinalMissionRewardModal) {
 <app-chest-cinematic
