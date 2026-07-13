@@ -44,8 +44,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "27kb",
-                  "maximumError": "27kb"
+                  "maximumWarning": "28kb",
+                  "maximumError": "28kb"
                 }
               ],
               "fileReplacements": [

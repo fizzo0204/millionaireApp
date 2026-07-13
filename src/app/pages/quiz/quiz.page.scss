@@ -736,11 +736,51 @@
 }
 
 /* QUIZ WOW EFFECTS */
+.answers-list.correct-answer-state .answer-card.answer-muted {
+  opacity: 0.42;
+  filter: saturate(0.45) brightness(0.72);
+  transform: scale(0.985);
+}
+
 .answer-card.correct-pop {
-  animation: correctPop 520ms cubic-bezier(0.22, 1.4, 0.36, 1);
+  z-index: 3;
+  animation: correctPop 650ms cubic-bezier(0.16, 1.3, 0.3, 1);
   box-shadow:
-    0 0 30px rgba(34, 197, 94, 0.45),
-    0 10px 24px rgba(0, 0, 0, 0.28);
+    0 0 0 2px rgba(134, 239, 172, 0.45),
+    0 0 34px rgba(34, 197, 94, 0.58),
+    0 12px 26px rgba(0, 0, 0, 0.3);
+}
+
+.answer-card.correct-pop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 28%,
+    rgba(255, 255, 255, 0.58) 48%,
+    transparent 68%
+  );
+  transform: translateX(-125%);
+  animation: correctShine 620ms ease-out 70ms both;
+}
+
+.answer-card.correct-pop::after {
+  content: "✓";
+  position: absolute;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #052e16;
+  background: #86efac;
+  font-size: 1.05rem;
+  font-weight: 1000;
+  box-shadow: 0 0 18px rgba(134, 239, 172, 0.72);
+  animation: correctCheck 520ms cubic-bezier(0.16, 1.45, 0.3, 1) both;
 }
 
 @keyframes correctPop {
@@ -748,12 +788,41 @@
     transform: scale(1);
   }
 
-  40% {
-    transform: scale(1.06);
+  38% {
+    transform: scale(1.055);
+    filter: brightness(1.2);
+  }
+
+  70% {
+    transform: scale(0.992);
   }
 
   100% {
     transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes correctShine {
+  to {
+    transform: translateX(125%);
+  }
+}
+
+@keyframes correctCheck {
+  from {
+    opacity: 0;
+    transform: scale(0.35) rotate(-18deg);
+  }
+
+  72% {
+    opacity: 1;
+    transform: scale(1.16) rotate(4deg);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0);
   }
 }
 
@@ -1905,6 +1974,9 @@
   .question-card.question-entry::before,
   .question-card.question-entry h1,
   .answers-list.answers-entry .answer-card:not(.hidden):not(.fifty-eliminating),
+  .answer-card.correct-pop,
+  .answer-card.correct-pop::before,
+  .answer-card.correct-pop::after,
   .question-stage.question-leaving,
   .question-stage.question-entering,
   .question-stage.question-entering .answer-card,

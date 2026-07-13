@@ -171,6 +171,7 @@
         [class.answers-entry]="
           answersEntryActive && questionTransition === 'idle'
         "
+        [class.correct-answer-state]="answered && isCorrect"
       >
         @for (answer of currentQuestion.answers; track i; let i = $index) {
         <button
@@ -185,6 +186,9 @@
     i === selectedAnswerIndex &&
     i === currentQuestion.correctIndex
   "
+          [class.answer-muted]="
+            answered && isCorrect && i !== selectedAnswerIndex
+          "
           [class.wrong]="getAnswerClass(i) === 'wrong'"
           [class.wrong-shake]="
     answered &&
