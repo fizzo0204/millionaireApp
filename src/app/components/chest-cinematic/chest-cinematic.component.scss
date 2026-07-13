@@ -1,7 +1,7 @@
 :host {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 20;
+  z-index: 99999;
   display: block;
   width: 100%;
   height: 100%;
@@ -434,6 +434,68 @@
   transform: translateX(-50%);
   display: grid;
   gap: 9px;
+}
+
+/*
+ * Variante usata nelle Missioni:
+ * i pulsanti restano ancorati alla fine della scena, sotto lo scrigno.
+ * Il Daily Reward mantiene invece il posizionamento originale qui sopra.
+ */
+.reward-actions.compact {
+  bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px));
+}
+
+/*
+ * Nella variante compatta liberiamo spazio sopra ai pulsanti,
+ * senza alterare la cinematica standard del Daily Reward.
+ */
+.premium-reward-content.compact-actions .premium-chest-image {
+  top: 45%;
+}
+
+.premium-reward-content.compact-actions .chest-img {
+  width: min(70vw, 300px);
+}
+
+.premium-reward-content.compact-actions .chest-img.epic-chest-img {
+  width: min(76vw, 330px);
+}
+
+@media (max-height: 700px) {
+  .reward-actions.compact {
+    bottom: max(10px, calc(env(safe-area-inset-bottom) + 6px));
+    gap: 7px;
+  }
+
+  .reward-actions.compact .reward-double-btn,
+  .reward-actions.compact .reward-continue-btn {
+    min-height: 42px;
+    padding: 8px 14px;
+  }
+
+  .premium-reward-content.compact-actions .premium-chest-image {
+    top: 43%;
+  }
+
+  .premium-reward-content.compact-actions .chest-img {
+    width: min(58vw, 225px);
+  }
+
+  .premium-reward-content.compact-actions .chest-img.epic-chest-img {
+    width: min(62vw, 245px);
+  }
+}
+
+@media (min-height: 701px) and (max-height: 850px) {
+  .reward-actions.compact {
+    bottom: max(16px, calc(env(safe-area-inset-bottom) + 10px));
+  }
+}
+
+@media (min-height: 851px) {
+  .reward-actions.compact {
+    bottom: max(24px, calc(env(safe-area-inset-bottom) + 16px));
+  }
 }
 
 .reward-double-btn,

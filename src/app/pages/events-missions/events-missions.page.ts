@@ -11,11 +11,15 @@ import { DailyEventsService } from 'src/app/services/daily-events.service';
 import { DailyMissionService } from 'src/app/services/daily-mission.service';
 import { HapticsService } from 'src/app/services/haptics.service';
 import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
+import {
+  ChestCinematicComponent,
+  ChestCinematicPhase,
+} from 'src/app/components/chest-cinematic/chest-cinematic.component';
 
 @Component({
   selector: 'app-events-missions',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonicModule, ChestCinematicComponent],
   templateUrl: './events-missions.page.html',
   styleUrls: ['./events-missions.page.scss'],
 })
@@ -32,6 +36,11 @@ export class EventsMissionsPage implements OnInit, OnDestroy {
   recentlyClaimedMissionId: string | null = null;
   recentlySwitchedMissionId: string | null = null;
   showFinalMissionRewardModal = false;
+  finalMissionCinematicPhase: ChestCinematicPhase = 'opening';
+
+  readonly finalMissionChestImage = 'assets/ui/epic-chest-reward.webp';
+
+  readonly finalMissionCoinIcon = 'assets/ui/coin-turtle.webp';
   finalMissionRewardCoins = 0;
   finalMissionRewardDoubleLoading = false;
   finalMissionRewardDoubled = false;
@@ -61,6 +70,10 @@ export class EventsMissionsPage implements OnInit, OnDestroy {
     if (this.missions.length === 0) return 0;
 
     return (this.completedMissions / this.missions.length) * 100;
+  }
+
+  get finalMissionRewardLabel(): string {
+    return `+${this.finalMissionRewardCoins} TurtleCoins`;
   }
 
   getMissionPercent(mission: DailyMissionView): number {
@@ -200,6 +213,7 @@ export class EventsMissionsPage implements OnInit, OnDestroy {
 
   closeFinalMissionReward(): void {
     this.showFinalMissionRewardModal = false;
+    this.finalMissionCinematicPhase = 'opening';
   }
 
   goBack(): void {
@@ -314,7 +328,30 @@ export class EventsMissionsPage implements OnInit, OnDestroy {
     this.finalMissionRewardCoins = coins;
     this.finalMissionRewardDoubled = coins > 25;
     this.finalMissionRewardDoubleLoading = false;
+    this.finalMissionCinematicPhase = 'opening';
     this.showFinalMissionRewardModal = true;
+
     void this.haptics.success();
+    void this.playFinalMissionCinematic();
+  }
+
+  private async playFinalMissionCinematic(): Promise<void> {
+    this.finalMissionCinematicPhase = 'opening';
+
+    await this.wait(1600);
+
+    if (!this.showFinalMissionRewardModal) return;
+
+    this.finalMissionCinematicPhase = 'flash';
+
+    await this.wait(650);
+
+    if (!this.showFinalMissionRewardModal) return;
+
+    this.finalMissionCinematicPhase = 'reward';
+  }
+
+  private wait(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

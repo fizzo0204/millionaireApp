@@ -14,15 +14,13 @@ export type ChestCinematicRevealType = 'coins' | 'xp' | 'avatar' | 'chest';
 export class ChestCinematicComponent {
   @Input() visible = false;
   @Input() phase: ChestCinematicPhase = 'opening';
-
   @Input() chestImage = '';
   @Input() chestAlt = 'Chest';
   @Input() epic = false;
-
+  @Input() compactActions = false;
   @Input() revealType: ChestCinematicRevealType = 'coins';
   @Input() rewardIcon = '';
   @Input() rewardLabel = '';
-
   @Input() canDoubleReward = false;
   @Input() doubleRewardLoading = false;
 

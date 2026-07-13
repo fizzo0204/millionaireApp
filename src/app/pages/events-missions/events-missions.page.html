@@ -113,7 +113,7 @@
     }
   </div>
 
-  @if (showFinalMissionRewardModal) {
+  @if (false && showFinalMissionRewardModal) {
   <div class="final-mission-backdrop">
     <div class="final-mission-modal">
       <div class="final-mission-glow"></div>
@@ -156,3 +156,20 @@
   </div>
   }
 </ion-content>
+@if (showFinalMissionRewardModal) {
+<app-chest-cinematic
+  [visible]="showFinalMissionRewardModal"
+  [phase]="finalMissionCinematicPhase"
+  [chestImage]="finalMissionChestImage"
+  chestAlt="Forziere missioni"
+  [epic]="true"
+  revealType="coins"
+  [rewardIcon]="finalMissionCoinIcon"
+  [rewardLabel]="finalMissionRewardLabel"
+  [canDoubleReward]="!finalMissionRewardDoubled"
+  [compactActions]="true"
+  [doubleRewardLoading]="finalMissionRewardDoubleLoading"
+  (continueRequested)="closeFinalMissionReward()"
+  (doubleRequested)="doubleFinalMissionReward()"
+></app-chest-cinematic>
+}

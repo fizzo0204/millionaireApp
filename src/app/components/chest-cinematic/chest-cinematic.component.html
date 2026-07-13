@@ -38,7 +38,10 @@
     }
 
     @if (phase === "reward") {
-      <div class="premium-reward-content">
+      <div
+        class="premium-reward-content"
+        [class.compact-actions]="compactActions"
+      >
         <div class="reward-subtitle">Hai ottenuto</div>
 
         <div class="floating-reward">
@@ -68,7 +71,11 @@
           />
         </div>
 
-        <div class="reward-actions" (click)="$event.stopPropagation()">
+        <div
+          class="reward-actions"
+          [class.compact]="compactActions"
+          (click)="$event.stopPropagation()"
+        >
           @if (canDoubleReward) {
             <button
               class="reward-double-btn"
