@@ -543,42 +543,6 @@
 
 /* ANIMATIONS */
 
-@keyframes dailyPop {
-  from {
-    opacity: 0;
-    transform: translateY(26px) scale(0.88);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes dailySpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes giftBounce {
-  50% {
-    transform: translateY(-5px) rotate(-3deg);
-  }
-}
-
-@keyframes currentDayPulse {
-  50% {
-    transform: scale(1.04);
-  }
-}
-
-@keyframes claimGlow {
-  50% {
-    filter: brightness(1.08);
-  }
-}
-
 @keyframes premiumSceneIn {
   from {
     opacity: 0;
@@ -793,13 +757,6 @@
   50% {
     transform: translateX(-50%) scale(1.14);
     opacity: 0.72;
-  }
-}
-
-@keyframes tapPulse {
-  50% {
-    opacity: 0.62;
-    transform: translateX(-50%) scale(0.98);
   }
 }
 
@@ -1276,5 +1233,83 @@
   .premium-reward-content.has-secondary-reward
     .reward-actions.compact.banner-safe {
     bottom: max(50px, calc(env(safe-area-inset-bottom) + 42px)) !important;
+  }
+}
+
+/* =========================================================
+   CINEMATIC PERFORMANCE
+   Riduce i ridisegni continui nelle WebView Android.
+   Restano attive le animazioni di ingresso e di apertura.
+========================================================= */
+
+@media (max-width: 719px) {
+  .scene-bg-glow,
+  .scene-rays {
+    animation: none;
+    filter: none;
+  }
+
+  .scene-bg-glow {
+    opacity: 0.72;
+  }
+
+  .scene-rays {
+    opacity: 0.42;
+  }
+
+  .scene-stars {
+    animation: none;
+    opacity: 0.65;
+  }
+
+  .scene-particles {
+    animation: none;
+    opacity: 0.72;
+  }
+
+  .floating-reward,
+  .reward-light,
+  .chest-light,
+  .secondary-reward-glow,
+  .reward-double-btn {
+    animation: none;
+  }
+
+  .reward-light {
+    filter: none;
+    opacity: 0.72;
+  }
+
+  .chest-light {
+    filter: none;
+    opacity: 0.78;
+  }
+
+  .secondary-reward-glow {
+    opacity: 0.82;
+  }
+
+  .reward-continue-btn {
+    backdrop-filter: none;
+  }
+
+  .reward-icon-premium {
+    filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.38));
+  }
+
+  .chest-img {
+    filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.4))
+      drop-shadow(0 0 18px rgba(255, 196, 0, 0.28));
+  }
+
+  .cinematic-coin-img {
+    filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.36))
+      drop-shadow(0 0 16px rgba(255, 215, 0, 0.42));
+  }
+
+  .secondary-reward-card {
+    box-shadow:
+      0 0 18px rgba(250, 204, 21, 0.4),
+      0 10px 18px rgba(0, 0, 0, 0.34);
   }
 }
