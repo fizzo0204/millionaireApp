@@ -937,3 +937,344 @@
     bottom: max(108px, calc(env(safe-area-inset-bottom) + 96px));
   }
 }
+
+/* =========================================================
+   SECONDARY REWARD
+   Variante usata dal Negozio quando il forziere assegna
+   anche un avatar. Non modifica gli altri utilizzi della
+   cinematica condivisa.
+========================================================= */
+
+.secondary-reward-card {
+  position: fixed;
+  left: 50%;
+  top: 48%;
+  z-index: 38;
+  width: clamp(104px, 29vw, 142px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  padding: 7px;
+  border: 3px solid rgba(255, 234, 0, 0.96);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.28), transparent 42%),
+    linear-gradient(145deg, #facc15, #a16207);
+  box-shadow:
+    0 0 28px rgba(250, 204, 21, 0.55),
+    0 14px 26px rgba(0, 0, 0, 0.38);
+  transform: translate(-50%, -50%);
+  animation: secondaryRewardReveal 620ms cubic-bezier(0.16, 1.35, 0.3, 1) both;
+  overflow: visible;
+}
+
+.secondary-reward-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 16px;
+  background: rgba(3, 31, 61, 0.86);
+}
+
+.secondary-reward-card strong {
+  position: absolute;
+  left: 50%;
+  bottom: -13px;
+  min-width: 78%;
+  max-width: 116%;
+  padding: 6px 11px;
+  border-radius: 999px;
+  color: #04111f;
+  background: linear-gradient(180deg, #ffea00, #ffc400);
+  font-size: clamp(0.6rem, 2.4vw, 0.76rem);
+  line-height: 1;
+  font-weight: 1000;
+  text-align: center;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  box-shadow:
+    0 4px 0 rgba(129, 90, 0, 0.72),
+    0 8px 14px rgba(0, 0, 0, 0.3);
+}
+
+.secondary-reward-glow {
+  position: absolute;
+  inset: -30px;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 234, 0, 0.52), transparent 68%);
+  animation: secondaryRewardGlow 1.5s ease-in-out infinite;
+}
+
+/*
+ * Il riepilogo TurtleCoins + XP rimane sopra l'avatar
+ * e non viene attraversato dalla card.
+ */
+.premium-reward-content.has-secondary-reward .floating-reward {
+  top: 29%;
+  width: min(94vw, 620px);
+}
+
+.premium-reward-content.has-secondary-reward .reward-label-premium {
+  width: min(94vw, 620px);
+  max-width: min(94vw, 620px);
+  font-size: clamp(1.22rem, 5.4vw, 2.25rem);
+  line-height: 1.08;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+/*
+ * Lo scrigno resta sotto la card avatar e sopra i pulsanti.
+ */
+.premium-reward-content.has-secondary-reward .premium-chest-image {
+  top: 67%;
+  z-index: 30;
+}
+
+.premium-reward-content.has-secondary-reward .chest-img {
+  width: min(48vw, 230px);
+}
+
+.premium-reward-content.has-secondary-reward .chest-img.epic-chest-img {
+  width: min(52vw, 250px);
+}
+
+/*
+ * Nel Negozio usiamo compact + banner-safe.
+ * Il pulsante resta sopra il banner ma sotto lo scrigno.
+ */
+.premium-reward-content.has-secondary-reward
+  .reward-actions.compact.banner-safe {
+  bottom: max(84px, calc(env(safe-area-inset-bottom) + 76px));
+}
+
+@keyframes secondaryRewardReveal {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -35%) scale(0.58) rotate(-5deg);
+  }
+
+  70% {
+    opacity: 1;
+    transform: translate(-50%, -53%) scale(1.07) rotate(2deg);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(0);
+  }
+}
+
+@keyframes secondaryRewardGlow {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: scale(0.96);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+/* Telefoni bassi */
+@media (max-height: 700px) {
+  .premium-reward-content.has-secondary-reward .floating-reward {
+    top: 27%;
+  }
+
+  .premium-reward-content.has-secondary-reward .reward-label-premium {
+    width: min(92vw, 520px);
+    max-width: min(92vw, 520px);
+    font-size: clamp(1rem, 4.5vw, 1.55rem);
+  }
+
+  .secondary-reward-card {
+    top: 47%;
+    width: clamp(88px, 24vw, 108px);
+    border-radius: 18px;
+  }
+
+  .secondary-reward-card img {
+    border-radius: 13px;
+  }
+
+  .premium-reward-content.has-secondary-reward .premium-chest-image {
+    top: 65%;
+  }
+
+  .premium-reward-content.has-secondary-reward .chest-img {
+    width: min(38vw, 176px);
+  }
+
+  .premium-reward-content.has-secondary-reward .chest-img.epic-chest-img {
+    width: min(42vw, 194px);
+  }
+
+  .premium-reward-content.has-secondary-reward
+    .reward-actions.compact.banner-safe {
+    bottom: max(72px, calc(env(safe-area-inset-bottom) + 64px));
+  }
+}
+
+/* Telefoni medi */
+@media (min-height: 701px) and (max-height: 850px) {
+  .secondary-reward-card {
+    top: 48%;
+  }
+
+  .premium-reward-content.has-secondary-reward .premium-chest-image {
+    top: 66%;
+  }
+
+  .premium-reward-content.has-secondary-reward
+    .reward-actions.compact.banner-safe {
+    bottom: max(84px, calc(env(safe-area-inset-bottom) + 76px));
+  }
+}
+
+/* Telefoni alti */
+@media (min-height: 851px) {
+  .secondary-reward-card {
+    top: 49%;
+  }
+
+  .premium-reward-content.has-secondary-reward .premium-chest-image {
+    top: 68%;
+  }
+
+  .premium-reward-content.has-secondary-reward
+    .reward-actions.compact.banner-safe {
+    bottom: max(96px, calc(env(safe-area-inset-bottom) + 86px));
+  }
+}
+
+/* =========================================================
+   SHOP AVATAR REWARD — LAYOUT DEFINITIVO
+   Solo cinematica Negozio con avatar secondario.
+========================================================= */
+
+.premium-reward-content.has-secondary-reward .reward-subtitle {
+  top: 16% !important;
+}
+
+/* Moneta e riepilogo premi */
+.premium-reward-content.has-secondary-reward .floating-reward {
+  top: 21% !important;
+  width: 100% !important;
+  animation: none;
+}
+
+.premium-reward-content.has-secondary-reward .reward-light {
+  width: 120px;
+  height: 120px;
+}
+
+.premium-reward-content.has-secondary-reward .cinematic-coin-img {
+  width: clamp(74px, 20vw, 96px) !important;
+}
+
+.premium-reward-content.has-secondary-reward .reward-label-premium {
+  width: min(92vw, 440px) !important;
+  max-width: min(92vw, 440px) !important;
+  margin-top: -8px !important;
+  padding: 0 12px;
+
+  font-size: clamp(1.05rem, 4.8vw, 1.65rem) !important;
+  line-height: 1.08 !important;
+  letter-spacing: 0 !important;
+
+  white-space: normal !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+/* Avatar ottenuto */
+.premium-reward-content.has-secondary-reward .secondary-reward-card {
+  top: 47% !important;
+  width: clamp(92px, 24vw, 122px) !important;
+  z-index: 40 !important;
+}
+
+/* Scrigno separato dall’avatar e dal pulsante */
+.premium-reward-content.has-secondary-reward .premium-chest-image {
+  top: 59% !important;
+  z-index: 30 !important;
+}
+
+.premium-reward-content.has-secondary-reward .chest-img {
+  width: min(38vw, 170px) !important;
+}
+
+.premium-reward-content.has-secondary-reward .chest-img.epic-chest-img {
+  width: min(42vw, 190px) !important;
+}
+
+/* Pulsante sotto lo scrigno e sopra banner/navbar */
+.premium-reward-content.has-secondary-reward
+  .reward-actions.compact.banner-safe {
+  bottom: max(42px, calc(env(safe-area-inset-bottom) + 34px)) !important;
+  z-index: 50 !important;
+}
+
+/* Telefoni bassi */
+@media (max-height: 700px) {
+  .premium-reward-content.has-secondary-reward .reward-subtitle {
+    top: 15% !important;
+  }
+
+  .premium-reward-content.has-secondary-reward .floating-reward {
+    top: 20% !important;
+  }
+
+  .premium-reward-content.has-secondary-reward .cinematic-coin-img {
+    width: clamp(62px, 17vw, 78px) !important;
+  }
+
+  .premium-reward-content.has-secondary-reward .reward-label-premium {
+    width: min(91vw, 390px) !important;
+    font-size: clamp(0.92rem, 4.2vw, 1.3rem) !important;
+  }
+
+  .premium-reward-content.has-secondary-reward .secondary-reward-card {
+    top: 45% !important;
+    width: clamp(80px, 21vw, 102px) !important;
+  }
+
+  .premium-reward-content.has-secondary-reward .premium-chest-image {
+    top: 58% !important;
+  }
+
+  .premium-reward-content.has-secondary-reward .chest-img {
+    width: min(32vw, 142px) !important;
+  }
+
+  .premium-reward-content.has-secondary-reward .chest-img.epic-chest-img {
+    width: min(35vw, 158px) !important;
+  }
+
+  .premium-reward-content.has-secondary-reward
+    .reward-actions.compact.banner-safe {
+    bottom: max(34px, calc(env(safe-area-inset-bottom) + 28px)) !important;
+  }
+}
+
+/* Telefoni alti */
+@media (min-height: 851px) {
+  .premium-reward-content.has-secondary-reward .secondary-reward-card {
+    top: 46% !important;
+  }
+
+  .premium-reward-content.has-secondary-reward .premium-chest-image {
+    top: 60% !important;
+  }
+
+  .premium-reward-content.has-secondary-reward
+    .reward-actions.compact.banner-safe {
+    bottom: max(50px, calc(env(safe-area-inset-bottom) + 42px)) !important;
+  }
+}

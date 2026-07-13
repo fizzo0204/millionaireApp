@@ -2,6 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AlertController, IonicModule } from '@ionic/angular';
 import { Observable, Subscription } from 'rxjs';
+import {
+  ChestCinematicComponent,
+  ChestCinematicPhase,
+} from 'src/app/components/chest-cinematic/chest-cinematic.component';
 
 import { AdsService } from 'src/app/services/ads.service';
 import { CoinsService } from 'src/app/services/coins.service';
@@ -15,7 +19,7 @@ import {
 @Component({
   selector: 'app-shop',
   standalone: true,
-  imports: [IonicModule, CommonModule],
+  imports: [IonicModule, CommonModule, ChestCinematicComponent],
   templateUrl: './shop.page.html',
   styleUrls: ['./shop.page.scss'],
 })
@@ -29,13 +33,25 @@ export class ShopPage implements OnInit, OnDestroy {
 
   chestLoading: TipoForziere | null = null;
 
+  showPurchaseRewardCinematic = false;
+  purchaseRewardCinematicPhase: ChestCinematicPhase = 'opening';
+
+  readonly purchaseChestImage = 'assets/ui/epic-chest-reward.webp';
+  readonly coinIconPath = 'assets/ui/coin-turtle.webp';
+
+  purchaseRewardTitle = '';
+  purchaseRewardIcon = this.coinIconPath;
+  purchaseRewardLabel = '';
+  purchaseRewardAvatarImage = '';
+  purchaseRewardAvatarLabel = '';
+
   purchasePreview: AnteprimaForziere | null = null;
   purchaseAvatarRows: string[] = [];
-  private purchaseConfirmResolver?: (value: boolean) => void;
 
+  private purchaseConfirmResolver?: (value: boolean) => void;
   private previousLives?: number;
+
   readonly maxLives = 5;
-  readonly coinIconPath = 'assets/ui/coin-turtle.webp';
 
   coins$: Observable<number>;
   lives$: Observable<number>;
@@ -53,7 +69,7 @@ export class ShopPage implements OnInit, OnDestroy {
     this.livesCountdown$ = this.livesService.countdown$;
   }
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.livesSub = this.lives$.subscribe((lives) => {
       if (this.previousLives !== undefined && lives > this.previousLives) {
         this.triggerLifePulse();
@@ -64,7 +80,7 @@ export class ShopPage implements OnInit, OnDestroy {
   }
 
   // Avvia il flusso di acquisto del forziere selezionato.
-  async compraForziere(tipo: TipoForziere) {
+  async compraForziere(tipo: TipoForziere): Promise<void> {
     if (this.chestLoading || this.coinsLoading || this.lifeLoading) return;
 
     this.chestLoading = tipo;
@@ -90,6 +106,7 @@ export class ShopPage implements OnInit, OnDestroy {
         risultato.coins,
         risultato.xp,
         risultato.avatar?.label,
+        risultato.avatar?.icon,
         risultato.fallbackUsato,
       );
     } catch (error) {
@@ -113,19 +130,19 @@ export class ShopPage implements OnInit, OnDestroy {
   }
 
   // Conferma l'acquisto dalla modale custom.
-  confermaAcquistoModale() {
+  confermaAcquistoModale(): void {
     this.purchaseConfirmResolver?.(true);
     this.chiudiModaleAcquisto();
   }
 
   // Annulla l'acquisto dalla modale custom.
-  annullaAcquistoModale() {
+  annullaAcquistoModale(): void {
     this.purchaseConfirmResolver?.(false);
     this.chiudiModaleAcquisto();
   }
 
   // Chiude e pulisce la modale custom.
-  private chiudiModaleAcquisto() {
+  private chiudiModaleAcquisto(): void {
     this.purchasePreview = null;
     this.purchaseAvatarRows = [];
     this.purchaseConfirmResolver = undefined;
@@ -159,37 +176,65 @@ export class ShopPage implements OnInit, OnDestroy {
     return true;
   }
 
-  // Mostra il riepilogo del premio ricevuto dopo l'acquisto.
+  // Mostra la cinematica del premio ricevuto dopo l'acquisto.
   private async mostraPremioForziere(
     titolo: string,
     coins: number,
     xp: number,
     avatarLabel?: string,
+    avatarImage?: string,
     fallbackUsato = false,
-  ) {
-    const alert = await this.alertController.create({
-      header: 'Forziere aperto!',
-      subHeader: titolo,
-      message: [
-        `🪙 +${coins} TurtleCoins`,
-        `⭐ +${xp} XP`,
-        avatarLabel
-          ? `🎭 Nuovo avatar: ${avatarLabel}`
-          : fallbackUsato
-            ? `🎉 Avatar già tutti sbloccati: hai ricevuto monete bonus!`
-            : '',
-      ]
-        .filter(Boolean)
-        .join('\n'),
-      buttons: ['Fantastico!'],
-      cssClass: 'shop-alert reward-alert',
-    });
+  ): Promise<void> {
+    this.purchaseRewardTitle = titolo;
+    this.purchaseRewardIcon = this.coinIconPath;
 
-    await alert.present();
+    this.purchaseRewardAvatarImage = avatarImage ?? '';
+    this.purchaseRewardAvatarLabel = avatarLabel ?? '';
+
+    const rewards = [`+${coins} TurtleCoins`, `+${xp} XP`];
+
+    if (fallbackUsato) {
+      rewards.push('Monete bonus per avatar già posseduti');
+    }
+
+    this.purchaseRewardLabel = rewards.join(' • ');
+    this.purchaseRewardCinematicPhase = 'opening';
+    this.showPurchaseRewardCinematic = true;
+
+    await this.playPurchaseRewardCinematic();
+  }
+
+  // Gestisce le tre fasi della cinematica condivisa.
+  private async playPurchaseRewardCinematic(): Promise<void> {
+    await this.wait(1600);
+
+    if (!this.showPurchaseRewardCinematic) return;
+
+    this.purchaseRewardCinematicPhase = 'flash';
+
+    await this.wait(650);
+
+    if (!this.showPurchaseRewardCinematic) return;
+
+    this.purchaseRewardCinematicPhase = 'reward';
+  }
+
+  // Chiude la cinematica e ripulisce tutti i dati del premio.
+  closePurchaseRewardCinematic(): void {
+    if (this.purchaseRewardCinematicPhase !== 'reward') return;
+
+    this.showPurchaseRewardCinematic = false;
+    this.purchaseRewardCinematicPhase = 'opening';
+
+    this.purchaseRewardTitle = '';
+    this.purchaseRewardIcon = this.coinIconPath;
+    this.purchaseRewardLabel = '';
+    this.purchaseRewardAvatarImage = '';
+    this.purchaseRewardAvatarLabel = '';
   }
 
   // Mostra una modale generica in caso di errore acquisto.
-  private async mostraErroreAcquisto() {
+  private async mostraErroreAcquisto(): Promise<void> {
     const alert = await this.alertController.create({
       header: 'Acquisto non completato',
       message:
@@ -201,7 +246,7 @@ export class ShopPage implements OnInit, OnDestroy {
     await alert.present();
   }
 
-  async watchCoinsAd() {
+  async watchCoinsAd(): Promise<void> {
     if (this.coinsLoading || this.lifeLoading || this.chestLoading) return;
 
     this.coinsLoading = true;
@@ -220,7 +265,7 @@ export class ShopPage implements OnInit, OnDestroy {
     }
   }
 
-  triggerCoinPulse() {
+  triggerCoinPulse(): void {
     this.coinRewardPulse = true;
 
     setTimeout(() => {
@@ -228,7 +273,7 @@ export class ShopPage implements OnInit, OnDestroy {
     }, 900);
   }
 
-  async watchLifeAd() {
+  async watchLifeAd(): Promise<void> {
     if (this.lifeLoading || this.coinsLoading || this.chestLoading) return;
 
     if (this.livesService.getLives() >= this.maxLives) {
@@ -250,7 +295,7 @@ export class ShopPage implements OnInit, OnDestroy {
     }
   }
 
-  triggerLifePulse() {
+  triggerLifePulse(): void {
     this.lifeRecoveredPulse = true;
 
     setTimeout(() => {
@@ -258,7 +303,18 @@ export class ShopPage implements OnInit, OnDestroy {
     }, 900);
   }
 
-  ngOnDestroy() {
+  ngOnDestroy(): void {
     this.livesSub?.unsubscribe();
+
+    /*
+     * Evitiamo di lasciare aperta una Promise se il componente viene
+     * distrutto mentre la conferma dell'acquisto è ancora visibile.
+     */
+    this.purchaseConfirmResolver?.(false);
+    this.purchaseConfirmResolver = undefined;
+  }
+
+  private wait(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

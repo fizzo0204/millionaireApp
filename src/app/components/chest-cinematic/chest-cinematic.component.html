@@ -38,78 +38,97 @@
     }
 
     @if (phase === "reward") {
-      <div
-        class="premium-reward-content"
-        [class.compact-actions]="compactActions"
-      >
-        <div class="reward-subtitle">Hai ottenuto</div>
+      @if (phase === "reward") {
+        <div
+          class="premium-reward-content"
+          [class.compact-actions]="compactActions"
+          [class.has-secondary-reward]="!!secondaryRewardImage"
+        >
+          <div class="reward-subtitle">Hai ottenuto</div>
 
-        <div class="floating-reward">
-          <div class="reward-light"></div>
+          <div class="floating-reward">
+            <div class="reward-light"></div>
 
-          <div class="reward-icon-premium">
-            @if (rewardIcon.includes("assets/")) {
-              <img class="cinematic-coin-img" [src]="rewardIcon" alt="Reward" />
+            <div class="reward-icon-premium">
+              @if (rewardIcon.includes("assets/")) {
+                <img
+                  class="cinematic-coin-img"
+                  [src]="rewardIcon"
+                  alt="Reward"
+                />
+              } @else {
+                {{ rewardIcon }}
+              }
+            </div>
+
+            <div class="reward-label-premium">
+              {{ rewardLabel }}
+            </div>
+          </div>
+
+          @if (secondaryRewardImage) {
+            <div class="secondary-reward-card">
+              <div class="secondary-reward-glow"></div>
+
+              <img [src]="secondaryRewardImage" [alt]="secondaryRewardAlt" />
+
+              @if (secondaryRewardLabel) {
+                <strong>{{ secondaryRewardLabel }}</strong>
+              }
+            </div>
+          }
+
+          <div class="premium-chest-image">
+            <div class="chest-light"></div>
+
+            <img
+              [src]="chestImage"
+              [alt]="chestAlt"
+              class="chest-img"
+              [class.epic-chest-img]="epic"
+            />
+          </div>
+
+          <div
+            class="reward-actions"
+            [class.compact]="compactActions"
+            [class.banner-safe]="bannerSafeActions"
+            (click)="$event.stopPropagation()"
+          >
+            @if (canDoubleReward) {
+              <button
+                class="reward-double-btn"
+                type="button"
+                (click)="onDouble($event)"
+                [disabled]="doubleRewardLoading"
+              >
+                @if (!doubleRewardLoading) {
+                  ▶ Guarda video e raddoppia
+                } @else {
+                  Video in corso...
+                }
+              </button>
+
+              <button
+                class="reward-continue-btn"
+                type="button"
+                (click)="onContinue(true)"
+                [disabled]="doubleRewardLoading"
+              >
+                Continua
+              </button>
             } @else {
-              {{ rewardIcon }}
+              <button
+                class="reward-continue-btn primary"
+                type="button"
+                (click)="onContinue(true)"
+              >
+                Continua
+              </button>
             }
           </div>
-
-          <div class="reward-label-premium">
-            {{ rewardLabel }}
-          </div>
         </div>
-
-        <div class="premium-chest-image">
-          <div class="chest-light"></div>
-
-          <img
-            [src]="chestImage"
-            [alt]="chestAlt"
-            class="chest-img"
-            [class.epic-chest-img]="epic"
-          />
-        </div>
-
-        <div
-          class="reward-actions"
-          [class.compact]="compactActions"
-          [class.banner-safe]="bannerSafeActions"
-          (click)="$event.stopPropagation()"
-        >
-          @if (canDoubleReward) {
-            <button
-              class="reward-double-btn"
-              type="button"
-              (click)="onDouble($event)"
-              [disabled]="doubleRewardLoading"
-            >
-              @if (!doubleRewardLoading) {
-                ▶ Guarda video e raddoppia
-              } @else {
-                Video in corso...
-              }
-            </button>
-
-            <button
-              class="reward-continue-btn"
-              type="button"
-              (click)="onContinue(true)"
-              [disabled]="doubleRewardLoading"
-            >
-              Continua
-            </button>
-          } @else {
-            <button
-              class="reward-continue-btn primary"
-              type="button"
-              (click)="onContinue(true)"
-            >
-              Continua
-            </button>
-          }
-        </div>
-      </div>
+      }
     }
   </div>
 }

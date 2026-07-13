@@ -25,6 +25,9 @@ export class ChestCinematicComponent {
   @Input() doubleRewardLoading = false;
   @Input() ribbonLabel = 'PREMIO GIORNALIERO!';
   @Input() bannerSafeActions = false;
+  @Input() secondaryRewardImage = '';
+  @Input() secondaryRewardAlt = 'Premio';
+  @Input() secondaryRewardLabel = '';
 
   @Output() continueRequested = new EventEmitter<boolean>();
   @Output() doubleRequested = new EventEmitter<Event>();

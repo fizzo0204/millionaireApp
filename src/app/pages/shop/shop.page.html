@@ -304,3 +304,24 @@
   </div>
   }
 </ion-content>
+@if (showPurchaseRewardCinematic) {
+<app-chest-cinematic
+  [visible]="showPurchaseRewardCinematic"
+  [phase]="purchaseRewardCinematicPhase"
+  [chestImage]="purchaseChestImage"
+  chestAlt="Forziere acquistato"
+  [epic]="true"
+  revealType="coins"
+  [rewardIcon]="purchaseRewardIcon"
+  [rewardLabel]="purchaseRewardLabel"
+  [ribbonLabel]="purchaseRewardTitle"
+  [secondaryRewardImage]="purchaseRewardAvatarImage"
+  secondaryRewardAlt="Avatar ottenuto"
+  [secondaryRewardLabel]="purchaseRewardAvatarLabel"
+  [canDoubleReward]="false"
+  [doubleRewardLoading]="false"
+  [compactActions]="true"
+  [bannerSafeActions]="true"
+  (continueRequested)="closePurchaseRewardCinematic()"
+></app-chest-cinematic>
+}
