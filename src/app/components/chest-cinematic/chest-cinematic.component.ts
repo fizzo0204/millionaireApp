@@ -23,6 +23,7 @@ export class ChestCinematicComponent {
   @Input() rewardLabel = '';
   @Input() canDoubleReward = false;
   @Input() doubleRewardLoading = false;
+  @Input() ribbonLabel = 'PREMIO GIORNALIERO!';
 
   @Output() continueRequested = new EventEmitter<boolean>();
   @Output() doubleRequested = new EventEmitter<Event>();

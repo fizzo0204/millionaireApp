@@ -473,42 +473,6 @@
       </button>
     </div>
   </div>
-  } @if (showArcadeChestRewardModal) {
-  <div class="arcade-chest-modal-backdrop">
-    <div class="arcade-chest-modal">
-      <div class="arcade-chest-glow"></div>
-
-      <div class="arcade-chest-copy">
-        <span>Forziere Scalata</span>
-        <h2>Bonus sbloccato!</h2>
-        <p>Hai completato 10 livelli della scalata.</p>
-      </div>
-
-      <div class="arcade-chest-icon">
-        <img src="assets/ui/epic-chest-reward.webp" alt="Forziere Scalata" />
-      </div>
-
-      <div class="arcade-chest-rewards">
-        <div>
-          <strong>+{{ arcadeChestRewardCoins }}</strong>
-          <span>TurtleCoins</span>
-        </div>
-
-        <div>
-          <strong>+{{ arcadeChestRewardXp }}</strong>
-          <span>XP</span>
-        </div>
-      </div>
-
-      <button
-        class="arcade-chest-btn"
-        type="button"
-        (click)="continueAfterArcadeChestReward()"
-      >
-        Torna alla scalata
-      </button>
-    </div>
-  </div>
   } @if (showRewardModal) {
   <div class="modal-backdrop">
     <div class="reward-modal epic">
@@ -580,3 +544,21 @@
   </div>
   }
 </ion-content>
+
+@if (showArcadeChestRewardModal) {
+<app-chest-cinematic
+  [visible]="showArcadeChestRewardModal"
+  [phase]="arcadeChestCinematicPhase"
+  [chestImage]="arcadeChestImage"
+  chestAlt="Forziere Scalata"
+  [epic]="true"
+  revealType="coins"
+  [rewardIcon]="arcadeChestRewardIcon"
+  [rewardLabel]="arcadeChestRewardLabel"
+  ribbonLabel="FORZIERE SCALATA!"
+  [canDoubleReward]="false"
+  [doubleRewardLoading]="false"
+  [compactActions]="true"
+  (continueRequested)="continueAfterArcadeChestReward()"
+></app-chest-cinematic>
+}

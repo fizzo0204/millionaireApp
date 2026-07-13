@@ -11,6 +11,10 @@ import { QuestionModel } from 'src/app/models/question.model';
 import { CoinsService } from 'src/app/services/coins.service';
 import { LivesService } from 'src/app/services/lives';
 import { GameLoaderComponent } from 'src/app/components/game-loader/game-loader.component';
+import {
+  ChestCinematicComponent,
+  ChestCinematicPhase,
+} from 'src/app/components/chest-cinematic/chest-cinematic.component';
 import { AuthService } from 'src/app/services/auth.service';
 import { firstValueFrom } from 'rxjs';
 import { HapticsService } from 'src/app/services/haptics.service';
@@ -31,7 +35,12 @@ import { QuizScalataService } from 'src/app/services/quiz-scalata.service';
 @Component({
   selector: 'app-quiz',
   standalone: true,
-  imports: [CommonModule, IonicModule, GameLoaderComponent],
+  imports: [
+    CommonModule,
+    IonicModule,
+    GameLoaderComponent,
+    ChestCinematicComponent,
+  ],
   templateUrl: './quiz.page.html',
   styleUrls: ['./quiz.page.scss'],
 })
@@ -76,6 +85,10 @@ export class QuizPage implements OnInit, OnDestroy {
   arcadeTransitionFrom = 1;
   arcadeTransitionTo = 2;
   showArcadeChestRewardModal = false;
+  arcadeChestCinematicPhase: ChestCinematicPhase = 'opening';
+
+  readonly arcadeChestImage = 'assets/ui/epic-chest-reward.webp';
+  readonly arcadeChestRewardIcon = 'assets/ui/coin-turtle.webp';
 
   difficultyId: DifficultyId = 'easy';
   categoryTitle = 'Quiz';
@@ -419,6 +432,10 @@ export class QuizPage implements OnInit, OnDestroy {
     }
 
     return `+${this.xpPerQuestion} XP`;
+  }
+
+  get arcadeChestRewardLabel(): string {
+    return `+${this.arcadeChestRewardCoins} TurtleCoins • +${this.arcadeChestRewardXp} XP`;
   }
 
   get timerPercent(): number {
@@ -972,7 +989,10 @@ export class QuizPage implements OnInit, OnDestroy {
     );
 
     if (risultato.premio.hasBonus) {
+      this.arcadeChestCinematicPhase = 'opening';
       this.showArcadeChestRewardModal = true;
+
+      void this.playArcadeChestCinematic();
     }
   }
 
@@ -996,8 +1016,25 @@ export class QuizPage implements OnInit, OnDestroy {
   continueAfterArcadeChestReward() {
     this.haptics.heavy();
     this.showArcadeChestRewardModal = false;
+    this.arcadeChestCinematicPhase = 'opening';
     this.navigatingAway = true;
     this.goToExitPage();
+  }
+
+  private async playArcadeChestCinematic(): Promise<void> {
+    this.arcadeChestCinematicPhase = 'opening';
+
+    await this.wait(1600);
+
+    if (!this.showArcadeChestRewardModal) return;
+
+    this.arcadeChestCinematicPhase = 'flash';
+
+    await this.wait(650);
+
+    if (!this.showArcadeChestRewardModal) return;
+
+    this.arcadeChestCinematicPhase = 'reward';
   }
 
   private async playArcadeTransition(
