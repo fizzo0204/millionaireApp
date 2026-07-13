@@ -12,6 +12,7 @@ import {
   RevealType,
 } from 'src/app/models/daily-reward.model';
 import { AvatarModel } from 'src/app/models/avatar.model';
+import { ChestCinematicComponent } from '../chest-cinematic/chest-cinematic.component';
 
 interface PreparedDailyRewardClaim {
   payload: DailyRewardClaimPayload;
@@ -26,7 +27,7 @@ interface PreparedDailyRewardClaim {
 @Component({
   selector: 'app-daily-reward-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ChestCinematicComponent],
   templateUrl: './daily-reward-modal.component.html',
   styleUrls: ['./daily-reward-modal.component.scss'],
 })

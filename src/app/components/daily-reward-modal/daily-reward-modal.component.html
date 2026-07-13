@@ -59,7 +59,7 @@
     </div>
   </div>
 
-  @if (cinematicVisible) {
+  <!-- @if (false && cinematicVisible) {
     <div
       class="premium-reward-scene"
       [ngClass]="[rewardRevealType, cinematicPhase]"
@@ -163,5 +163,21 @@
         </div>
       }
     </div>
+  } -->
+  @if (cinematicVisible) {
+    <app-chest-cinematic
+      [visible]="cinematicVisible"
+      [phase]="cinematicPhase"
+      [chestImage]="cinematicChestImage"
+      [chestAlt]="cinematicChestAlt"
+      [epic]="isEpicChestRewardDay"
+      [revealType]="rewardRevealType"
+      [rewardIcon]="rewardRevealIcon"
+      [rewardLabel]="rewardRevealLabel"
+      [canDoubleReward]="canDoubleReward"
+      [doubleRewardLoading]="doubleRewardLoading"
+      (continueRequested)="finishCinematic($event)"
+      (doubleRequested)="doubleCurrentReward($event)"
+    ></app-chest-cinematic>
   }
 </div>

@@ -1,0 +1,107 @@
+@if (visible) {
+  <div
+    class="premium-reward-scene"
+    [ngClass]="[revealType, phase]"
+    (click)="onContinue(false)"
+  >
+    <div class="scene-bg-glow"></div>
+    <div class="scene-stars"></div>
+    <div class="scene-rays"></div>
+    <div class="scene-particles"></div>
+
+    <div class="reward-ribbon">
+      <div class="ribbon-side left"></div>
+      <div class="ribbon-main">PREMIO GIORNALIERO!</div>
+      <div class="ribbon-side right"></div>
+    </div>
+
+    @if (phase === "opening") {
+      <div class="premium-opening">
+        <div class="chest-aura"></div>
+
+        <img
+          class="premium-chest closed chest-opening-img"
+          [class.epic-chest-img]="epic"
+          [src]="chestImage"
+          [alt]="chestAlt"
+        />
+
+        <div class="opening-copy">Apertura scrigno...</div>
+      </div>
+    }
+
+    @if (phase === "flash") {
+      <div class="premium-flash">
+        <div class="flash-ring"></div>
+        <div class="flash-title">WOW!</div>
+      </div>
+    }
+
+    @if (phase === "reward") {
+      <div class="premium-reward-content">
+        <div class="reward-subtitle">Hai ottenuto</div>
+
+        <div class="floating-reward">
+          <div class="reward-light"></div>
+
+          <div class="reward-icon-premium">
+            @if (rewardIcon.includes("assets/")) {
+              <img class="cinematic-coin-img" [src]="rewardIcon" alt="Reward" />
+            } @else {
+              {{ rewardIcon }}
+            }
+          </div>
+
+          <div class="reward-label-premium">
+            {{ rewardLabel }}
+          </div>
+        </div>
+
+        <div class="premium-chest-image">
+          <div class="chest-light"></div>
+
+          <img
+            [src]="chestImage"
+            [alt]="chestAlt"
+            class="chest-img"
+            [class.epic-chest-img]="epic"
+          />
+        </div>
+
+        <div class="reward-actions" (click)="$event.stopPropagation()">
+          @if (canDoubleReward) {
+            <button
+              class="reward-double-btn"
+              type="button"
+              (click)="onDouble($event)"
+              [disabled]="doubleRewardLoading"
+            >
+              @if (!doubleRewardLoading) {
+                ▶ Guarda video e raddoppia
+              } @else {
+                Video in corso...
+              }
+            </button>
+
+            <button
+              class="reward-continue-btn"
+              type="button"
+              (click)="onContinue(true)"
+              [disabled]="doubleRewardLoading"
+            >
+              Continua
+            </button>
+          } @else {
+            <button
+              class="reward-continue-btn primary"
+              type="button"
+              (click)="onContinue(true)"
+            >
+              Continua
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+}
