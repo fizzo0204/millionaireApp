@@ -1,9 +1,4 @@
-import {
-  Component,
-  HostListener,
-  OnDestroy,
-  OnInit,
-} from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { NavigationEnd, Router } from '@angular/router';
@@ -17,13 +12,17 @@ import {
 import { HapticsService } from 'src/app/services/haptics.service';
 import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 import { TutorialService } from 'src/app/services/tutorial.service';
+import {
+  ChestCinematicComponent,
+  ChestCinematicPhase,
+} from 'src/app/components/chest-cinematic/chest-cinematic.component';
 
 type RewardChestPhase = 'idle' | 'charging' | 'revealed';
 
 @Component({
   selector: 'app-tutorial-overlay',
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonicModule, ChestCinematicComponent],
   templateUrl: './tutorial-overlay.component.html',
   styleUrls: ['./tutorial-overlay.component.scss'],
 })
@@ -32,13 +31,26 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
   readonly steps = this.tutorialService.steps;
   readonly mascotSrc = TUTORIAL_CONFIG.mascotSrc;
   readonly tutorialChestSrc = 'assets/ui/epic-chest-reward.webp';
+  readonly tutorialRewardIcon = 'assets/ui/coin-turtle.webp';
   readonly rewardCoins = TUTORIAL_CONFIG.rewardCoins;
   readonly answerLetters = ['A', 'B', 'C', 'D'];
 
   selectedAnswerIndex: number | null = null;
   spotlightRect: TutorialSpotlightRect | null = null;
   coachPlacement: 'top' | 'bottom' = 'bottom';
+
+  /*
+   * Manteniamo lo stato storico del forziere del tutorial perché viene ancora
+   * usato dalla preview interna e dalla logica che blocca il tasto Continua.
+   */
   rewardChestPhase: RewardChestPhase = 'idle';
+
+  /*
+   * Stato separato della nuova cinematica condivisa.
+   * In questo modo possiamo migrare l'HTML senza rompere il flusso già esistente.
+   */
+  showRewardCinematic = false;
+  rewardCinematicPhase: ChestCinematicPhase = 'opening';
 
   private stateSub?: Subscription;
   private routerSub?: Subscription;
@@ -58,7 +70,11 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
     });
 
     this.routerSub = this.router.events
-      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .pipe(
+        filter(
+          (event): event is NavigationEnd => event instanceof NavigationEnd,
+        ),
+      )
       .subscribe(() => {
         void this.refreshSpotlight();
       });
@@ -73,6 +89,10 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
   @HostListener('window:resize')
   onWindowResize(): void {
     void this.refreshSpotlight();
+  }
+
+  get tutorialRewardLabel(): string {
+    return `+${this.rewardCoins} TurtleCoins e Avatar Tartaruga Saggia`;
   }
 
   getStep(state: TutorialState): TutorialStep {
@@ -170,7 +190,15 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
   close(): void {
     this.selectedAnswerIndex = null;
     this.spotlightRect = null;
+    this.showRewardCinematic = false;
+    this.rewardCinematicPhase = 'opening';
     this.tutorialService.close();
+  }
+
+  closeRewardCinematic(): void {
+    if (this.rewardCinematicPhase !== 'reward') return;
+
+    this.showRewardCinematic = false;
   }
 
   getAnswerClass(index: number, step: TutorialStep): string {
@@ -306,6 +334,8 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
     }
 
     this.clearRewardRevealTimer();
+    this.showRewardCinematic = false;
+    this.rewardCinematicPhase = 'opening';
 
     if ((state.loading || !state.rewardClaimed) && !state.completed) {
       this.rewardChestPhase = 'charging';
@@ -319,16 +349,35 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
     if (this.rewardChestPhase === 'revealed' || this.rewardRevealTimer) return;
 
     this.rewardChestPhase = 'charging';
-    this.rewardRevealTimer = setTimeout(() => {
-      this.rewardChestPhase = 'revealed';
-      this.rewardRevealTimer = undefined;
-      void this.haptics.success();
-    }, 820);
+    this.showRewardCinematic = true;
+    this.rewardCinematicPhase = 'opening';
+
+    void this.playRewardCinematic();
+  }
+
+  private async playRewardCinematic(): Promise<void> {
+    this.clearRewardRevealTimer();
+
+    await this.wait(1600);
+
+    if (!this.showRewardCinematic) return;
+
+    this.rewardCinematicPhase = 'flash';
+
+    await this.wait(650);
+
+    if (!this.showRewardCinematic) return;
+
+    this.rewardCinematicPhase = 'reward';
+    this.rewardChestPhase = 'revealed';
+    void this.haptics.success();
   }
 
   private resetRewardChest(): void {
     this.clearRewardRevealTimer();
     this.rewardChestPhase = 'idle';
+    this.showRewardCinematic = false;
+    this.rewardCinematicPhase = 'opening';
   }
 
   private clearRewardRevealTimer(): void {

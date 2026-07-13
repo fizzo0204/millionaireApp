@@ -144,30 +144,12 @@
                 class="reward-preview"
                 [class.ready]="!state.completed && !state.rewardClaimed"
                 [class.opening]="rewardChestPhase === 'charging'"
-                [class.revealed]="
-                  state.rewardGranted && rewardChestPhase === 'revealed'
-                "
                 [class.claimed]="state.rewardClaimed && !state.rewardGranted"
               >
                 <div class="chest-aura"></div>
 
                 <div class="chest-stage" aria-hidden="true">
-                  <div class="chest-flash"></div>
                   <img class="chest-image" [src]="tutorialChestSrc" alt="" />
-
-                  @if (state.rewardGranted && rewardChestPhase === "revealed") {
-                    <div class="reward-burst-items">
-                      <div class="reward-prize coin-prize">
-                        <img src="assets/ui/coin-turtle.webp" alt="" />
-                        <span>+{{ rewardCoins }}</span>
-                      </div>
-
-                      <div class="reward-prize avatar-prize">
-                        <img [src]="mascotSrc" alt="" />
-                        <span>Avatar</span>
-                      </div>
-                    </div>
-                  }
                 </div>
 
                 <div class="chest-copy">
@@ -219,4 +201,23 @@
       </div>
     </div>
   }
+}
+
+@if (showRewardCinematic) {
+  <app-chest-cinematic
+    [visible]="showRewardCinematic"
+    [phase]="rewardCinematicPhase"
+    [chestImage]="tutorialChestSrc"
+    chestAlt="Forziere tutorial"
+    [epic]="true"
+    revealType="coins"
+    [rewardIcon]="tutorialRewardIcon"
+    [rewardLabel]="tutorialRewardLabel"
+    ribbonLabel="PREMIO TUTORIAL!"
+    [canDoubleReward]="false"
+    [doubleRewardLoading]="false"
+    [compactActions]="true"
+    [bannerSafeActions]="true"
+    (continueRequested)="closeRewardCinematic()"
+  ></app-chest-cinematic>
 }

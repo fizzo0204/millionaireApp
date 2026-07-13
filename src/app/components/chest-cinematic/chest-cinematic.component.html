@@ -74,6 +74,7 @@
         <div
           class="reward-actions"
           [class.compact]="compactActions"
+          [class.banner-safe]="bannerSafeActions"
           (click)="$event.stopPropagation()"
         >
           @if (canDoubleReward) {
