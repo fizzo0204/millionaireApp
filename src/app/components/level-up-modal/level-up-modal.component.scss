@@ -16,8 +16,16 @@
     calc(env(safe-area-inset-bottom) + 26px);
   color: #fff;
   background:
-    radial-gradient(circle at 50% 30%, rgba(255, 234, 0, 0.34), transparent 24%),
-    radial-gradient(circle at 24% 68%, rgba(34, 211, 238, 0.28), transparent 22%),
+    radial-gradient(
+      circle at 50% 30%,
+      rgba(255, 234, 0, 0.34),
+      transparent 24%
+    ),
+    radial-gradient(
+      circle at 24% 68%,
+      rgba(34, 211, 238, 0.28),
+      transparent 22%
+    ),
     linear-gradient(180deg, #03102b 0%, #071d4a 48%, #020817 100%);
   animation: levelBackdropIn 260ms ease both;
 }
@@ -100,10 +108,10 @@
   width: 82%;
   height: auto;
   object-fit: contain;
-  filter:
-    drop-shadow(0 20px 24px rgba(0, 0, 0, 0.38))
+  filter: drop-shadow(0 20px 24px rgba(0, 0, 0, 0.38))
     drop-shadow(0 0 26px rgba(255, 234, 0, 0.48));
-  animation: levelImagePop 820ms cubic-bezier(0.22, 1.45, 0.36, 1) both,
+  animation:
+    levelImagePop 820ms cubic-bezier(0.22, 1.45, 0.36, 1) both,
     levelImageFloat 2s ease-in-out 900ms infinite;
   backface-visibility: hidden;
   transform: translateZ(0);
@@ -269,7 +277,8 @@
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.18),
     0 10px 18px rgba(0, 0, 0, 0.32);
-  animation: levelButtonIn 520ms ease 500ms both,
+  animation:
+    levelButtonIn 520ms ease 500ms both,
     levelRewardButtonPulse 1.4s ease-in-out 900ms infinite;
 }
 
@@ -459,16 +468,6 @@
   }
 }
 
-@keyframes levelButtonGlow {
-  50% {
-    filter: brightness(1.08);
-    box-shadow:
-      0 7px 0 rgba(129, 90, 0, 0.86),
-      0 14px 26px rgba(0, 0, 0, 0.3),
-      0 0 34px rgba(255, 234, 0, 0.48);
-  }
-}
-
 @keyframes levelRewardButtonPulse {
   0%,
   100% {
@@ -524,5 +523,153 @@
 
   .level-up-actions {
     margin-top: 10px;
+  }
+}
+
+/* =========================================================
+   MOBILE PERFORMANCE WOW
+   Conserva il carattere premium usando animazioni leggere:
+   solo transform e opacity, evitando blur e ombre animate.
+========================================================= */
+
+@media (max-width: 719px) {
+  /*
+   * I raggi restano visibili ma non ruotano:
+   * la rotazione di un layer più grande dello schermo è costosa.
+   */
+  .level-up-rays {
+    animation: none;
+    opacity: 0.5;
+  }
+
+  /*
+   * Il glow respira leggermente senza blur animato.
+   */
+  .level-up-glow {
+    filter: none;
+    opacity: 0.7;
+    animation: levelGlowMobile 2.8s ease-in-out infinite;
+  }
+
+  /*
+   * L'immagine mantiene ingresso e galleggiamento,
+   * ma con movimento ridotto e più lento.
+   */
+  .level-up-image-wrap img {
+    animation:
+      levelImagePop 620ms cubic-bezier(0.22, 1.3, 0.36, 1) both,
+      levelImageFloatMobile 3.2s ease-in-out 800ms infinite;
+
+    filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.34))
+      drop-shadow(0 0 15px rgba(255, 234, 0, 0.32));
+
+    will-change: transform;
+  }
+
+  /*
+   * L'anello pulsa ancora, ma solo tramite scale e opacity.
+   */
+  .level-up-ring {
+    animation: levelRingMobile 3s ease-in-out infinite;
+    will-change: transform, opacity;
+
+    box-shadow:
+      0 0 20px rgba(250, 204, 21, 0.28),
+      inset 0 0 18px rgba(255, 255, 255, 0.12);
+  }
+
+  /*
+   * Manteniamo solo tre particelle:
+   * sufficiente per l'effetto WOW, molto meno costoso.
+   */
+  .level-up-particles span:nth-child(n + 4) {
+    display: none;
+  }
+
+  .level-up-particles span {
+    width: 6px;
+    height: 6px;
+    box-shadow: none;
+    animation-duration: 3.4s;
+  }
+
+  /*
+   * Il bottone continua a pulsare per attirare l'attenzione,
+   * ma senza animare brightness o box-shadow.
+   */
+  .level-up-double-button {
+    animation:
+      levelButtonIn 420ms ease 320ms both,
+      levelRewardButtonPulseMobile 2.2s ease-in-out 900ms infinite;
+
+    will-change: transform;
+  }
+
+  .level-up-button {
+    animation: levelButtonIn 420ms ease 360ms both;
+    backdrop-filter: none;
+  }
+
+  .level-up-reward {
+    box-shadow:
+      0 8px 16px rgba(0, 0, 0, 0.2),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+
+  .level-up-reward img,
+  .level-up-double-button ion-icon {
+    filter: none;
+  }
+}
+
+/* Glow leggero dello sfondo */
+@keyframes levelGlowMobile {
+  0%,
+  100% {
+    opacity: 0.62;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.78;
+    transform: scale(1.025);
+  }
+}
+
+/* Movimento ridotto dell'immagine */
+@keyframes levelImageFloatMobile {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* Pulsazione morbida dell'anello */
+@keyframes levelRingMobile {
+  0%,
+  100% {
+    transform: translateZ(0) scale(1);
+    opacity: 0.88;
+  }
+
+  50% {
+    transform: translateZ(0) scale(1.018);
+    opacity: 1;
+  }
+}
+
+/* Pulse premium del bottone, solo tramite transform */
+@keyframes levelRewardButtonPulseMobile {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.025);
   }
 }
