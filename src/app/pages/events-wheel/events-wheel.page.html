@@ -28,7 +28,9 @@
 
       <div class="hero-wheel-preview" aria-hidden="true">
         <div class="preview-wheel">
-          <div class="preview-center">🐢</div>
+          <div class="preview-center">
+            <img src="assets/images/iconApp.webp" alt="" />
+          </div>
         </div>
       </div>
     </section>
@@ -59,6 +61,7 @@
 
       <div class="wheel-stage">
         <div class="wheel-aura"></div>
+        <div class="wheel-energy-orbit"></div>
 
         <div class="wheel-sparks" aria-hidden="true">
           <i></i>
@@ -68,7 +71,7 @@
         </div>
 
         <div class="wheel-pointer-wrap">
-          <div class="wheel-pointer-shine"></div>
+          <div class="wheel-pointer-top"></div>
           <div class="wheel-pointer"></div>
         </div>
 
@@ -96,30 +99,44 @@
           }
         </div>
 
-        <button
-          type="button"
-          class="wheel-button"
-          [disabled]="wheelSpinning"
-          (click)="spinWheel()"
-        >
-          @if (wheelSpinning) {
-          <ion-spinner name="dots"></ion-spinner>
-          <span>Giro...</span>
-          } @else if (wheelFreeSpinAvailable) {
-          <strong>Gira</strong>
-          <small>gratis</small>
-          } @else {
-          <ion-icon name="play"></ion-icon>
-          <span>Guarda<br />e gira</span>
-          }
-        </button>
+        <div class="wheel-center-medallion" aria-hidden="true">
+          <img src="assets/images/iconApp.webp" alt="" />
+        </div>
+
+        <div class="wheel-pedestal" aria-hidden="true">
+          <div class="wheel-pedestal-top"></div>
+          <div class="wheel-pedestal-body"></div>
+          <div class="wheel-pedestal-glow"></div>
+        </div>
       </div>
 
       <div class="wheel-hint">
         <ion-icon name="gift-outline"></ion-icon>
-
-        <span> Puoi trovare TurtleCoins, XP o avatar speciali. </span>
+        <span>Puoi trovare TurtleCoins, XP o avatar speciali.</span>
       </div>
+
+      <button
+        type="button"
+        class="wheel-button"
+        [disabled]="wheelSpinning"
+        (click)="spinWheel()"
+      >
+        @if (wheelSpinning) {
+        <ion-spinner name="dots"></ion-spinner>
+        <span>Ruota in movimento...</span>
+        } @else if (wheelFreeSpinAvailable) {
+        <span class="wheel-button-copy">
+          <strong>Gira</strong>
+          <small>gratis</small>
+        </span>
+        } @else {
+        <ion-icon name="play"></ion-icon>
+        <span class="wheel-button-copy">
+          <strong>Guarda e gira</strong>
+          <small>un altro tentativo</small>
+        </span>
+        }
+      </button>
     </section>
     }
   </div>
