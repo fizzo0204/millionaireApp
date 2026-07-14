@@ -513,17 +513,18 @@ ion-content.event-detail-content {
   z-index: 1000;
   display: grid;
   place-items: center;
-  padding: 18px;
+  padding: calc(env(safe-area-inset-top) + 18px) 18px
+    calc(env(safe-area-inset-bottom) + 96px);
   background: rgba(2, 6, 23, 0.78);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(6px);
 }
 
 .wheel-result-modal {
   position: relative;
   overflow: hidden;
-  width: min(330px, 100%);
+  width: min(340px, 100%);
   border-radius: 28px;
-  padding: 28px 20px 18px;
+  padding: 26px 20px 18px;
   text-align: center;
   border: 1px solid rgba(255, 234, 0, 0.36);
   background:
@@ -614,11 +615,15 @@ ion-content.event-detail-content {
 }
 
 .wheel-result-modal h2 {
-  margin: 8px 0 16px;
+  margin: 8px 38px 16px;
   color: #fff;
-  font-size: 1.65rem;
+  font-size: clamp(1.35rem, 6.2vw, 1.65rem);
   line-height: 1.02;
   font-weight: 1000;
+  letter-spacing: -0.02em;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  hyphens: none;
 }
 
 .double-button,
@@ -819,5 +824,41 @@ ion-content.event-detail-content {
   .wheel-aura {
     width: 266px;
     height: 266px;
+  }
+}
+
+/* FIX MODALE PREMIO SU TELEFONI STRETTI */
+@media (max-width: 390px) {
+  .wheel-result-backdrop {
+    padding: calc(env(safe-area-inset-top) + 14px) 14px
+      calc(env(safe-area-inset-bottom) + 90px);
+  }
+
+  .wheel-result-modal {
+    width: 100%;
+    padding: 24px 17px 16px;
+  }
+
+  .wheel-result-modal h2 {
+    margin-right: 32px;
+    margin-left: 32px;
+    font-size: clamp(1.22rem, 5.9vw, 1.45rem);
+  }
+
+  .result-icon {
+    width: 92px;
+    height: 92px;
+  }
+
+  .result-icon img {
+    width: 84px;
+    height: 84px;
+  }
+
+  .wheel-result-modal h2,
+  .wheel-result-modal > span,
+  .double-button,
+  .continue-button {
+    max-width: 100%;
   }
 }

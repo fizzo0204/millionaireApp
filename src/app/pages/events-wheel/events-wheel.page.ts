@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { DAILY_WHEEL_REWARDS } from 'src/app/config/daily-events.config';
 import {
@@ -18,7 +18,7 @@ import { NavigationTransitionService } from 'src/app/services/navigation-transit
   templateUrl: './events-wheel.page.html',
   styleUrls: ['./events-wheel.page.scss'],
 })
-export class EventsWheelPage implements OnInit {
+export class EventsWheelPage implements OnInit, OnDestroy {
   private navigation = inject(NavigationTransitionService);
   private ads = inject(AdsService);
   private dailyEventsService = inject(DailyEventsService);
@@ -26,6 +26,8 @@ export class EventsWheelPage implements OnInit {
 
   loading = true;
   wheelSpinning = false;
+  wheelSettling = false;
+  wheelImpact = false;
   wheelRotation = 0;
   wheelReward: DailyWheelRewardResult | null = null;
   wheelDoubleLoading = false;
@@ -33,12 +35,19 @@ export class EventsWheelPage implements OnInit {
 
   readonly wheelRewards = DAILY_WHEEL_REWARDS;
 
+  private tickTimers: ReturnType<typeof setTimeout>[] = [];
+  private impactTimer?: ReturnType<typeof setTimeout>;
+
   async ngOnInit(): Promise<void> {
     await this.refresh();
   }
 
   async ionViewWillEnter(): Promise<void> {
     await this.refresh();
+  }
+
+  ngOnDestroy(): void {
+    this.clearWheelTimers();
   }
 
   get wheelFreeSpinAvailable(): boolean {
@@ -75,8 +84,11 @@ export class EventsWheelPage implements OnInit {
       if (!rewarded) return;
     }
 
+    this.clearWheelTimers();
     this.wheelReward = null;
     this.wheelSpinning = true;
+    this.wheelSettling = false;
+    this.wheelImpact = false;
 
     try {
       const result = await this.dailyEventsService.spinWheel(useAdSpin);
@@ -89,29 +101,39 @@ export class EventsWheelPage implements OnInit {
 
       const safeSegmentIndex = Math.max(segmentIndex, 0);
       const segmentAngle = 360 / this.wheelRewards.length;
-
-      /*
-       * Calcoliamo l'angolo finale esatto dello spicchio premiato.
-       * La ruota ruota nel tempo e quindi dobbiamo considerare anche
-       * la rotazione attuale, altrimenti dopo più giri il premio visivo
-       * può non corrispondere al premio reale.
-       */
       const targetAngle =
         360 - (safeSegmentIndex * segmentAngle + segmentAngle / 2);
 
       const currentAngle = ((this.wheelRotation % 360) + 360) % 360;
       const extraRotationToTarget = (targetAngle - currentAngle + 360) % 360;
 
-      // Aggiungiamo giri completi + solo la rotazione necessaria per finire sul premio corretto.
       this.wheelRotation += 2160 + extraRotationToTarget;
+      this.scheduleWheelTicks();
+
+      this.tickTimers.push(
+        setTimeout(() => {
+          this.wheelSettling = true;
+        }, 1750),
+      );
 
       await this.wait(2800);
 
-      this.wheelReward = result;
+      this.wheelSettling = false;
+      this.wheelImpact = true;
       void this.haptics.success();
+
+      this.impactTimer = setTimeout(() => {
+        this.wheelImpact = false;
+        this.impactTimer = undefined;
+      }, 520);
+
+      await this.wait(420);
+
+      this.wheelReward = result;
       await this.refresh();
     } finally {
       this.wheelSpinning = false;
+      this.wheelSettling = false;
     }
   }
 
@@ -152,8 +174,36 @@ export class EventsWheelPage implements OnInit {
     void this.navigation.navigateByUrl('/events');
   }
 
-  // Piccola utility interna per sincronizzare la durata dell'animazione CSS
-  // con la comparsa della modale del premio.
+  private scheduleWheelTicks(): void {
+    const tickMoments = [
+      110, 210, 305, 395, 485, 575, 665, 760, 860, 965, 1080, 1200, 1330, 1470,
+      1620, 1780, 1950, 2130, 2320, 2520, 2700,
+    ];
+
+    for (const delay of tickMoments) {
+      const timer = setTimeout(() => {
+        if (!this.wheelSpinning) return;
+
+        void this.haptics.light();
+      }, delay);
+
+      this.tickTimers.push(timer);
+    }
+  }
+
+  private clearWheelTimers(): void {
+    for (const timer of this.tickTimers) {
+      clearTimeout(timer);
+    }
+
+    this.tickTimers = [];
+
+    if (this.impactTimer) {
+      clearTimeout(this.impactTimer);
+      this.impactTimer = undefined;
+    }
+  }
+
   private wait(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
