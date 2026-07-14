@@ -778,13 +778,14 @@ ion-content.event-detail-content {
 
 .result-ring {
   left: 50%;
-  top: 28px;
-  width: 132px;
-  height: 132px;
+  top: 80px;
+  width: 148px;
+  height: 148px;
   border-radius: 50%;
   transform: translateX(-50%);
   border: 2px dashed rgba(255, 234, 0, 0.38);
   animation: resultRingSpin 8s linear infinite;
+  z-index: 1;
 }
 
 .result-icon,
