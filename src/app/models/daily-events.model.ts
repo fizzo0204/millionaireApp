@@ -53,6 +53,9 @@ export interface DailyWheelRewardResult {
   avatarDuplicate?: boolean;
   convertedCoins?: number;
   amount?: number;
+  // Identifica il giro che ha generato il premio: serve a impedire che lo
+  // stesso premio venga raddoppiato piu' di una volta.
+  spinId: string;
 }
 
 export interface DailyEventsData {
@@ -65,6 +68,10 @@ export interface DailyEventsData {
     freeSpinDate: string | null;
     lastFreeSpinAt?: unknown | null;
     spinsToday: number;
+    // Ultimo giro effettuato e se il suo premio e' gia' stato raddoppiato:
+    // permette un solo raddoppio per giro, senza limitare il numero di giri.
+    lastSpinId: string | null;
+    lastSpinDoubled: boolean;
   };
   missionsFinalReward: {
     claimedDate: string | null;

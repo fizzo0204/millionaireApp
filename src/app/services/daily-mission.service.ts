@@ -591,6 +591,8 @@ export class DailyMissionService {
         freeSpinDate: null,
         lastFreeSpinAt: null,
         spinsToday: 0,
+        lastSpinId: null,
+        lastSpinDoubled: false,
       },
       dailyChallenge: {
         completedDate: null,

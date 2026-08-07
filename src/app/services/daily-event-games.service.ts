@@ -107,6 +107,25 @@ export class DailyEventGamesService {
           ? avatar.unlockedAvatarIds
           : [];
 
+        dailyEvents.wheel.freeSpinDate = freeSpinAvailable
+          ? this.todayKey
+          : dailyEvents.wheel.freeSpinDate;
+        dailyEvents.wheel.lastFreeSpinAt = freeSpinAvailable
+          ? new Date()
+          : (dailyEvents.wheel.lastFreeSpinAt ?? null);
+        dailyEvents.wheel.spinsToday += 1;
+        dailyEvents.metrics.wheelSpins = this.capWheelSpins(
+          (dailyEvents.metrics.wheelSpins ?? 0) + 1,
+          dailyEvents,
+        );
+
+        // Identifica questo giro: serve solo a consentire un raddoppio per
+        // giro (vedi doubleWheelReward), non limita in alcun modo i giri.
+        const spinId = `${this.todayKey}#${dailyEvents.wheel.spinsToday}`;
+        dailyEvents.wheel.lastSpinId = spinId;
+        dailyEvents.wheel.lastSpinDoubled = false;
+        updatedDailyEvents = dailyEvents;
+
         let avatarId: string | undefined;
         let avatarDuplicate = false;
         let avatarConvertedCoins = 0;
@@ -131,6 +150,7 @@ export class DailyEventGamesService {
               avatarDuplicate,
               convertedCoins: avatarConvertedCoins || undefined,
               amount: avatarConvertedCoins || undefined,
+              spinId,
             };
           } else {
             selectedReward =
@@ -139,19 +159,6 @@ export class DailyEventGamesService {
             amount = selectedReward.amount ?? 5;
           }
         }
-
-        dailyEvents.wheel.freeSpinDate = freeSpinAvailable
-          ? this.todayKey
-          : dailyEvents.wheel.freeSpinDate;
-        dailyEvents.wheel.lastFreeSpinAt = freeSpinAvailable
-          ? new Date()
-          : (dailyEvents.wheel.lastFreeSpinAt ?? null);
-        dailyEvents.wheel.spinsToday += 1;
-        dailyEvents.metrics.wheelSpins = this.capWheelSpins(
-          (dailyEvents.metrics.wheelSpins ?? 0) + 1,
-          dailyEvents,
-        );
-        updatedDailyEvents = dailyEvents;
 
         const updates: UpdateData<DocumentData> = {
           dailyEvents,
@@ -191,6 +198,7 @@ export class DailyEventGamesService {
             label: selectedReward.label,
             doubled: false,
             amount,
+            spinId,
           };
         }
       }),
@@ -207,42 +215,73 @@ export class DailyEventGamesService {
   }
 
   // Raddoppia il premio della ruota quando il premio è monete o XP.
+  // Consentito una sola volta per giro: il controllo e il flag "raddoppiato"
+  // vivono in dailyEvents.wheel (lastSpinId/lastSpinDoubled), non solo nello
+  // stato del componente, cosi non e' possibile raddoppiare lo stesso premio
+  // piu' volte richiamando il servizio direttamente.
   async doubleWheelReward(
     wheelReward: DailyWheelRewardResult,
   ): Promise<DailyWheelRewardResult | null> {
     if (wheelReward.doubled || !wheelReward.amount) return null;
     if (wheelReward.reward.type === 'baseAvatar') return null;
+    if (!wheelReward.spinId) return null;
 
     const user = await firstValueFrom(this.auth.user$);
-    const rewardAmount = wheelReward.amount;
 
     if (!user) return null;
 
-    if (wheelReward.reward.type === 'coins') {
-      const userRef = doc(this.firestore, `users/${user.uid}`);
+    const userRef = doc(this.firestore, `users/${user.uid}`);
+    const rewardAmount = wheelReward.amount;
 
-      await this.runFirestore(() =>
-        runTransaction(this.firestore, async (transaction) => {
-          const snapshot = await transaction.get(userRef);
+    const doubled = await this.runFirestore(() =>
+      runTransaction(this.firestore, async (transaction) => {
+        const snapshot = await transaction.get(userRef);
 
-          if (!snapshot.exists()) return;
+        if (!snapshot.exists()) return false;
 
-          const stats = snapshot.data()['stats'] ?? {};
+        const data = snapshot.data();
+        const dailyEvents = this.dailyMissionService.normalizeDailyEventsData(
+          data['dailyEvents'],
+        );
+
+        const canDouble =
+          dailyEvents.wheel.lastSpinId === wheelReward.spinId &&
+          !dailyEvents.wheel.lastSpinDoubled;
+
+        if (!canDouble) return false;
+
+        dailyEvents.wheel.lastSpinDoubled = true;
+
+        const updates: UpdateData<DocumentData> = { dailyEvents };
+        const stats = data['stats'] ?? {};
+
+        if (wheelReward.reward.type === 'coins') {
           const currentCoins =
             typeof stats?.coins === 'number'
               ? stats.coins
               : this.userStatsService.defaultStats.coins;
 
-          transaction.update(userRef, {
-            'stats.coins': currentCoins + rewardAmount,
-          });
-        }),
-      );
-    }
+          updates['stats.coins'] = currentCoins + rewardAmount;
+        }
 
-    if (wheelReward.reward.type === 'xp') {
-      await this.userStatsService.addXp(user.uid, rewardAmount);
-    }
+        if (wheelReward.reward.type === 'xp') {
+          const currentXp =
+            typeof stats?.xp === 'number'
+              ? stats.xp
+              : this.userStatsService.defaultStats.xp;
+          const updatedXp = currentXp + rewardAmount;
+
+          updates['stats.xp'] = updatedXp;
+          updates['stats.level'] = getLevelFromXp(updatedXp);
+        }
+
+        transaction.update(userRef, updates);
+
+        return true;
+      }),
+    );
+
+    if (!doubled) return null;
 
     return {
       ...wheelReward,
