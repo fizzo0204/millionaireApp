@@ -64,6 +64,8 @@ Un solo documento per utente contiene quasi tutto lo stato di gioco (`stats.coin
 
 Il login nativo Android passa da `@capacitor-firebase/authentication` con `skipNativeAuth: true`: il plugin recupera solo il token, il link/sign-in vero avviene nel Firebase JS SDK (per non perdere l'uid dell'ospite).
 
+`AuthService.deleteAccount()` cancella prima i dati Firestore e solo dopo l'account Firebase Auth, mai il contrario: `firestore.rules` richiede `request.auth.uid` per cancellare `users/{uid}`, e quell'autenticazione sparisce nel momento stesso in cui l'account Auth viene eliminato. Se estendi questo flusso, mantieni l'ordine "dati poi account".
+
 ### Ads e monetizzazione
 
 `AdsService` incapsula `@capacitor-community/admob` (banner + rewarded video). Gli ID annuncio sono in `src/app/config/ads.config.ts`. Non c'è integrazione Google Play Billing: lo shop (`shop.page.ts`) spende solo la valuta virtuale (`TurtleCoins`) tramite `CoinsService`.
