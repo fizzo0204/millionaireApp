@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
+import { ToastController } from '@ionic/angular/standalone';
 import { DAILY_WHEEL_REWARDS } from 'src/app/config/daily-events.config';
 import {
   DailyEventsData,
@@ -23,6 +24,7 @@ export class EventsWheelPage implements OnInit, OnDestroy {
   private ads = inject(AdsService);
   private dailyEventsService = inject(DailyEventsService);
   private haptics = inject(HapticsService);
+  private toastCtrl = inject(ToastController);
 
   loading = true;
   wheelSpinning = false;
@@ -93,7 +95,12 @@ export class EventsWheelPage implements OnInit, OnDestroy {
     try {
       const result = await this.dailyEventsService.spinWheel(useAdSpin);
 
-      if (!result) return;
+      if (!result) {
+        await this.showWheelToast(
+          'Giro non disponibile al momento. Riprova tra poco.',
+        );
+        return;
+      }
 
       const segmentIndex = this.wheelRewards.findIndex(
         (reward) => reward.id === result.reward.id,
@@ -160,6 +167,10 @@ export class EventsWheelPage implements OnInit, OnDestroy {
       if (doubled) {
         this.wheelReward = doubled;
         void this.haptics.success();
+      } else {
+        await this.showWheelToast(
+          'Non è stato possibile raddoppiare il premio. Riprova con il prossimo giro.',
+        );
       }
     } finally {
       this.wheelDoubleLoading = false;
@@ -206,5 +217,18 @@ export class EventsWheelPage implements OnInit, OnDestroy {
 
   private wait(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  // Avvisa l'utente quando ha guardato un video ma l'azione non e' andata
+  // a buon fine (es. stato non piu' valido), cosi non sembra che l'app si
+  // sia bloccata senza motivo.
+  private async showWheelToast(message: string): Promise<void> {
+    const toast = await this.toastCtrl.create({
+      message,
+      duration: 2600,
+      position: 'bottom',
+    });
+
+    await toast.present();
   }
 }
