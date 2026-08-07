@@ -247,102 +247,6 @@ export class ProfilePage {
     return 'bad';
   }
 
-  getAchievements(realStats: AppUserProfile['stats']): AchievementModel[] {
-    const totalAnswers = realStats.correctAnswers + realStats.wrongAnswers;
-
-    const correctPercentage =
-      totalAnswers <= 0
-        ? 0
-        : Math.round((realStats.correctAnswers / totalAnswers) * 100);
-
-    return [
-      {
-        icon: realStats.bestScore >= 10 ? '🏆' : '🔒',
-        title: 'Perfetto!',
-        description: 'Fai 10/10 in un quiz',
-        completed: realStats.bestScore >= 10,
-        progress: `${realStats.bestScore}/10`,
-      },
-      {
-        icon: realStats.streakDays >= 3 ? '🎯' : '🔒',
-        title: 'Costante',
-        description: 'Gioca per 3 giorni di fila',
-        completed: realStats.streakDays >= 3,
-        progress: `${realStats.streakDays}/3`,
-      },
-      {
-        icon: correctPercentage >= 70 ? '⚡' : '🔒',
-        title: 'Preciso',
-        description: 'Raggiungi il 70% di risposte corrette',
-        completed: correctPercentage >= 70,
-        progress: `${correctPercentage}/70%`,
-      },
-      {
-        icon: realStats.quizPlayed >= 100 ? '👑' : '🔒',
-        title: 'Esperto',
-        description: 'Gioca 100 quiz',
-        completed: realStats.quizPlayed >= 100,
-        progress: `${realStats.quizPlayed}/100`,
-      },
-      {
-        icon: realStats.quizPlayed >= 10 ? '🚀' : '🔒',
-        title: 'Partenza',
-        description: 'Gioca 10 quiz',
-        completed: realStats.quizPlayed >= 10,
-        progress: `${realStats.quizPlayed}/10`,
-      },
-      {
-        icon: realStats.quizPlayed >= 50 ? '🔥' : '🔒',
-        title: 'Allenato',
-        description: 'Gioca 50 quiz',
-        completed: realStats.quizPlayed >= 50,
-        progress: `${realStats.quizPlayed}/50`,
-      },
-      {
-        icon: realStats.quizPlayed >= 200 ? '💎' : '🔒',
-        title: 'Veterano',
-        description: 'Gioca 200 quiz',
-        completed: realStats.quizPlayed >= 200,
-        progress: `${realStats.quizPlayed}/200`,
-      },
-      {
-        icon: realStats.streakDays >= 7 ? '📆' : '🔒',
-        title: 'Settimana d’oro',
-        description: 'Gioca per 7 giorni di fila',
-        completed: realStats.streakDays >= 7,
-        progress: `${realStats.streakDays}/7`,
-      },
-      {
-        icon: realStats.streakDays >= 30 ? '🌟' : '🔒',
-        title: 'Inarrestabile',
-        description: 'Gioca per 30 giorni di fila',
-        completed: realStats.streakDays >= 30,
-        progress: `${realStats.streakDays}/30`,
-      },
-      {
-        icon: correctPercentage >= 80 ? '🎯' : '🔒',
-        title: 'Cecchino',
-        description: 'Raggiungi l’80% di risposte corrette',
-        completed: correctPercentage >= 80,
-        progress: `${correctPercentage}/80%`,
-      },
-      {
-        icon: correctPercentage >= 90 ? '🧠' : '🔒',
-        title: 'Genio',
-        description: 'Raggiungi il 90% di risposte corrette',
-        completed: correctPercentage >= 90,
-        progress: `${correctPercentage}/90%`,
-      },
-      {
-        icon: realStats.level >= 10 ? '👑' : '🔒',
-        title: 'Re del quiz',
-        description: 'Raggiungi il livello 10',
-        completed: realStats.level >= 10,
-        progress: `${realStats.level}/10`,
-      },
-    ];
-  }
-
   getFeaturedAchievements(
     realStats: AppUserProfile['stats'],
     profile?: AppUserProfile | null,
@@ -939,7 +843,10 @@ export class ProfilePage {
   }
 
   private isSpecialAvatarAvailable(avatarId: string): boolean {
-    return this.isSpecialAvatarUnlockedByNickname(avatarId);
+    return (
+      this.unlockedAvatarIds.includes(avatarId) ||
+      this.isSpecialAvatarUnlockedByNickname(avatarId)
+    );
   }
 
   private isSpecialAvatarUnlockedByNickname(avatarId: string): boolean {
@@ -962,7 +869,21 @@ export class ProfilePage {
     if (this.lastSpecialIntroKey === nicknameKey) return;
 
     this.lastSpecialIntroKey = nicknameKey;
+    void this.persistSpecialAvatarUnlock(specialIntro.avatarId);
     this.openSpecialIntroModal(specialIntro);
+  }
+
+  // Sblocca l'avatar speciale in modo permanente al primo "trigger" del
+  // nickname segreto, cosi non si perde cambiando poi nickname.
+  private async persistSpecialAvatarUnlock(avatarId: string): Promise<void> {
+    if (this.unlockedAvatarIds.includes(avatarId)) return;
+
+    const user = await firstValueFrom(this.user$);
+
+    if (!user) return;
+
+    await this.userStatsService.unlockAvatar(user.uid, avatarId);
+    this.unlockedAvatarIds = [...this.unlockedAvatarIds, avatarId];
   }
 
   private openSpecialIntroModal(config: SpecialIntroConfig) {

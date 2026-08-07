@@ -247,6 +247,12 @@ export class UserStatsService {
     return this.avatarData.unlockDailyAvatar(uid, avatarId);
   }
 
+  // Sblocca in modo permanente un avatar (es. avatar speciali), indipendente
+  // dalla sorgente: resta sbloccato anche se cambia il motivo che lo ha attivato.
+  async unlockAvatar(uid: string, avatarId: string): Promise<void> {
+    return this.avatarData.addUnlockedAvatarId(uid, avatarId);
+  }
+
   // Salva l'avatar selezionato.
   async saveSelectedAvatar(uid: string, avatarId: string): Promise<void> {
     return this.avatarData.saveSelectedAvatar(uid, avatarId);
