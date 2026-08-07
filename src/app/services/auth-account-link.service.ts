@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import {
   AuthCredential,
+  deleteUser,
+  getAdditionalUserInfo,
   getAuth as getFirebaseAuth,
   signInWithCredential,
   signOut as signOutFirebaseAuth,
@@ -45,9 +47,20 @@ export class AuthAccountLinkService {
       .slice(2)}`;
     const tempApp = initializeApp(environment.firebase, tempAppName);
     const tempAuth = getFirebaseAuth(tempApp);
+    let createdNewAuthUser = false;
 
     try {
       const existingUser = await signInWithCredential(tempAuth, credential);
+
+      /*
+       * signInWithCredential crea automaticamente un utente Firebase Auth se
+       * il provider non ne aveva ancora uno: qui stiamo solo controllando,
+       * quindi se lo ha appena creato lo segnamo per eliminarlo nel finally,
+       * evitando di lasciare account "fantasma" senza profilo TurtleMind.
+       */
+      createdNewAuthUser =
+        getAdditionalUserInfo(existingUser)?.isNewUser === true;
+
       const tempFirestore = getFirebaseFirestore(tempApp);
       const userRef = firestoreDoc(
         tempFirestore,
@@ -87,10 +100,21 @@ export class AuthAccountLinkService {
       );
       return null;
     } finally {
-      try {
-        await signOutFirebaseAuth(tempAuth);
-      } catch {
-        // La app temporanea potrebbe non aver completato il login: va bene cosi.
+      if (createdNewAuthUser && tempAuth.currentUser) {
+        try {
+          await deleteUser(tempAuth.currentUser);
+        } catch (error) {
+          console.warn(
+            "Non sono riuscito a ripulire l'account temporaneo creato dal controllo:",
+            error,
+          );
+        }
+      } else {
+        try {
+          await signOutFirebaseAuth(tempAuth);
+        } catch {
+          // La app temporanea potrebbe non aver completato il login: va bene cosi.
+        }
       }
 
       try {
