@@ -159,12 +159,10 @@ export class ShopService {
       if (avatarDisponibili.length > 0) {
         avatarSbloccato = this.estraiAvatarCasuale(avatarDisponibili);
 
-        await this.userAvatarDataService.updateAvatarData(user.uid, {
-          unlockedAvatarIds: [
-            ...avatarData.unlockedAvatarIds,
-            avatarSbloccato.id,
-          ],
-        });
+        await this.userAvatarDataService.addUnlockedAvatarId(
+          user.uid,
+          avatarSbloccato.id,
+        );
       } else {
         fallbackUsato = true;
         coinsDaAggiungere = config.fallbackCoins ?? config.coins;

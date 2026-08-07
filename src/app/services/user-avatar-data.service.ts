@@ -6,6 +6,7 @@ import {
 } from '@angular/core';
 import {
   Firestore,
+  arrayUnion,
   doc,
   getDoc,
   updateDoc,
@@ -64,15 +65,23 @@ export class UserAvatarDataService {
   }
 
   async unlockDailyAvatar(uid: string, avatarId: string): Promise<void> {
-    const avatar = await this.getAvatarData(uid);
+    await this.addUnlockedAvatarId(uid, avatarId);
+  }
 
-    if (avatar.unlockedAvatarIds.includes(avatarId)) {
-      return;
-    }
+  /*
+   * Aggiunge un avatar alla lista sbloccati con arrayUnion, atomico lato
+   * Firestore: a differenza di un leggi-poi-scrivi, due sblocchi avatar
+   * concorrenti (es. acquisto forziere e daily reward nello stesso istante)
+   * non si sovrascrivono piu' a vicenda.
+   */
+  async addUnlockedAvatarId(uid: string, avatarId: string): Promise<void> {
+    const userRef = doc(this.firestore, `users/${uid}`);
 
-    await this.updateAvatarData(uid, {
-      unlockedAvatarIds: [...avatar.unlockedAvatarIds, avatarId],
-    });
+    await this.runFirestore(() =>
+      updateDoc(userRef, {
+        'avatar.unlockedAvatarIds': arrayUnion(avatarId),
+      }),
+    );
   }
 
   async saveSelectedAvatar(uid: string, avatarId: string): Promise<void> {
