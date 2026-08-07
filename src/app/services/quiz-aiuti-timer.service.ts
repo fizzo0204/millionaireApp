@@ -120,7 +120,13 @@ export class QuizAiutiTimerService {
     if (params.idAiuto === 'switch') {
       const nuovaDomanda = await this.recuperaNuovaDomanda(params);
 
-      if (!nuovaDomanda) {
+      if (!nuovaDomanda || nuovaDomanda.id === params.domandaCorrente.id) {
+        /*
+         * Se non troviamo una domanda diversa da quella attuale (es. il
+         * pool delle "gia viste" e saturo e si ripesca la stessa) non ha
+         * senso aver fatto pagare l'aiuto: rimborsiamo le monete spese.
+         */
+        await this.coinsService.addCoins(aiuto.cost);
         return { esito: 'nessuna_nuova_domanda' };
       }
 
