@@ -107,11 +107,13 @@ export class UserProfileDataService {
       .filter(Boolean);
 
     if (providerIds.length === 0) {
-      return [
-        user.isAnonymous
-          ? AUTH_CONFIG.providers.anonymous
-          : AUTH_CONFIG.providers.google,
-      ];
+      /*
+       * providerData puo risultare momentaneamente vuoto (es. Play Games
+       * subito dopo il link, prima che Firebase JS aggiorni lo stato).
+       * Meglio non indovinare un provider specifico qui: chi chiama unisce
+       * il risultato a quanto gia salvato invece di sovrascriverlo.
+       */
+      return user.isAnonymous ? [AUTH_CONFIG.providers.anonymous] : [];
     }
 
     return Array.from(new Set(providerIds));
@@ -215,7 +217,19 @@ export class UserProfileDataService {
       updates['achievements'] = this.defaultAchievements;
     }
 
-    updates['auth.providerIds'] = authProfile.providerIds;
+    /*
+     * Uniamo invece di sovrascrivere: se providerData risultasse vuoto in
+     * questo istante (vedi getProviderIds) non perdiamo provider gia noti.
+     */
+    const existingProviderIds = (data['auth']?.providerIds ??
+      []) as AppAuthProviderId[];
+    const mergedProviderIds = Array.from(
+      new Set([...existingProviderIds, ...authProfile.providerIds]),
+    );
+
+    if (mergedProviderIds.length > 0) {
+      updates['auth.providerIds'] = mergedProviderIds;
+    }
 
     if (!data['auth']?.createdFromProviderId) {
       updates['auth.createdFromProviderId'] = authProfile.createdFromProviderId;
