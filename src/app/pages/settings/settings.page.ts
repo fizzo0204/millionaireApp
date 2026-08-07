@@ -2,15 +2,17 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { User } from 'firebase/auth';
-import { ModalController } from '@ionic/angular/standalone';
+import { ModalController, ToastController } from '@ionic/angular/standalone';
 import { firstValueFrom } from 'rxjs';
 import { LogoutConfirmModalComponent } from 'src/app/components/logout-confirm-modal/logout-confirm-modal.component';
+import { DeleteAccountConfirmModalComponent } from 'src/app/components/delete-account-confirm-modal/delete-account-confirm-modal.component';
 import { DailyRewardService } from 'src/app/services/daily-reward.service';
 import { AuthService } from 'src/app/services/auth.service';
 import { AudioService } from 'src/app/services/audio';
 import { UserStatsService } from 'src/app/services/user-stats.service';
 import { AuthPromptService } from 'src/app/services/auth-prompt.service';
 import { LogoutDecision } from 'src/app/models/logout.model';
+import { AccountDeletionDecision } from 'src/app/models/account-deletion.model';
 import { environment } from 'src/environments/environment';
 import { TutorialService } from 'src/app/services/tutorial.service';
 import { DailyEventsService } from 'src/app/services/daily-events.service';
@@ -30,6 +32,7 @@ export class SettingsPage {
   clickEnabled = true;
   resetLoading = false;
   arcadeResetLoading = false;
+  deleteAccountLoading = false;
   eventsDebugLoading = false;
   eventsDebugWeekday: number | null = null;
   readonly isDebugMode = !environment.production;
@@ -51,6 +54,7 @@ export class SettingsPage {
     private dailyRewardService: DailyRewardService,
     private authPromptService: AuthPromptService,
     private modalCtrl: ModalController,
+    private toastCtrl: ToastController,
     private tutorialService: TutorialService,
     private dailyEventsService: DailyEventsService,
   ) {
@@ -71,6 +75,12 @@ export class SettingsPage {
 
   shouldShowLinkAccount(user: User | null): boolean {
     return this.authService.isBaseProfile(user);
+  }
+
+  // L'eliminazione account riguarda solo profili con un accesso reale,
+  // non l'ospite anonimo (che ha già il reset debug per ripartire da zero).
+  shouldShowDeleteAccount(user: User | null): boolean {
+    return !!user && !user.isAnonymous;
   }
 
   async logout() {
@@ -94,6 +104,61 @@ export class SettingsPage {
     const result = await modal.onDidDismiss<LogoutDecision>();
 
     return result.data ?? 'cancel';
+  }
+
+  async deleteAccount() {
+    if (this.deleteAccountLoading) return;
+
+    const decision = await this.confirmDeleteAccount();
+
+    if (decision === 'cancel') return;
+
+    this.deleteAccountLoading = true;
+
+    try {
+      const result = await this.authService.deleteAccount();
+
+      if (result === 'success') {
+        await this.navigation.navigateByUrl('/home');
+        await this.showToast('Account eliminato. Ora sei un nuovo ospite.');
+        return;
+      }
+
+      if (result === 'requires-recent-login') {
+        alert(
+          'Per motivi di sicurezza devi aver eseguito l\'accesso di recente. Esegui il logout, accedi di nuovo e riprova.',
+        );
+        return;
+      }
+
+      alert('Errore durante l\'eliminazione dell\'account. Riprova.');
+    } finally {
+      this.deleteAccountLoading = false;
+    }
+  }
+
+  private async confirmDeleteAccount(): Promise<AccountDeletionDecision> {
+    const modal = await this.modalCtrl.create({
+      component: DeleteAccountConfirmModalComponent,
+      cssClass: 'delete-account-confirm-ion-modal',
+      backdropDismiss: false,
+    });
+
+    await modal.present();
+
+    const result = await modal.onDidDismiss<AccountDeletionDecision>();
+
+    return result.data ?? 'cancel';
+  }
+
+  private async showToast(message: string): Promise<void> {
+    const toast = await this.toastCtrl.create({
+      message,
+      duration: 2600,
+      position: 'bottom',
+    });
+
+    await toast.present();
   }
 
   async openLoginPrompt() {

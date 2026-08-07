@@ -11,6 +11,7 @@ import {
   AuthCredential,
   signInWithPopup,
   FacebookAuthProvider,
+  deleteUser,
   signOut as signOutFirebaseAuth,
 } from 'firebase/auth';
 import { Capacitor } from '@capacitor/core';
@@ -30,6 +31,8 @@ import {
   ExistingProviderProfileState,
 } from './auth-account-link.service';
 import { UserProfileMigrationSnapshot } from 'src/app/models/user-stats.model';
+
+export type DeleteAccountResult = 'success' | 'requires-recent-login' | 'error';
 
 @Injectable({
   providedIn: 'root',
@@ -610,6 +613,49 @@ export class AuthService {
       this.userSubject.next(anon.user);
     } catch (err) {
       console.error('❌ Errore durante logout:', err);
+    } finally {
+      this.loadingSubject.next(false);
+    }
+  }
+
+  // Elimina definitivamente account e dati dell'utente corrente.
+  async deleteAccount(): Promise<DeleteAccountResult> {
+    const currentUser = firebaseAuth.currentUser;
+
+    if (!currentUser) return 'error';
+
+    this.loadingSubject.next(true);
+
+    try {
+      /*
+       * Cancelliamo prima i dati Firestore, mentre siamo ancora autenticati
+       * come quell'utente: le regole di sicurezza richiedono request.auth.uid,
+       * che sparisce non appena l'account Auth viene eliminato.
+       */
+      await this.userStatsService.deleteUserProfileData(currentUser.uid);
+
+      try {
+        await deleteUser(currentUser);
+      } catch (error: any) {
+        if (error?.code === 'auth/requires-recent-login') {
+          this.debug('Eliminazione account: richiede login recente.');
+          return 'requires-recent-login';
+        }
+
+        throw error;
+      }
+
+      await FirebaseAuthentication.signOut();
+      this.suppressInitialPlayGamesAutoSignIn();
+
+      const anon = await signInAnonymously(firebaseAuth);
+      await this.userStatsService.ensureUserProfile(anon.user);
+      this.userSubject.next(anon.user);
+
+      return 'success';
+    } catch (error) {
+      console.error('❌ Errore durante eliminazione account:', error);
+      return 'error';
     } finally {
       this.loadingSubject.next(false);
     }

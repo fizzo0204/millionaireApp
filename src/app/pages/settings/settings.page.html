@@ -80,6 +80,31 @@
           name="chevron-forward-outline"
         ></ion-icon>
       </button>
+      } @if (shouldShowDeleteAccount(user)) {
+      <button
+        class="delete-account-card"
+        type="button"
+        [disabled]="deleteAccountLoading"
+        (click)="deleteAccount()"
+      >
+        <div class="delete-account-icon">
+          <ion-icon name="trash-outline"></ion-icon>
+        </div>
+
+        <div class="delete-account-text">
+          <h3>Elimina account</h3>
+          <p>Cancella per sempre account e progressi</p>
+        </div>
+
+        @if (!deleteAccountLoading) {
+        <ion-icon
+          class="delete-account-arrow"
+          name="chevron-forward-outline"
+        ></ion-icon>
+        } @else {
+        <ion-spinner name="dots"></ion-spinner>
+        }
+      </button>
       } }
       <!-- TODO release: riattivare @if (isDebugMode) per nascondere i tool debug in produzione. -->
       <button
