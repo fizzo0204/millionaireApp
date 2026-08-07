@@ -3,7 +3,14 @@ import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { ModalController } from '@ionic/angular/standalone';
 import { User } from 'firebase/auth';
-import { combineLatest, map, of, shareReplay, switchMap } from 'rxjs';
+import {
+  combineLatest,
+  firstValueFrom,
+  map,
+  of,
+  shareReplay,
+  switchMap,
+} from 'rxjs';
 import { AUTH_CONFIG } from 'src/app/config/auth.config';
 import { AppUserProfile } from 'src/app/models/user-stats.model';
 import { AuthService } from 'src/app/services/auth.service';
@@ -113,11 +120,23 @@ export class AnonymousModalComponent {
     );
   }
 
-  // Non cambia account: l'utente resta ospite e continua a giocare.
+  // Non cambia account: l'utente resta ospite (o resta su Play Games senza
+  // aggiungere altri provider) e continua a giocare.
   async continueAsGuest() {
     if (this.isLoading) return;
 
-    this.auth.rememberGuestChoice();
+    const user = await firstValueFrom(this.auth.user$);
+
+    /*
+     * Sopprimiamo il riaggancio automatico a Play Games solo per chi sceglie
+     * davvero di restare ospite anonimo. Chi e' gia' su Play Games e rifiuta
+     * solo di aggiungere Google/Facebook non deve perdere il riaggancio
+     * automatico se la sessione locale si perde senza un logout esplicito.
+     */
+    if (user?.isAnonymous) {
+      this.auth.rememberGuestChoice();
+    }
+
     await this.close();
   }
 
