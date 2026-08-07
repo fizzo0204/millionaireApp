@@ -11,31 +11,39 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
+    // Pannello admin (solo lettura/scrittura per l'account TurtleMind ufficiale).
+    // L'email nel token è verificata da Firebase Auth, non è falsificabile dal client.
+    function isAdmin() {
+      return isSignedIn()
+        && request.auth.token.email == 'turtlemind.dev@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+
     match /questions/{questionId} {
       allow read: if resource.data.active == true;
       allow create, update, delete: if false;
     }
 
     match /users/{uid} {
-      allow read: if isOwner(uid);
+      allow read: if isOwner(uid) || isAdmin();
       allow create: if isOwner(uid);
-      allow update: if isOwner(uid);
-      allow delete: if isOwner(uid);
+      allow update: if isOwner(uid) || isAdmin();
+      allow delete: if isOwner(uid) || isAdmin();
 
       match /completedLevels/{levelId} {
-        allow read, create, update, delete: if isOwner(uid);
+        allow read, create, update, delete: if isOwner(uid) || isAdmin();
       }
 
       match /quizHistory/{historyId} {
-        allow read, create, update, delete: if isOwner(uid);
+        allow read, create, update, delete: if isOwner(uid) || isAdmin();
       }
 
       match /progress/{progressId} {
-        allow read, create, update, delete: if isOwner(uid);
+        allow read, create, update, delete: if isOwner(uid) || isAdmin();
       }
 
       match /{document=**} {
-        allow read, create, update, delete: if isOwner(uid);
+        allow read, create, update, delete: if isOwner(uid) || isAdmin();
       }
     }
 

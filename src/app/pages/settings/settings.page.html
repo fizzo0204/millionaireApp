@@ -106,6 +106,20 @@
         }
       </button>
       } }
+      @if (user$ | async; as adminUser) { @if (isAdmin(adminUser)) {
+      <button class="login-card" type="button" (click)="openAdminPanel()">
+        <div class="login-icon">
+          <ion-icon name="shield-checkmark-outline"></ion-icon>
+        </div>
+
+        <div class="login-text">
+          <h3>Pannello Admin</h3>
+          <p>Cerca e gestisci gli account utente</p>
+        </div>
+
+        <ion-icon class="login-arrow" name="chevron-forward-outline"></ion-icon>
+      </button>
+      } }
       <!-- TODO release: riattivare @if (isDebugMode) per nascondere i tool debug in produzione. -->
       <button
         class="logout-card"

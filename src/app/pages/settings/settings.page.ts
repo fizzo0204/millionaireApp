@@ -17,6 +17,7 @@ import { environment } from 'src/environments/environment';
 import { TutorialService } from 'src/app/services/tutorial.service';
 import { DailyEventsService } from 'src/app/services/daily-events.service';
 import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
+import { AdminUsersService } from 'src/app/services/admin-users.service';
 
 @Component({
   selector: 'app-settings',
@@ -57,6 +58,7 @@ export class SettingsPage {
     private toastCtrl: ToastController,
     private tutorialService: TutorialService,
     private dailyEventsService: DailyEventsService,
+    private adminUsersService: AdminUsersService,
   ) {
     this.musicEnabled = this.audioService.isMusicEnabled();
     this.clickEnabled = this.audioService.isClickEnabled();
@@ -75,6 +77,14 @@ export class SettingsPage {
 
   shouldShowLinkAccount(user: User | null): boolean {
     return this.authService.isBaseProfile(user);
+  }
+
+  isAdmin(user: User | null): boolean {
+    return this.adminUsersService.isAdminUser(user);
+  }
+
+  async openAdminPanel(): Promise<void> {
+    await this.navigation.navigateByUrl('/admin-users');
   }
 
   // L'eliminazione account riguarda solo profili con un accesso reale,

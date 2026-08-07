@@ -36,6 +36,10 @@ import {
   play,
   gameControllerOutline,
   sparklesOutline,
+  ellipsisVertical,
+  addCircleOutline,
+  colorPaletteOutline,
+  shieldCheckmarkOutline,
 } from 'ionicons/icons';
 
 import { defineCustomElements as ionicElements } from '@ionic/core/loader';
@@ -88,4 +92,8 @@ addIcons({
   play: play,
   'game-controller-outline': gameControllerOutline,
   'sparkles-outline': sparklesOutline,
+  'ellipsis-vertical': ellipsisVertical,
+  'add-circle-outline': addCircleOutline,
+  'color-palette-outline': colorPaletteOutline,
+  'shield-checkmark-outline': shieldCheckmarkOutline,
 });
