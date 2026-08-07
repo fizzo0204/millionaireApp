@@ -342,9 +342,29 @@ export class QuizPage implements OnInit, OnDestroy {
     this.lifeLostForLeaving = true;
     this.navigatingAway = true;
 
-    await this.livesService.spendLife();
-
     this.stopTimer();
+
+    if (this.dailyChallengeMode) {
+      /*
+       * Uscire dalla sfida giornaliera non costa mai una vita (vedi
+       * confirmExitQuiz e il testo della modale di uscita): andare in
+       * background per una notifica/telefonata/blocco schermo non va
+       * trattato come un abbandono punito.
+       */
+      this.goToExitPage();
+      return;
+    }
+
+    if (this.arcadeMode) {
+      const user = await firstValueFrom(this.auth.user$);
+
+      await this.quizScalataService.registraErroreScalata(user);
+      await this.livesService.spendLife();
+      this.goToExitPage();
+      return;
+    }
+
+    await this.livesService.spendLife();
     this.goToExitPage();
   }
 
