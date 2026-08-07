@@ -22,6 +22,10 @@ import {
 } from 'src/app/models/daily-reward.model';
 import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
 import { getLevelFromXp } from 'src/app/utils/level-progress.util';
+import {
+  getTodayKey,
+  resolveStreakDay,
+} from 'src/app/utils/daily-reward-streak.util';
 
 @Injectable({
   providedIn: 'root',
@@ -77,10 +81,33 @@ export class UserDailyRewardDataService {
       return this.defaultDailyReward;
     }
 
-    return {
+    const mergedDailyReward: UserDailyRewardData = {
       ...this.defaultDailyReward,
       ...dailyReward,
     };
+
+    const resolvedCurrentDay = resolveStreakDay(
+      mergedDailyReward.currentDay,
+      mergedDailyReward.lastClaimDate,
+      getTodayKey(),
+    );
+
+    if (resolvedCurrentDay === mergedDailyReward.currentDay) {
+      return mergedDailyReward;
+    }
+
+    /*
+     * La streak si e' interrotta (e' passato piu' di un giorno dall'ultimo
+     * claim): salviamo subito il reset a giorno 1, cosi anche un claim
+     * successivo parte da uno stato coerente con quello mostrato in UI.
+     */
+    await this.runFirestore(() =>
+      updateDoc(userRef, {
+        'dailyReward.currentDay': resolvedCurrentDay,
+      }),
+    );
+
+    return { ...mergedDailyReward, currentDay: resolvedCurrentDay };
   }
 
   async updateDailyRewardData(
@@ -123,9 +150,17 @@ export class UserDailyRewardDataService {
           return null;
         }
 
-        const currentDay = Math.min(
+        const storedCurrentDay = Math.min(
           Math.max(dailyReward.currentDay ?? 1, 1),
           maxRewardDay,
+        );
+
+        // Se e' passato piu' di un giorno dall'ultimo claim la streak si e'
+        // interrotta: il giorno valido per il claim di oggi torna a essere 1.
+        const currentDay = resolveStreakDay(
+          storedCurrentDay,
+          dailyReward.lastClaimDate,
+          todayKey,
         );
 
         if (
