@@ -267,8 +267,8 @@
         <span>Vite</span>
 
         <div>
-          @if (lives$ | async; as lives) { @for (_ of [].constructor(lives);
-          track $index) { ❤️ } }
+          @if (lives$ | async; as lives) { @for (_ of [].constructor(lives > 0
+          ? lives : 0); track $index) { ❤️ } }
         </div>
       </div>
     </div>
