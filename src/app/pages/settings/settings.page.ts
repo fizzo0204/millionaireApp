@@ -13,6 +13,7 @@ import { AccountDeletionDecision } from 'src/app/models/account-deletion.model';
 import { TutorialService } from 'src/app/services/tutorial.service';
 import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 import { AdminUsersService } from 'src/app/services/admin-users.service';
+import { LEGAL_CONFIG } from 'src/app/config/legal.config';
 
 @Component({
   selector: 'app-settings',
@@ -27,6 +28,7 @@ export class SettingsPage {
   musicEnabled = true;
   clickEnabled = true;
   deleteAccountLoading = false;
+  readonly privacyPolicyUrl = LEGAL_CONFIG.privacyPolicyUrl;
 
   constructor(
     private audioService: AudioService,
