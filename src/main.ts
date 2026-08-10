@@ -61,12 +61,7 @@ bootstrapApplication(AppComponent, {
     provideAuth(() => getAuth()),
     provideFirestore(() => getFirestore()),
   ],
-})
-  .then(() => {
-    console.log('✅ Angular + Ionic bootstrap completato');
-    console.log('🔥 Firebase + Firestore configurati');
-  })
-  .catch((err) => console.error('❌ Errore Bootstrap:', err));
+}).catch((err) => console.error('❌ Errore Bootstrap:', err));
 
 addIcons({
   'home-outline': homeOutline,

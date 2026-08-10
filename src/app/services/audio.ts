@@ -160,7 +160,6 @@ export class AudioService {
 
       return true;
     } catch {
-      console.log('🎵 Autoplay bloccato');
       return false;
     } finally {
       this.isStartingMusic = false;
