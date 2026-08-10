@@ -11,10 +11,10 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <!-- ⭐ APP ID ADMOB (TEST) -->
+        <!-- ⭐ APP ID ADMOB -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"
+            android:value="ca-app-pub-8570204656148700~8038470759"
         />
         <meta-data
             android:name="com.facebook.sdk.ApplicationId"
