@@ -72,6 +72,8 @@ Il login nativo Android passa da `@capacitor-firebase/authentication` con `skipN
 
 `AdsService` incapsula `@capacitor-community/admob` (banner + rewarded video). Gli ID annuncio sono in `src/app/config/ads.config.ts`. Non c'è integrazione Google Play Billing: lo shop (`shop.page.ts`) spende solo la valuta virtuale (`TurtleCoins`) tramite `CoinsService`.
 
+`AdsService.initialize()` non chiama `AdMob.initialize()` direttamente: prima passa da `ensureConsent()`, che gestisce il flusso GDPR/UMP (`AdMob.requestConsentInfo()` + `AdMob.showConsentForm()` se richiesto) e inizializza AdMob solo se `canRequestAds` è vero. Se aggiungi un nuovo punto che mostra annunci, passa sempre da `initialize()`/`showBanner()`/`showRewardedAd()` esistenti invece di chiamare `AdMob` direttamente, altrimenti salti il consenso. Il banner usa `BannerAdSize.ADAPTIVE_BANNER`, non `BANNER`: quest'ultimo veniva renderizzato vicino al bordo sinistro invece che centrato per un bug di `@capacitor-community/admob` nel calcolo dei margini (non c'entra il nostro codice).
+
 ### Convenzioni
 
 - Testo dei commenti e nomi di alcuni servizi/metodi sono in italiano (es. `quiz-completamento.service.ts`, `completaQuizNormale`); segui questa convenzione quando estendi quei file invece di passare all'inglese a metà file.
