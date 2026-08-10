@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import {
   AdMob,
+  AdmobConsentStatus,
   BannerAdOptions,
   BannerAdSize,
   BannerAdPosition,
@@ -12,13 +13,14 @@ import { App } from '@capacitor/app';
 import { AudioService } from './audio';
 import { ADS_CONFIG } from '../config/ads.config';
 import { PluginListenerHandle } from '@capacitor/core';
-import { Subject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AdsService {
   private rewardedAdCompletedSubject = new Subject<void>();
+  private privacyOptionsRequiredSubject = new BehaviorSubject<boolean>(false);
   private bannerVisible = false;
   private bannerWanted = false;
   private bannerOperationId = 0;
@@ -29,6 +31,10 @@ export class AdsService {
   readonly rewardedAdCompleted$ =
     this.rewardedAdCompletedSubject.asObservable();
 
+  // Vero quando AdMob richiede di mostrare un punto d'accesso "gestisci consenso" in UI.
+  readonly privacyOptionsRequired$ =
+    this.privacyOptionsRequiredSubject.asObservable();
+
   constructor(private audioService: AudioService) {
     void this.initialize();
   }
@@ -38,10 +44,14 @@ export class AdsService {
 
     if (this.initializePromise) return this.initializePromise;
 
-    this.initializePromise = AdMob.initialize()
-      .then(() => {
-        this.adMobInitialized = true;
-        return true;
+    this.initializePromise = this.ensureConsent()
+      .then((canRequestAds) => {
+        if (!canRequestAds) return false;
+
+        return AdMob.initialize().then(() => {
+          this.adMobInitialized = true;
+          return true;
+        });
       })
       .catch((error) => {
         console.warn('Errore inizializzazione AdMob:', error);
@@ -52,6 +62,56 @@ export class AdsService {
       });
 
     return this.initializePromise;
+  }
+
+  // Riapre il form di gestione del consenso pubblicitario (es. da Impostazioni).
+  async openPrivacyOptionsForm(): Promise<void> {
+    try {
+      await AdMob.showPrivacyOptionsForm();
+
+      const consentInfo = await AdMob.requestConsentInfo();
+
+      // 'REQUIRED' invece dell'enum PrivacyOptionsRequirementStatus: @capacitor-community/admob@7.2.0
+      // dichiara l'enum ma non lo ri-esporta da consent/index.d.ts (bug nei type, non nel runtime).
+      this.privacyOptionsRequiredSubject.next(
+        consentInfo.privacyOptionsRequirementStatus === 'REQUIRED',
+      );
+    } catch (error) {
+      console.warn('Errore apertura opzioni privacy AdMob:', error);
+    }
+  }
+
+  /*
+   * Flusso di consenso GDPR/UMP: va eseguito prima di AdMob.initialize() e prima
+   * di caricare qualsiasi annuncio. Se il consenso e richiesto e il form e
+   * disponibile, lo mostra (contenuto configurato in console AdMob). Il valore
+   * di ritorno (canRequestAds) e l'unica fonte di verita su cui basarsi per
+   * decidere se e lecito richiedere annunci: se resta false (es. consenso
+   * richiesto ma form non disponibile, offline) AdMob non viene inizializzato
+   * e banner/rewarded restano semplicemente no-op finche non si riprova.
+   */
+  private async ensureConsent(): Promise<boolean> {
+    try {
+      let consentInfo = await AdMob.requestConsentInfo();
+
+      if (
+        consentInfo.status === AdmobConsentStatus.REQUIRED &&
+        consentInfo.isConsentFormAvailable
+      ) {
+        consentInfo = await AdMob.showConsentForm();
+      }
+
+      // 'REQUIRED' invece dell'enum PrivacyOptionsRequirementStatus: @capacitor-community/admob@7.2.0
+      // dichiara l'enum ma non lo ri-esporta da consent/index.d.ts (bug nei type, non nel runtime).
+      this.privacyOptionsRequiredSubject.next(
+        consentInfo.privacyOptionsRequirementStatus === 'REQUIRED',
+      );
+
+      return consentInfo.canRequestAds;
+    } catch (error) {
+      console.warn('Errore consenso AdMob/UMP:', error);
+      return false;
+    }
   }
 
   async showBanner() {

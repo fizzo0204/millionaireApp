@@ -293,10 +293,20 @@
 
 .privacy-policy-link {
   display: block;
-  margin: 22px 0 8px;
+  width: 100%;
+  margin: 22px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
   text-align: center;
   font-size: 0.72rem;
   font-weight: 600;
   color: rgba(219, 234, 254, 0.5);
   text-decoration: underline;
+  cursor: pointer;
+}
+
+.privacy-policy-link + .privacy-policy-link {
+  margin-top: 10px;
 }

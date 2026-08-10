@@ -13,6 +13,7 @@ import { AccountDeletionDecision } from 'src/app/models/account-deletion.model';
 import { TutorialService } from 'src/app/services/tutorial.service';
 import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 import { AdminUsersService } from 'src/app/services/admin-users.service';
+import { AdsService } from 'src/app/services/ads.service';
 import { LEGAL_CONFIG } from 'src/app/config/legal.config';
 
 @Component({
@@ -29,6 +30,7 @@ export class SettingsPage {
   clickEnabled = true;
   deleteAccountLoading = false;
   readonly privacyPolicyUrl = LEGAL_CONFIG.privacyPolicyUrl;
+  readonly privacyOptionsRequired$ = this.adsService.privacyOptionsRequired$;
 
   constructor(
     private audioService: AudioService,
@@ -39,6 +41,7 @@ export class SettingsPage {
     private toastCtrl: ToastController,
     private tutorialService: TutorialService,
     private adminUsersService: AdminUsersService,
+    private adsService: AdsService,
   ) {
     this.musicEnabled = this.audioService.isMusicEnabled();
     this.clickEnabled = this.audioService.isClickEnabled();
@@ -158,5 +161,9 @@ export class SettingsPage {
 
   async openTutorial() {
     await this.tutorialService.openManualTutorial();
+  }
+
+  async openPrivacyOptions() {
+    await this.adsService.openPrivacyOptionsForm();
   }
 }

@@ -130,5 +130,15 @@
     >
       Privacy Policy
     </a>
+
+    @if (privacyOptionsRequired$ | async) {
+    <button
+      class="privacy-policy-link"
+      type="button"
+      (click)="openPrivacyOptions()"
+    >
+      Gestisci consenso pubblicitario
+    </button>
+    }
   </div>
 </ion-content>
