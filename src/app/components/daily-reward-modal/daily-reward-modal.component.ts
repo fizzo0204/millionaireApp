@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ModalController } from '@ionic/angular/standalone';
 import { DailyRewardService } from 'src/app/services/daily-reward.service';
 import { AdsService } from 'src/app/services/ads.service';
+import { NotificationsService } from 'src/app/services/notifications.service';
 
 import {
   DailyChestReward,
@@ -58,6 +59,7 @@ export class DailyRewardModalComponent {
     public dailyRewardService: DailyRewardService,
     private ads: AdsService,
     private modalCtrl: ModalController,
+    private notificationsService: NotificationsService,
   ) {}
 
   get rewards() {
@@ -198,6 +200,7 @@ export class DailyRewardModalComponent {
     }
 
     this.claimedNow = true;
+    void this.notificationsService.requestPermissionIfNeeded();
     this.chestReward = preparedClaim.chestReward ?? null;
     this.epicAvatarReward = preparedClaim.epicAvatarReward ?? null;
     this.unlockedAvatar = preparedClaim.unlockedAvatar ?? null;

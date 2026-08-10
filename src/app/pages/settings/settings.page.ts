@@ -14,7 +14,9 @@ import { TutorialService } from 'src/app/services/tutorial.service';
 import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 import { AdminUsersService } from 'src/app/services/admin-users.service';
 import { AdsService } from 'src/app/services/ads.service';
+import { NotificationsService } from 'src/app/services/notifications.service';
 import { LEGAL_CONFIG } from 'src/app/config/legal.config';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-settings',
@@ -24,10 +26,13 @@ import { LEGAL_CONFIG } from 'src/app/config/legal.config';
   styleUrls: ['./settings.page.scss'],
 })
 export class SettingsPage {
+  readonly environment = environment;
+
   user$ = this.authService.user$;
 
   musicEnabled = true;
   clickEnabled = true;
+  notificationsEnabled = true;
   deleteAccountLoading = false;
   readonly privacyPolicyUrl = LEGAL_CONFIG.privacyPolicyUrl;
   readonly privacyOptionsRequired$ = this.adsService.privacyOptionsRequired$;
@@ -42,9 +47,11 @@ export class SettingsPage {
     private tutorialService: TutorialService,
     private adminUsersService: AdminUsersService,
     private adsService: AdsService,
+    private notificationsService: NotificationsService,
   ) {
     this.musicEnabled = this.audioService.isMusicEnabled();
     this.clickEnabled = this.audioService.isClickEnabled();
+    this.notificationsEnabled = this.notificationsService.isEnabled();
   }
 
   toggleMusic() {
@@ -55,6 +62,35 @@ export class SettingsPage {
   toggleClick() {
     this.clickEnabled = !this.clickEnabled;
     this.audioService.setClickEnabled(this.clickEnabled);
+  }
+
+  toggleNotifications() {
+    this.notificationsEnabled = !this.notificationsEnabled;
+    this.notificationsService.setEnabled(this.notificationsEnabled);
+
+    if (!this.notificationsEnabled) {
+      void this.notificationsService.cancelAll();
+    }
+  }
+
+  async debugTestLivesNotification() {
+    const scheduled = await this.notificationsService.debugTestLivesFullNotification();
+
+    await this.showToast(
+      scheduled
+        ? 'Notifica "vite piene" in arrivo tra 10s'
+        : 'Notifiche disattivate o permesso non concesso',
+    );
+  }
+
+  async debugTestDailyRewardNotification() {
+    const scheduled = await this.notificationsService.debugTestDailyRewardNotification();
+
+    await this.showToast(
+      scheduled
+        ? 'Notifica "daily reward" in arrivo tra 10s'
+        : 'Notifiche disattivate o permesso non concesso',
+    );
   }
 
   shouldShowLinkAccount(user: User | null): boolean {

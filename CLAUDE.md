@@ -12,13 +12,13 @@ Il progetto è Ionic/Angular con Capacitor per la parte Android. Non ci sono scr
 
 ```bash
 npm start              # ng serve, dev server web su http://localhost:4200
-npm run build           # ng build (usa environment.ts, non prod)
+npm run build           # ng build (defaultConfiguration è "production" in angular.json: usa environment.prod.ts anche senza flag!)
 npm run watch            # ng build --watch --configuration development
 npm test                # ng test (Karma + Jasmine)
 npm run lint            # ng lint (ESLint, regole @angular-eslint)
 ```
 
-- Non esiste un target `build --configuration production` esplicito in `package.json`: per una build di produzione va lanciato `ng build --configuration production` a mano.
+- **Attenzione**: `angular.json` → `architect.build.defaultConfiguration` è `"production"`. Questo significa che `ng build`/`npm run build`/`ionic build` senza `--configuration` esplicito applicano comunque il `fileReplacements` di produzione (`environment.ts` → `environment.prod.ts`, `production: true`), anche se sembra un comando "neutro". Per una build di sviluppo (quella con gli strumenti di debug gatekeepati da `environment.production` visibili) serve sempre `--configuration development` esplicito: `ionic build --configuration development` o `ng build --configuration development`.
 - Non ci sono suite e2e configurate.
 - Per eseguire un singolo test Karma, filtra da browser (Karma apre Chrome) oppure usa `fdescribe`/`fit` temporanei nello spec — non c'è un runner headless con filtro da CLI pre-configurato.
 
@@ -30,6 +30,13 @@ npx cap open android     # apre Android Studio
 ```
 
 Il flusso reale è: `ng build` → `npx cap sync android` → build/run da Android Studio o `android/gradlew`. La cartella `www/` è generata (ignorata da git) ed è il `webDir` di Capacitor.
+
+## Workflow di sviluppo
+
+Dopo aver completato una fix o una nuova funzionalità (e prima di riportarla come conclusa):
+
+1. Lancia `ionic build --configuration development` seguito da `npx cap sync android` — build di sviluppo, così restano visibili gli strumenti di debug gatekeepati con `environment.production` (vedi Convenzioni). Vedi la nota sopra: senza `--configuration development` esplicito si finisce in produzione anche per sbaglio.
+2. Non fare commit né push in automatico a fine lavoro: di' semplicemente che la modifica è pronta e che si può aprire Android Studio (`npx cap open android`) e testare direttamente sul device/emulatore. Commit e push restano un'azione esplicita, solo su richiesta.
 
 ## Architettura
 
@@ -73,6 +80,20 @@ Il login nativo Android passa da `@capacitor-firebase/authentication` con `skipN
 `AdsService` incapsula `@capacitor-community/admob` (banner + rewarded video). Gli ID annuncio sono in `src/app/config/ads.config.ts`. Non c'è integrazione Google Play Billing: lo shop (`shop.page.ts`) spende solo la valuta virtuale (`TurtleCoins`) tramite `CoinsService`.
 
 `AdsService.initialize()` non chiama `AdMob.initialize()` direttamente: prima passa da `ensureConsent()`, che gestisce il flusso GDPR/UMP (`AdMob.requestConsentInfo()` + `AdMob.showConsentForm()` se richiesto) e inizializza AdMob solo se `canRequestAds` è vero. Se aggiungi un nuovo punto che mostra annunci, passa sempre da `initialize()`/`showBanner()`/`showRewardedAd()` esistenti invece di chiamare `AdMob` direttamente, altrimenti salti il consenso. Il banner usa `BannerAdSize.ADAPTIVE_BANNER`, non `BANNER`: quest'ultimo veniva renderizzato vicino al bordo sinistro invece che centrato per un bug di `@capacitor-community/admob` nel calcolo dei margini (non c'entra il nostro codice).
+
+### Notifiche locali
+
+`NotificationsService` (`src/app/services/notifications.service.ts`) usa `@capacitor/local-notifications`, non push FCM: niente backend proprio, quindi i due eventi (vite piene, daily reward/streak in scadenza) vengono calcolati e schedulati interamente dal client in base a dati già noti (`LivesService.getFullRecoveryDate()`, `DailyRewardService.getState().claimedToday`). Config in `src/app/config/notifications.config.ts` (id notifiche, canale, orario reminder, testi).
+
+- Il canale usato è `reminders` (importanza Alta, creato via `LocalNotifications.createChannel()` a ogni avvio, idempotente) — **non** il canale `default` auto-creato dal plugin, che nasce con importanza silenziosa e non è più modificabile una volta creato su Android.
+- `AppComponent.listenToAppState()` chiama `notificationsService.scheduleAll()` quando l'app va in background (`appStateChange` con `isActive: false`). Volutamente **non** chiama `cancelAll()` al ritorno in foreground: `LocalNotifications.cancel()` rimuove anche una notifica già consegnata e visibile, non solo il timer futuro — cancellarla al rientro in app cancellava/nascondeva notifiche appena arrivate. Lo stato si autocorregge comunque al prossimo giro in background.
+- Il permesso Android viene richiesto la prima volta dopo il primo claim del daily reward (`daily-reward-modal.component.ts`), non al primo avvio a freddo.
+- I due pulsanti di debug in Impostazioni (gatekeepati con `environment.production`, vedi Convenzioni) usano id di notifica dedicati (`debugLivesFull`/`debugDailyReward`, diversi da `livesFull`/`dailyReward`) apposta per non essere mai toccati da `scheduleAll()`/`cancelAll()` del flusso reale.
+
+**Bug aperto (2026-08-10)**: le notifiche di debug funzionano (confermato dall'utente: testo e canale con popup ok). La notifica reale "vite piene" (`scheduleLivesFullNotification`, innescata perdendo una vita e poi mettendo l'app in background) **non arriva ancora**, anche dopo il fix del canale silenzioso. Ipotesi da verificare nella prossima sessione, in ordine di probabilità:
+1. Il test potrebbe non aver davvero messo l'app in background (`scheduleAll()` scatta solo su `appStateChange isActive:false`, non su un countdown a schermo acceso) — verificare con l'utente la sequenza esatta del test.
+2. Race condition tra `LivesService.spendLife()` (scrittura Firestore) e l'aggiornamento locale di `lastLifeUpdateTime` dallo stream `docData()`: se il backgrounding avviene prima che lo stream si aggiorni, `getFullRecoveryDate()` ritorna `null` e `scheduleLivesFullNotification()` silenziosamente annulla invece di schedulare (nessun errore, nessun log).
+Prossimo passo consigliato: aggiungere un log temporaneo in `scheduleLivesFullNotification()` per vedere cosa restituisce `getFullRecoveryDate()` nel momento reale del backgrounding, invece di continuare a ipotizzare alla cieca.
 
 ### Convenzioni
 

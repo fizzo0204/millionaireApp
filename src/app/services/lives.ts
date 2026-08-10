@@ -73,6 +73,20 @@ export class LivesService {
     return this.livesSubject.value;
   }
 
+  // Data in cui tutte le vite saranno recuperate, o null se sono gia' piene.
+  getFullRecoveryDate(): Date | null {
+    const lives = this.getLives();
+
+    if (lives >= LIVES_CONFIG.maxLives) return null;
+    if (!this.lastLifeUpdateTime) return null;
+
+    const livesNeeded = LIVES_CONFIG.maxLives - lives;
+
+    return new Date(
+      this.lastLifeUpdateTime + livesNeeded * LIVES_CONFIG.recoveryTime,
+    );
+  }
+
   async spendLife(): Promise<boolean> {
     const user = await firstValueFrom(this.auth.user$);
 

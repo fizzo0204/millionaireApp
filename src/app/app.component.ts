@@ -23,6 +23,7 @@ import { DailyEventsService } from './services/daily-events.service';
 import { DailyRewardAutoOpenService } from './services/daily-reward-auto-open.service';
 import { AssetPreloadService } from './services/asset-preload.service';
 import { AchievementToastService } from './services/achievement-toast.service';
+import { NotificationsService } from './services/notifications.service';
 import { NavigationTab } from './models/navigation.model';
 import { APP_CONFIG } from 'src/app/config/app.config';
 import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
@@ -64,6 +65,7 @@ export class AppComponent implements OnDestroy {
   private appStateListener?: PluginListenerHandle;
   private trackedLevelUserId: string | null = null;
   private lastTrackedLevel: number | null = null;
+  private userSub?: Subscription;
 
   constructor(
     private platform: Platform,
@@ -76,12 +78,14 @@ export class AppComponent implements OnDestroy {
     private dailyRewardAutoOpen: DailyRewardAutoOpenService,
     private assetPreload: AssetPreloadService,
     private achievementToast: AchievementToastService,
+    private notificationsService: NotificationsService,
     private router: Router,
   ) {
     void this.dailyEventsService;
     this.initializeApp();
     this.listenToRouteChanges();
     this.listenToLevelChanges();
+    this.listenToUserForNotifications();
   }
 
   async initializeApp() {
@@ -112,6 +116,16 @@ export class AppComponent implements OnDestroy {
   }
 
   private async listenToAppState() {
+    /*
+     * Volutamente NON chiamiamo notificationsService.cancelAll() quando l'app
+     * torna in foreground: LocalNotifications.cancel() rimuove anche una
+     * notifica gia' consegnata e visibile (dismissVisibleNotification lato
+     * nativo), quindi cancellava anche promemoria appena arrivati un istante
+     * prima che l'utente riaprisse l'app. Lo stato si autocorregge comunque
+     * al prossimo giro in background: scheduleAll() ricalcola e cancella la
+     * notifica se la condizione non vale piu' (vite piene, reward gia'
+     * riscosso).
+     */
     this.appStateListener = await CapacitorApp.addListener(
       'appStateChange',
       ({ isActive }) => {
@@ -126,8 +140,17 @@ export class AppComponent implements OnDestroy {
         }
 
         this.audioService.pauseMusic();
+        void this.notificationsService.scheduleAll();
       },
     );
+  }
+
+  private listenToUserForNotifications() {
+    this.userSub = this.auth.user$.subscribe((user) => {
+      if (!user) {
+        void this.notificationsService.cancelAll();
+      }
+    });
   }
 
   handleGlobalPointerDown() {
@@ -297,6 +320,7 @@ export class AppComponent implements OnDestroy {
   ngOnDestroy() {
     this.routerSub?.unsubscribe();
     this.levelSub?.unsubscribe();
+    this.userSub?.unsubscribe();
     this.achievementToast.stop();
     this.appStateListener?.remove();
   }

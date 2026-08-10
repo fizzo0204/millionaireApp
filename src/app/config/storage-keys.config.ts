@@ -3,4 +3,6 @@ export const STORAGE_KEYS = {
   musicEnabled: 'music_enabled',
   tutorialOnboarding: 'tutorial_onboarding',
   notifiedAchievements: 'notified_achievements',
+  notificationsEnabled: 'notifications_enabled',
+  notificationsPermissionAsked: 'notifications_permission_asked',
 };

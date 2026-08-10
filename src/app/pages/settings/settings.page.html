@@ -38,6 +38,54 @@
         ></ion-toggle>
       </div>
 
+      <div class="settings-card">
+        <div class="setting-info">
+          <div class="setting-icon">🔔</div>
+
+          <div>
+            <h3>Notifiche</h3>
+            <p>Vite piene e promemoria del regalo giornaliero</p>
+          </div>
+        </div>
+
+        <ion-toggle
+          [checked]="notificationsEnabled"
+          (ionChange)="toggleNotifications()"
+        ></ion-toggle>
+      </div>
+
+      @if (!environment.production) {
+      <button
+        class="login-card"
+        type="button"
+        (click)="debugTestLivesNotification()"
+      >
+        <div class="login-icon">
+          <ion-icon name="bug-outline"></ion-icon>
+        </div>
+
+        <div class="login-text">
+          <h3>[Debug] Test notifica vite piene</h3>
+          <p>Invia la notifica "vite piene" dopo 10 secondi</p>
+        </div>
+      </button>
+
+      <button
+        class="login-card"
+        type="button"
+        (click)="debugTestDailyRewardNotification()"
+      >
+        <div class="login-icon">
+          <ion-icon name="bug-outline"></ion-icon>
+        </div>
+
+        <div class="login-text">
+          <h3>[Debug] Test notifica daily reward</h3>
+          <p>Invia la notifica "daily reward" dopo 10 secondi</p>
+        </div>
+      </button>
+      }
+
       <button class="login-card" type="button" (click)="openTutorial()">
         <div class="login-icon">
           <ion-icon name="game-controller-outline"></ion-icon>
