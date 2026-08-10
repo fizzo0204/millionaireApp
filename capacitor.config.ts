@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'www',
   server: {
     androidScheme: 'https',
-    cleartext: true, // consente localhost su dispositivi/emulatori
+    cleartext: false, // per il live-reload contro un dev server usare "npx cap run android -l --external", che lo abilita solo per quella sessione
   },
   plugins: {
     FirebaseAuthentication: {
