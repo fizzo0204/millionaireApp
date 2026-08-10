@@ -16,7 +16,6 @@ import {
   DAILY_MISSION_PLANS,
   DAILY_MISSION_SWITCH_POOL,
 } from 'src/app/config/daily-events.config';
-import { STORAGE_KEYS } from 'src/app/config/storage-keys.config';
 import {
   DailyEventsData,
   DailyMissionConfig,
@@ -119,25 +118,6 @@ export class DailyMissionService {
       notificationCount: this.getNotificationCountFromData(result.data),
       dayChanged: result.dayChanged,
     };
-  }
-
-  // Resetta i dati dailyEvents dell'utente corrente.
-  async resetDailyEventsDebug(): Promise<void> {
-    const user = await firstValueFrom(this.auth.user$);
-
-    if (!user) return;
-
-    const userRef = doc(this.firestore, `users/${user.uid}`);
-
-    await this.runFirestore(() =>
-      setDoc(
-        userRef,
-        {
-          dailyEvents: this.getDefaultDailyEventsData(),
-        },
-        { merge: true },
-      ),
-    );
   }
 
   // Cambia una missione giornaliera con una missione alternativa valida.
@@ -787,24 +767,9 @@ export class DailyMissionService {
      * I piani in configurazione sono Lun-Dom. JavaScript invece usa
      * Dom-Sab, quindi rimappiamo per mantenere le missioni intuitive.
      */
-    const weekday = this.getDebugWeekday() ?? new Date().getDay();
+    const weekday = new Date().getDay();
 
     return weekday === 0 ? 6 : weekday - 1;
-  }
-
-  // Legge il giorno debug salvato in localStorage.
-  private getDebugWeekday(): number | null {
-    const savedValue = localStorage.getItem(
-      STORAGE_KEYS.dailyEventsDebugWeekday,
-    );
-
-    if (savedValue === null) return null;
-
-    const weekday = Number(savedValue);
-
-    return Number.isInteger(weekday) && weekday >= 0 && weekday <= 6
-      ? weekday
-      : null;
   }
 
   // Restituisce la chiave data usata per i dati giornalieri.

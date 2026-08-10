@@ -152,21 +152,6 @@ export class TutorialService {
     this.open('manual', onboarding.rewardClaimed);
   }
 
-  async openDebugFreshTutorial(): Promise<void> {
-    const user = await this.waitForUser();
-
-    /*
-     * Strumento solo debug: riporta il tutorial allo stato "primo avvio"
-     * e permette di testare di nuovo la ricompensa finale.
-     */
-    if (user) {
-      await this.userStatsService.ensureUserProfile(user);
-      await this.resetTutorialStateForDebug(user.uid);
-    }
-
-    this.open('manual', false);
-  }
-
   nextStep(): void {
     const current = this.stateSubject.value;
 
@@ -356,26 +341,6 @@ export class TutorialService {
     }
 
     this.setLocalFlag(uid, 'skipped');
-  }
-
-  private async resetTutorialStateForDebug(uid: string): Promise<void> {
-    this.clearLocalFlags(uid);
-
-    const userRef = doc(this.firestore, `users/${uid}`);
-
-    await this.runFirestore(() => setDoc(
-      userRef,
-      {
-        onboarding: {
-          tutorialCompleted: false,
-          tutorialRewardClaimed: false,
-          tutorialSkipped: false,
-          tutorialCompletedAt: null,
-          tutorialSkippedAt: null,
-        },
-      },
-      { merge: true },
-    ));
   }
 
   private async markCompletedAndClaimReward(uid: string): Promise<{

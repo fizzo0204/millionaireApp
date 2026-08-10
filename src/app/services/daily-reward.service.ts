@@ -207,34 +207,6 @@ export class DailyRewardService {
     return this.userStatsService.applyDailyRewardBonus(user.uid, rewardPayload);
   }
 
-  async simulateDay(day: number): Promise<void> {
-    await this.setDebugDay(day);
-  }
-
-  async resetDailyReward(): Promise<void> {
-    const user = await firstValueFrom(this.auth.user$);
-
-    const updatedData: Partial<UserDailyRewardData> = {
-      currentDay: 1,
-      lastClaimDate: null,
-      lastClaimedAt: null,
-      claimedToday: false,
-    };
-
-    this.cachedDailyReward = {
-      ...this.cachedDailyReward,
-      ...updatedData,
-    };
-
-    this.clearMigratedLocalData();
-
-    if (!user) return;
-
-    await this.ensureRemoteProfile(user);
-
-    await this.userStatsService.updateDailyRewardData(user.uid, updatedData);
-  }
-
   async saveUnlockedAvatar(avatar: AvatarModel): Promise<void> {
     const user = await firstValueFrom(this.auth.user$);
 
@@ -270,52 +242,6 @@ export class DailyRewardService {
     return AVATARS.filter((avatar) =>
       this.cachedAvatar.unlockedAvatarIds.includes(avatar.id),
     );
-  }
-
-  async setDebugDay(day: number): Promise<void> {
-    const user = await firstValueFrom(this.auth.user$);
-
-    const normalizedDay = Math.min(
-      Math.max(day, 1),
-      DAILY_REWARD_CONFIG.maxDay,
-    );
-
-    const updatedData: Partial<UserDailyRewardData> = {
-      currentDay: normalizedDay,
-      lastClaimDate: null,
-      lastClaimedAt: null,
-      claimedToday: false,
-    };
-
-    this.cachedDailyReward = {
-      ...this.cachedDailyReward,
-      ...updatedData,
-    };
-
-    if (!user) return;
-
-    await this.ensureRemoteProfile(user);
-
-    await this.userStatsService.updateDailyRewardData(user.uid, updatedData);
-  }
-
-  async resetUnlockedAvatars(): Promise<void> {
-    const user = await firstValueFrom(this.auth.user$);
-
-    this.cachedAvatar = {
-      ...this.cachedAvatar,
-      unlockedAvatarIds: [],
-    };
-
-    this.clearMigratedLocalData();
-
-    if (!user) return;
-
-    await this.ensureRemoteProfile(user);
-
-    await this.userStatsService.updateAvatarData(user.uid, {
-      unlockedAvatarIds: [],
-    });
   }
 
   getRandomEpicChestReward(): DailyChestReward {

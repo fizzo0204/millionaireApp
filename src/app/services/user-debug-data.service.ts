@@ -127,20 +127,6 @@ export class UserDebugDataService {
     );
   }
 
-  async resetArcadeDebugData(uid: string): Promise<void> {
-    /*
-     * Reset mirato della Scalata per i test: non tocca XP, TurtleCoins,
-     * vite, tutorial, reward o progressi delle categorie.
-     */
-    const userRef = doc(this.firestore, `users/${uid}`);
-
-    await this.runFirestore(() =>
-      updateDoc(userRef, {
-        arcade: this.defaultArcade,
-      }),
-    );
-  }
-
   private runFirestore<T>(operation: () => T): T {
     return runInInjectionContext(this.injector, operation);
   }

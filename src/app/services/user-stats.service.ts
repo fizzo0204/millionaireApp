@@ -442,13 +442,8 @@ export class UserStatsService {
     return this.debugData.deleteUserProfileData(uid);
   }
 
-  // Reset completo usato dai pulsanti debug.
+  // Reset completo di un utente, usato dal pannello Admin.
   async resetUserDebugData(uid: string): Promise<void> {
     return this.debugData.resetUserDebugData(uid);
-  }
-
-  // Reset mirato della sola modalità Scalata.
-  async resetArcadeDebugData(uid: string): Promise<void> {
-    return this.debugData.resetArcadeDebugData(uid);
   }
 }

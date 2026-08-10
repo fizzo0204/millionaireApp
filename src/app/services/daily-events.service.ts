@@ -4,7 +4,6 @@ import {
   DAILY_EVENTS_CONFIG,
   DAILY_WHEEL_REWARDS,
 } from 'src/app/config/daily-events.config';
-import { STORAGE_KEYS } from 'src/app/config/storage-keys.config';
 import {
   DailyEventsData,
   DailyMissionConfig,
@@ -94,45 +93,6 @@ export class DailyEventsService {
   // Indica se la daily challenge può ancora assegnare premio oggi.
   isDailyChallengeAvailable(data: DailyEventsData | null): boolean {
     return this.dailyEventGamesService.isDailyChallengeAvailable(data);
-  }
-
-  // Legge il giorno debug scelto nelle impostazioni, se presente.
-  getDebugWeekday(): number | null {
-    const savedValue = localStorage.getItem(
-      STORAGE_KEYS.dailyEventsDebugWeekday,
-    );
-
-    if (savedValue === null) return null;
-
-    const weekday = Number(savedValue);
-
-    return Number.isInteger(weekday) && weekday >= 0 && weekday <= 6
-      ? weekday
-      : null;
-  }
-
-  // Imposta o rimuove il giorno debug delle missioni giornaliere.
-  async setDebugWeekday(weekday: number | null): Promise<void> {
-    if (weekday === null) {
-      localStorage.removeItem(STORAGE_KEYS.dailyEventsDebugWeekday);
-      await this.resetDailyEventsDebug();
-      return;
-    }
-
-    const safeWeekday = Math.min(Math.max(Math.floor(weekday), 0), 6);
-
-    localStorage.setItem(
-      STORAGE_KEYS.dailyEventsDebugWeekday,
-      String(safeWeekday),
-    );
-
-    await this.resetDailyEventsDebug();
-  }
-
-  // Resetta tutti i dati giornalieri usati durante i test/debug.
-  async resetDailyEventsDebug(): Promise<void> {
-    await this.dailyMissionService.resetDailyEventsDebug();
-    this.dailyNotificationCountSubject.next(0);
   }
 
   // Registra un controllo del daily reward nelle missioni giornaliere.
