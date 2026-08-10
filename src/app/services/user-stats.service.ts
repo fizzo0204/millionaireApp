@@ -117,6 +117,13 @@ export class UserStatsService {
     return this.profileData.mergeCurrentProgressIntoLinkedAccount(uid);
   }
 
+  // Premio una tantum per aver collegato un account reale (Google/Facebook/Play Games).
+  async claimLinkReward(
+    uid: string,
+  ): Promise<{ coins: number; xp: number } | null> {
+    return this.profileData.claimLinkReward(uid);
+  }
+
   // Marca un profilo come proveniente da Play Games.
   async markPlayGamesProfile(
     uid: string,

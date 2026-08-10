@@ -17,9 +17,8 @@ export const AUTH_CONFIG = {
   },
 
   linkReward: {
-    // TODO: decidere premio finale per incentivare il collegamento Google/Facebook.
-    enabled: false,
-    coins: 0,
+    enabled: true,
+    coins: 50,
     xp: 0,
   },
 

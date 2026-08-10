@@ -15,6 +15,7 @@ import {
   collection,
   getDocs,
   deleteDoc,
+  runTransaction,
   DocumentData,
   UpdateData,
 } from '@angular/fire/firestore';
@@ -252,6 +253,46 @@ export class UserProfileDataService {
      * il vecchio profilo solo dopo conferma dell'utente.
      */
     await this.ensureProfileMigrationMarkers(uid);
+  }
+
+  // Premio una tantum per aver collegato un account reale (Google/Facebook/Play Games).
+  async claimLinkReward(
+    uid: string,
+  ): Promise<{ coins: number; xp: number } | null> {
+    if (!AUTH_CONFIG.linkReward.enabled) return null;
+
+    const userRef = doc(this.firestore, `users/${uid}`);
+
+    return this.runFirestore(() =>
+      runTransaction(this.firestore, async (transaction) => {
+        const snapshot = await transaction.get(userRef);
+
+        if (!snapshot.exists()) return null;
+
+        const data = snapshot.data();
+        const auth = data['auth'] as Partial<UserAuthProfile> | undefined;
+
+        if (auth?.loginRewardClaimed) return null;
+
+        const stats = data['stats'] as Partial<UserStats> | undefined;
+        const updatedCoins =
+          (stats?.coins ?? USER_STATS_CONFIG.defaultCoins) +
+          AUTH_CONFIG.linkReward.coins;
+        const updatedXp = (stats?.xp ?? 0) + AUTH_CONFIG.linkReward.xp;
+
+        transaction.update(userRef, {
+          'stats.coins': updatedCoins,
+          'stats.xp': updatedXp,
+          'stats.level': getLevelFromXp(updatedXp),
+          'auth.loginRewardClaimed': true,
+        });
+
+        return {
+          coins: AUTH_CONFIG.linkReward.coins,
+          xp: AUTH_CONFIG.linkReward.xp,
+        };
+      }),
+    );
   }
 
   async markPlayGamesProfile(

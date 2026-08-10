@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { ToastController } from '@ionic/angular/standalone';
 import { BehaviorSubject } from 'rxjs';
 import {
   signInWithCredential,
@@ -52,6 +53,7 @@ export class AuthService {
     private playGamesAuthService: PlayGamesAuthService,
     private authProfileSyncService: AuthProfileSyncService,
     private authAccountLinkService: AuthAccountLinkService,
+    private toastCtrl: ToastController,
   ) {
     onAuthStateChanged(firebaseAuth, async (user) => {
       this.debug(
@@ -676,6 +678,12 @@ export class AuthService {
     await this.userStatsService.ensureUserProfile(user);
     await this.userStatsService.mergeCurrentProgressIntoLinkedAccount(user.uid);
 
+    const linkReward = await this.userStatsService.claimLinkReward(user.uid);
+
+    if (linkReward) {
+      await this.showLinkRewardToast(linkReward);
+    }
+
     const providerMetadata =
       providerProfile ??
       this.getProviderMetadataFromFirebaseUser(user, linkedProviderId);
@@ -702,6 +710,26 @@ export class AuthService {
     }
 
     this.userSubject.next(firebaseAuth.currentUser ?? user);
+  }
+
+  private async showLinkRewardToast(reward: {
+    coins: number;
+    xp: number;
+  }): Promise<void> {
+    const parts: string[] = [];
+
+    if (reward.coins > 0) parts.push(`+${reward.coins} TurtleCoins`);
+    if (reward.xp > 0) parts.push(`+${reward.xp} XP`);
+
+    if (parts.length === 0) return;
+
+    const toast = await this.toastCtrl.create({
+      message: `🎉 ${parts.join(' e ')} per aver collegato l'account!`,
+      duration: 3000,
+      position: 'bottom',
+    });
+
+    await toast.present();
   }
 
   // Mostra i log solo in sviluppo, evitando console.log sparsi in produzione.
