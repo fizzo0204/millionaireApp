@@ -127,7 +127,11 @@ export class AdsService {
 
     const options: BannerAdOptions = {
       adId: ADS_CONFIG.banner.adId,
-      adSize: BannerAdSize.BANNER,
+      // ADAPTIVE_BANNER e a larghezza piena: il formato fisso BANNER (320dp) veniva
+      // posizionato vicino al bordo sinistro invece che centrato, per un bug nel
+      // calcolo dei margini di @capacitor-community/admob quando il contenitore
+      // padre non e davvero una CoordinatorLayout (vedi BannerExecutor.java).
+      adSize: BannerAdSize.ADAPTIVE_BANNER,
       position: BannerAdPosition.BOTTOM_CENTER,
     };
 
