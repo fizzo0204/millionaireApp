@@ -54,11 +54,13 @@ Punti risolti:
 
 Nota sull'economia di gioco: monete, XP, vite e livelli sono calcolati e scritti dal client verso Firestore, con le regole di sicurezza che verificano solo la proprietà del documento, non i valori scritti. Diversi buchi concreti di questo tipo (streak daily reward che non si resettava, raddoppio ruota senza limite server-side, ecc.) sono stati trovati e sistemati durante un giro di revisione completo del codice — vedi sotto. Resta comunque un vettore di cheat noto in generale (un client modificato può scriversi monete/XP arbitrari), da tenere presente se in futuro si aggiungono classifiche o acquisti reali.
 
-## Notifiche locali (2026-08-11)
+## Notifiche locali (in corso, 2026-08-11)
 
-Aggiunta una prima coppia di notifiche push locali (`@capacitor/local-notifications`, nessun server esterno): "vite piene" e promemoria del daily reward, per il re-engagement. Dettagli tecnici e architettura in `CLAUDE.md` (sezione "Notifiche locali"). Confermate funzionanti su device reale (testo, canale con popup, arrivo a schermo spento/app chiusa).
+Aggiunta una prima coppia di notifiche push locali (`@capacitor/local-notifications`, nessun server esterno): "vite piene" (icona cuore) e promemoria del daily reward (icona regalo), per il re-engagement. Dettagli tecnici e architettura in `CLAUDE.md` (sezione "Notifiche locali").
 
 Nel percorso di debug trovato e sistemato un problema non ovvio: schedulare la notifica solo quando l'app va in background è inaffidabile su device reali (verificato su un Motorola) perché il sistema operativo può uccidere il processo dell'app pochi istanti dopo il backgrounding, prima che la chiamata al plugin nativo faccia in tempo a completarsi. Risolto schedulando in modo proattivo appena lo stato rilevante cambia (vita persa/recuperata, daily reward riscosso), mentre l'app è ancora sicuramente in primo piano.
+
+**Non ancora confermata affidabile al 100%**: dopo quel fix la feature ha funzionato in diversi test (testo, canale con popup, arrivo a schermo spento/app chiusa), ma in un test successivo la notifica "vite piene" non è arrivata senza causa certa — l'allarme di sistema è partito regolarmente, ma la notifica non si è vista. Sospetto principale (non confermato): gestione batteria/processi aggressiva lato Motorola sul device di test, osservata nei log anche per altre app. Vedi `CLAUDE.md` per l'analisi completa e i prossimi passi. Da riverificare prima di considerare la feature davvero pronta.
 
 ## Revisione bug completata
 
