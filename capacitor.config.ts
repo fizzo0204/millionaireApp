@@ -9,6 +9,9 @@ const config: CapacitorConfig = {
     cleartext: false, // per il live-reload contro un dev server usare "npx cap run android -l --external", che lo abilita solo per quella sessione
   },
   plugins: {
+    LocalNotifications: {
+      iconColor: '#002b4f', // stesso blu navy dello splash screen
+    },
     FirebaseAuthentication: {
       skipNativeAuth: false,
       providers: ['google.com', 'facebook.com', 'playgames.google.com'],

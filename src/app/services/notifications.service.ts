@@ -10,6 +10,7 @@ import { STORAGE_KEYS } from 'src/app/config/storage-keys.config';
 interface NotificationCopy {
   title: string;
   body: string;
+  smallIcon: string;
 }
 
 @Injectable({
@@ -174,6 +175,7 @@ export class NotificationsService {
           id,
           title: copy.title,
           body: copy.body,
+          smallIcon: copy.smallIcon,
           channelId: NOTIFICATIONS_CONFIG.channelId,
           // allowWhileIdle: consegna la notifica anche in Doze (schermo spento
           // a lungo), non solo quando il telefono e' attivo/sbloccato.
