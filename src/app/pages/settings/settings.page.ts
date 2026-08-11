@@ -16,7 +16,6 @@ import { AdminUsersService } from 'src/app/services/admin-users.service';
 import { AdsService } from 'src/app/services/ads.service';
 import { NotificationsService } from 'src/app/services/notifications.service';
 import { LEGAL_CONFIG } from 'src/app/config/legal.config';
-import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-settings',
@@ -26,8 +25,6 @@ import { environment } from 'src/environments/environment';
   styleUrls: ['./settings.page.scss'],
 })
 export class SettingsPage {
-  readonly environment = environment;
-
   user$ = this.authService.user$;
 
   musicEnabled = true;
@@ -71,26 +68,6 @@ export class SettingsPage {
     if (!this.notificationsEnabled) {
       void this.notificationsService.cancelAll();
     }
-  }
-
-  async debugTestLivesNotification() {
-    const scheduled = await this.notificationsService.debugTestLivesFullNotification();
-
-    await this.showToast(
-      scheduled
-        ? 'Notifica "vite piene" in arrivo tra 10s'
-        : 'Notifiche disattivate o permesso non concesso',
-    );
-  }
-
-  async debugTestDailyRewardNotification() {
-    const scheduled = await this.notificationsService.debugTestDailyRewardNotification();
-
-    await this.showToast(
-      scheduled
-        ? 'Notifica "daily reward" in arrivo tra 10s'
-        : 'Notifiche disattivate o permesso non concesso',
-    );
   }
 
   shouldShowLinkAccount(user: User | null): boolean {

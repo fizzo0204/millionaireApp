@@ -54,38 +54,6 @@
         ></ion-toggle>
       </div>
 
-      @if (!environment.production) {
-      <button
-        class="login-card"
-        type="button"
-        (click)="debugTestLivesNotification()"
-      >
-        <div class="login-icon">
-          <ion-icon name="bug-outline"></ion-icon>
-        </div>
-
-        <div class="login-text">
-          <h3>[Debug] Test notifica vite piene</h3>
-          <p>Invia la notifica "vite piene" dopo 10 secondi</p>
-        </div>
-      </button>
-
-      <button
-        class="login-card"
-        type="button"
-        (click)="debugTestDailyRewardNotification()"
-      >
-        <div class="login-icon">
-          <ion-icon name="bug-outline"></ion-icon>
-        </div>
-
-        <div class="login-text">
-          <h3>[Debug] Test notifica daily reward</h3>
-          <p>Invia la notifica "daily reward" dopo 10 secondi</p>
-        </div>
-      </button>
-      }
-
       <button class="login-card" type="button" (click)="openTutorial()">
         <div class="login-icon">
           <ion-icon name="game-controller-outline"></ion-icon>

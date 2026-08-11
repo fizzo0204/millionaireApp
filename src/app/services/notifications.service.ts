@@ -23,6 +23,22 @@ export class NotificationsService {
   ) {
     this.registerTapHandler();
     void this.ensureChannel();
+    this.listenToLivesChanges();
+  }
+
+  /*
+   * Schedulare la notifica "vite piene" solo quando l'app va in background
+   * e' troppo rischioso su alcuni device (es. Motorola): il processo puo'
+   * essere ucciso dal sistema pochi istanti dopo il backgrounding, prima che
+   * la catena async verso il plugin nativo faccia in tempo a completarsi.
+   * Per questo la ri-schedoliamo anche qui, in modo proattivo, ogni volta
+   * che il numero di vite cambia (persa una vita, vita recuperata) mentre
+   * l'app e' ancora sicuramente in primo piano.
+   */
+  private listenToLivesChanges() {
+    this.livesService.lives$.subscribe(() => {
+      void this.scheduleAll();
+    });
   }
 
   // Al tap su una qualsiasi delle nostre notifiche (anche ad app chiusa),
@@ -88,52 +104,6 @@ export class NotificationsService {
 
     await this.cancelNotification(NOTIFICATIONS_CONFIG.ids.livesFull);
     await this.cancelNotification(NOTIFICATIONS_CONFIG.ids.dailyReward);
-  }
-
-  // Notifica di prova per il pulsante di debug: stesso toggle app del flusso
-  // reale, ma il permesso viene richiesto qui al volo (invece di dipendere dal
-  // primo claim del daily reward) cosi' si puo' testare anche senza aver
-  // ancora giocato. Ritardo fisso invece che calcolato dallo stato reale, e id
-  // dedicati (vedi notifications.config.ts) cosi' scheduleAll()/cancelAll()
-  // del flusso reale non toccano mai le notifiche di test.
-  async debugTestLivesFullNotification(): Promise<boolean> {
-    if (!(await this.ensureDebugPermission())) return false;
-
-    await this.scheduleNotification(
-      NOTIFICATIONS_CONFIG.ids.debugLivesFull,
-      NOTIFICATIONS_CONFIG.copy.livesFull,
-      this.debugDelayDate(),
-    );
-
-    return true;
-  }
-
-  async debugTestDailyRewardNotification(): Promise<boolean> {
-    if (!(await this.ensureDebugPermission())) return false;
-
-    await this.scheduleNotification(
-      NOTIFICATIONS_CONFIG.ids.debugDailyReward,
-      NOTIFICATIONS_CONFIG.copy.dailyReward,
-      this.debugDelayDate(),
-    );
-
-    return true;
-  }
-
-  private debugDelayDate(): Date {
-    return new Date(Date.now() + NOTIFICATIONS_CONFIG.debugDelaySeconds * 1000);
-  }
-
-  private async ensureDebugPermission(): Promise<boolean> {
-    if (!Capacitor.isNativePlatform() || !this.isEnabled()) return false;
-
-    let status = await LocalNotifications.checkPermissions();
-
-    if (status.display === 'prompt' || status.display === 'prompt-with-rationale') {
-      status = await LocalNotifications.requestPermissions();
-    }
-
-    return status.display === 'granted';
   }
 
   // Vero solo se le notifiche possono davvero essere consegnate: piattaforma nativa,

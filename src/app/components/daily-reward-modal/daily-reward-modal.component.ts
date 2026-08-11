@@ -201,6 +201,10 @@ export class DailyRewardModalComponent {
 
     this.claimedNow = true;
     void this.notificationsService.requestPermissionIfNeeded();
+    // Ricalcola/cancella subito il promemoria daily reward: aspettare il
+    // prossimo background e' rischioso (il processo puo' essere ucciso dal
+    // sistema prima che la schedulazione async finisca), vedi NotificationsService.
+    void this.notificationsService.scheduleAll();
     this.chestReward = preparedClaim.chestReward ?? null;
     this.epicAvatarReward = preparedClaim.epicAvatarReward ?? null;
     this.unlockedAvatar = preparedClaim.unlockedAvatar ?? null;

@@ -61,10 +61,13 @@ export class LivesService {
       this.livesDocSub = this.runFirestore(() => docData(userRef)).subscribe((profile) => {
         const userProfile = profile as AppUserProfile | undefined;
         const lives = userProfile?.stats?.lives ?? LIVES_CONFIG.maxLives;
-        this.livesSubject.next(lives);
+        // lastLifeUpdateTime va aggiornato PRIMA di livesSubject.next(): chi si
+        // sottoscrive a lives$ (es. NotificationsService) reagisce in modo
+        // sincrono dentro next(), e deve gia' vedere il valore aggiornato.
         this.lastLifeUpdateTime = this.getLastLifeUpdateTime(
           userProfile?.stats?.lastLifeUpdate,
         );
+        this.livesSubject.next(lives);
       });
     });
   }
