@@ -263,6 +263,29 @@
       transparent 45%
     ),
     linear-gradient(135deg, #7c3aed, #312e81 46%, #111827);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.13),
+    0 12px 22px rgba(0, 0, 0, 0.3),
+    0 0 18px rgba(168, 85, 247, 0.45);
+}
+
+/*
+ * Il "respiro" del bagliore era animato via box-shadow: proprieta' non
+ * compositabile, forza un repaint sul thread principale ad ogni frame.
+ * Spostato su un layer dedicato animato in opacity (compositabile).
+ */
+.legendary-chest::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 2px rgba(254, 240, 138, 0.28),
+    0 14px 26px rgba(0, 0, 0, 0.34),
+    0 0 30px rgba(250, 204, 21, 0.45);
+  opacity: 0;
   animation: legendaryGlow 3.2s ease-in-out infinite;
 }
 
@@ -314,6 +337,7 @@
     0 0,
     18px 12px;
   animation: starsFloat 8s linear infinite;
+  will-change: transform;
   pointer-events: none;
 }
 
@@ -831,17 +855,11 @@
 @keyframes legendaryGlow {
   0%,
   100% {
-    box-shadow:
-      inset 0 0 0 2px rgba(255, 255, 255, 0.13),
-      0 12px 22px rgba(0, 0, 0, 0.3),
-      0 0 18px rgba(168, 85, 247, 0.45);
+    opacity: 0;
   }
 
   50% {
-    box-shadow:
-      inset 0 0 0 2px rgba(254, 240, 138, 0.28),
-      0 14px 26px rgba(0, 0, 0, 0.34),
-      0 0 30px rgba(250, 204, 21, 0.45);
+    opacity: 1;
   }
 }
 
@@ -852,10 +870,12 @@
 }
 
 @keyframes starsFloat {
+  from {
+    transform: translate(0, 0);
+  }
+
   to {
-    background-position:
-      34px 34px,
-      64px 46px;
+    transform: translate(34px, 34px);
   }
 }
 
@@ -947,7 +967,7 @@
   }
 }
 
-@media (max-width: 370px) {
+@media (max-width: 400px) {
   .chests-top-grid,
   .free-rewards-row {
     grid-template-columns: 1fr;
@@ -965,6 +985,47 @@
 
   .legendary-chest-frame {
     margin: 4px auto 0;
+  }
+}
+
+/*
+ * PERFORMANCE — WebView Android
+ * Il Negozio resta aperto a lungo (a differenza della cinematica, che dura
+ * pochi secondi), quindi le animazioni ambientali/decorative (rotazioni,
+ * shine, blur) pesano molto di piu' sul thread principale su telefoni di
+ * fascia bassa. Sotto i 720px le spegniamo o le rendiamo statiche, tenendo
+ * solo le animazioni con un significato funzionale (pulse su vite/monete,
+ * float dello scrigno). Stesso approccio gia' usato in
+ * chest-cinematic.component.scss.
+ */
+@media (max-width: 719px) {
+  .legendary-aura {
+    animation: none;
+  }
+
+  .legendary-stars {
+    animation: none;
+  }
+
+  .chest-shine {
+    animation: none;
+    opacity: 0.5;
+  }
+
+  .purchase-backdrop {
+    backdrop-filter: none;
+    background: rgba(0, 0, 0, 0.74);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .legendary-chest::after,
+  .legendary-aura,
+  .legendary-stars,
+  .chest-shine,
+  .legendary-chest-frame,
+  .legendary-chest-frame::after {
+    animation: none;
   }
 }
 
