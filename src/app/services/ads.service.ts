@@ -2,7 +2,9 @@ import { Injectable } from '@angular/core';
 import {
   AdMob,
   AdmobConsentStatus,
+  AdMobBannerSize,
   BannerAdOptions,
+  BannerAdPluginEvents,
   BannerAdSize,
   BannerAdPosition,
   RewardAdOptions,
@@ -27,9 +29,19 @@ export class AdsService {
   private adMobInitialized = false;
   private initializePromise?: Promise<boolean>;
   private rewardedAdInProgress = false;
+  private bannerSizeListenerAdded = false;
+  private bannerHeightSubject = new BehaviorSubject<number>(0);
 
   readonly rewardedAdCompleted$ =
     this.rewardedAdCompletedSubject.asObservable();
+
+  /*
+   * Altezza reale del banner ADAPTIVE_BANNER (in dp, coincide con i px CSS
+   * nella WebView) riportata dal plugin nativo. Serve per riservare lo
+   * spazio esatto in fondo alle pagine senza bottom navbar, invece di
+   * indovinare un valore fisso che varia da device a device.
+   */
+  readonly bannerHeight$ = this.bannerHeightSubject.asObservable();
 
   // Vero quando AdMob richiede di mostrare un punto d'accesso "gestisci consenso" in UI.
   readonly privacyOptionsRequired$ =
@@ -50,6 +62,7 @@ export class AdsService {
 
         return AdMob.initialize().then(() => {
           this.adMobInitialized = true;
+          void this.listenBannerSize();
           return true;
         });
       })
@@ -112,6 +125,20 @@ export class AdsService {
       console.warn('Errore consenso AdMob/UMP:', error);
       return false;
     }
+  }
+
+  // Registra una sola volta il listener che riporta l'altezza reale del banner.
+  private async listenBannerSize(): Promise<void> {
+    if (this.bannerSizeListenerAdded) return;
+
+    this.bannerSizeListenerAdded = true;
+
+    await AdMob.addListener(
+      BannerAdPluginEvents.SizeChanged,
+      (info: AdMobBannerSize) => {
+        this.bannerHeightSubject.next(info?.height ?? 0);
+      },
+    );
   }
 
   async showBanner() {

@@ -87,13 +87,25 @@
   z-index: 2;
 }
 
+.arcade-hero-copy {
+  min-width: 0;
+}
+
+/*
+ * clamp() per adattarsi a schermi stretti; overflow/ellipsis come rete di
+ * sicurezza per quando il livello (la "Scalata" e' infinita) crescera'
+ * oltre le 3-4 cifre e altrimenti uscirebbe dalla card.
+ */
 .arcade-hero-copy strong {
   display: block;
+  overflow: hidden;
   margin: 4px 0;
   color: #fff;
   font-size: 3.5rem;
   line-height: 0.9;
   font-weight: 1000;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .arcade-hero-copy p {
@@ -108,6 +120,7 @@
 .arcade-record {
   width: 86px;
   height: 86px;
+  flex-shrink: 0;
   border-radius: 28px;
   display: grid;
   place-items: center;
@@ -122,8 +135,12 @@
 }
 
 .arcade-record strong {
+  max-width: 100%;
+  overflow: hidden;
   font-size: 1.9rem;
   font-weight: 1000;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .chest-card {

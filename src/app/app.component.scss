@@ -11,6 +11,20 @@
   flex-direction: column;
 }
 
+/*
+ * Senza bottom navbar (quiz, scalata, arcade, ...) i 24px fissi sopra non
+ * bastano a coprire il banner AdMob nativo, la cui altezza varia da device
+ * a device (ADAPTIVE_BANNER). --tm-ad-banner-height arriva in tempo reale
+ * dal plugin (bannerAdSizeChanged, vedi AdsService) invece di essere
+ * indovinata: quando la navbar c'è, il suo stesso ingombro la copre gia'
+ * abbondantemente e non serve aggiungere altro.
+ */
+.app-shell--no-nav {
+  padding-bottom: calc(
+    env(safe-area-inset-bottom) + 24px + var(--tm-ad-banner-height, 0px)
+  );
+}
+
 app-home-navbar,
 app-bottom-nav {
   position: relative;

@@ -53,6 +53,7 @@ export class AppComponent implements OnDestroy {
 
   activeTab: NavigationTab = 'home';
   user$: Observable<User | null> = this.auth.user$;
+  bannerHeightPx$: Observable<number>;
 
   showAppLoader = true;
   hideBottomNav = false;
@@ -81,6 +82,7 @@ export class AppComponent implements OnDestroy {
     private notificationsService: NotificationsService,
     private router: Router,
   ) {
+    this.bannerHeightPx$ = this.adsService.bannerHeight$;
     void this.dailyEventsService;
     this.initializeApp();
     this.listenToRouteChanges();
@@ -311,6 +313,14 @@ export class AppComponent implements OnDestroy {
 
   setActiveTab(tab: NavigationTab) {
     this.activeTab = tab;
+  }
+
+  get navHidden(): boolean {
+    return (
+      this.hideBottomNav ||
+      this.ui.hideBottomNavForModal() ||
+      this.ui.hideBottomNavForSubpage()
+    );
   }
 
   private wait(ms: number): Promise<void> {

@@ -33,7 +33,13 @@
 .quiz-topbar {
   margin: 24px 0 18px;
   display: grid;
-  grid-template-columns: 48px 1fr 1fr auto;
+  /*
+   * minmax(0, 1fr) invece di 1fr: senza il minimo esplicito a 0, una
+   * colonna grid non puo' restringersi sotto la dimensione intrinseca del
+   * suo contenuto. Con testo nowrap dentro (es. "Difficolta: Extreme") su
+   * schermi stretti la riga cresceva oltre lo spazio disponibile.
+   */
+  grid-template-columns: 48px minmax(0, 1fr) minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
 }
@@ -59,6 +65,7 @@
 .quiz-pill,
 .coins-pill {
   min-height: 48px;
+  min-width: 0;
   padding: 0 14px;
   border-radius: 999px;
   display: flex;
@@ -73,8 +80,15 @@
 }
 
 .quiz-pill span {
+  flex-shrink: 0;
   color: #dbeafe;
   font-size: 0.9rem;
+}
+
+.quiz-pill strong {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
 }
 
 .quiz-pill .difficulty {
@@ -1035,7 +1049,7 @@
 /* SMALL */
 @media (max-width: 390px) {
   .quiz-topbar {
-    grid-template-columns: 44px 1fr 1fr auto;
+    grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr) auto;
     gap: 8px;
   }
 

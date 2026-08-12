@@ -7,7 +7,11 @@
       ></app-game-loader>
     </div>
   } @else {
-    <div class="app-shell">
+    <div
+      class="app-shell"
+      [class.app-shell--no-nav]="navHidden"
+      [style.--tm-ad-banner-height.px]="(bannerHeightPx$ | async) ?? 0"
+    >
       <app-home-navbar></app-home-navbar>
 
       <div class="app-content">
@@ -18,16 +22,8 @@
         <app-bottom-nav
           [activeTab]="activeTab"
           (tabChange)="setActiveTab($event)"
-          [class.bottom-nav-hidden]="
-            hideBottomNav ||
-            ui.hideBottomNavForModal() ||
-            ui.hideBottomNavForSubpage()
-          "
-          [attr.aria-hidden]="
-            hideBottomNav ||
-            ui.hideBottomNavForModal() ||
-            ui.hideBottomNavForSubpage()
-          "
+          [class.bottom-nav-hidden]="navHidden"
+          [attr.aria-hidden]="navHidden"
         ></app-bottom-nav>
       }
     </div>
