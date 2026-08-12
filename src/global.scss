@@ -450,10 +450,13 @@ ion-modal.anon-modal::part(content) {
 .arcade-node {
   width: 68px;
   height: 68px;
+  overflow: hidden;
   border-radius: 22px;
   display: grid;
   place-items: center;
   font-size: 1.85rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .arcade-node.to {

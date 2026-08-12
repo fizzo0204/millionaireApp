@@ -94,6 +94,7 @@ export class QuizPage implements OnInit, OnDestroy {
   categoryTitle = 'Quiz';
   categoryIcon = '❓';
   difficultyTitle = 'Easy';
+  difficultyIcon = '⭐';
   categoryId = '';
   rewardMessage = '';
   rewardUnlockedMessage = '';
@@ -309,6 +310,7 @@ export class QuizPage implements OnInit, OnDestroy {
     this.difficultyId = selection.idDifficolta;
     this.levelNumber = selection.numeroLivello;
     this.difficultyTitle = this.getDifficultyTitle(selection.idDifficolta);
+    this.difficultyIcon = this.getDifficultyIcon(selection.idDifficolta);
 
     return [selection.domanda];
   }
@@ -383,6 +385,7 @@ export class QuizPage implements OnInit, OnDestroy {
     this.categoryTitle = categories[this.categoryId]?.title || 'Quiz';
     this.categoryIcon = categories[this.categoryId]?.icon || '❓';
     this.difficultyTitle = this.getDifficultyTitle(this.difficultyId);
+    this.difficultyIcon = this.getDifficultyIcon(this.difficultyId);
   }
 
   setupDailyChallengeLabels() {
@@ -390,6 +393,7 @@ export class QuizPage implements OnInit, OnDestroy {
     this.categoryTitle = 'Sfida Daily';
     this.categoryIcon = '';
     this.difficultyTitle = 'Random';
+    this.difficultyIcon = '🎲';
     this.levelNumber = 1;
     this.displayLevelNumber = 1;
     this.totalLevels = DAILY_EVENTS_CONFIG.dailyChallengeQuestionCount;
@@ -401,6 +405,7 @@ export class QuizPage implements OnInit, OnDestroy {
     this.categoryIcon = '⚡';
     this.difficultyId = 'easy';
     this.difficultyTitle = 'Progressiva';
+    this.difficultyIcon = '📈';
     this.levelNumber = 1;
     this.displayLevelNumber = 1;
     this.totalLevels = await this.questionsService.getArcadeTotalLevels();
@@ -415,6 +420,17 @@ export class QuizPage implements OnInit, OnDestroy {
     };
 
     return difficulties[difficultyId] || 'Easy';
+  }
+
+  private getDifficultyIcon(difficultyId: DifficultyId): string {
+    const icons: Record<DifficultyId, string> = {
+      easy: '⭐',
+      medium: '🏅',
+      hard: '🔥',
+      extreme: '👑',
+    };
+
+    return icons[difficultyId] || '⭐';
   }
 
   get currentQuestion(): QuestionModel | null {
