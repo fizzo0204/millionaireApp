@@ -65,7 +65,9 @@ export class SettingsPage {
     this.notificationsEnabled = !this.notificationsEnabled;
     this.notificationsService.setEnabled(this.notificationsEnabled);
 
-    if (!this.notificationsEnabled) {
+    if (this.notificationsEnabled) {
+      void this.notificationsService.scheduleAll();
+    } else {
       void this.notificationsService.cancelAll();
     }
   }
