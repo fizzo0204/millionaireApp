@@ -28,4 +28,12 @@ export const AUTH_CONFIG = {
     homeOpenDelayMs: 450,
     lastDismissedStorageKey: 'auth_guest_prompt_last_dismissed_at',
   },
+
+  deleteAccount: {
+    // Firebase rifiuta deleteUser() con 'auth/requires-recent-login' se l'ultimo
+    // accesso non e' recente. Controlliamo questa finestra PRIMA di cancellare
+    // i dati Firestore, altrimenti un rifiuto a meta' operazione lascerebbe
+    // l'account Auth vivo ma i dati gia' persi per sempre.
+    recentLoginWindowMs: 5 * 60 * 1000,
+  },
 };

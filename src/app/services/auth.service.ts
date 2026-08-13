@@ -626,6 +626,17 @@ export class AuthService {
 
     if (!currentUser) return 'error';
 
+    /*
+     * Controllo preventivo: se deleteUser() rifiutasse per login non recente
+     * DOPO aver gia' cancellato i dati Firestore (vedi sotto), l'utente
+     * perderebbe i progressi per sempre pur restando con l'account Auth
+     * attivo. Meglio bloccare qui, prima di cancellare qualunque cosa.
+     */
+    if (this.requiresRecentLoginForDeletion(currentUser)) {
+      this.debug('Eliminazione account: richiede login recente (controllo preventivo).');
+      return 'requires-recent-login';
+    }
+
     this.loadingSubject.next(true);
 
     try {
@@ -661,6 +672,16 @@ export class AuthService {
     } finally {
       this.loadingSubject.next(false);
     }
+  }
+
+  private requiresRecentLoginForDeletion(user: User): boolean {
+    const lastSignInTime = user.metadata.lastSignInTime;
+
+    if (!lastSignInTime) return false;
+
+    const elapsedMs = Date.now() - new Date(lastSignInTime).getTime();
+
+    return elapsedMs > AUTH_CONFIG.deleteAccount.recentLoginWindowMs;
   }
 
   private async completeCurrentProfileAccountLink(
