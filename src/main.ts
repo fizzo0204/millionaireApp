@@ -40,6 +40,12 @@ import {
   addCircleOutline,
   colorPaletteOutline,
   shieldCheckmarkOutline,
+  playCircleOutline,
+  playCircle,
+  giftOutline,
+  playForwardOutline,
+  warningOutline,
+  videocam,
 } from 'ionicons/icons';
 
 import { defineCustomElements as ionicElements } from '@ionic/core/loader';
@@ -91,4 +97,10 @@ addIcons({
   'add-circle-outline': addCircleOutline,
   'color-palette-outline': colorPaletteOutline,
   'shield-checkmark-outline': shieldCheckmarkOutline,
+  'play-circle-outline': playCircleOutline,
+  'play-circle': playCircle,
+  'gift-outline': giftOutline,
+  'play-forward-outline': playForwardOutline,
+  'warning-outline': warningOutline,
+  videocam: videocam,
 });

@@ -90,7 +90,7 @@
           <span [style.transform]="'rotate(' + getWheelLabelAngle(i) + 'deg)'">
             <b
               [style.transform]="
-                    'rotate(' + -getWheelLabelAngle(i) + 'deg)'
+                    'rotate(' + (-getWheelLabelAngle(i) - wheelRotation) + 'deg)'
                   "
             >
               {{ reward.shortLabel }}

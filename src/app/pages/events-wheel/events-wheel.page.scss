@@ -379,6 +379,7 @@ ion-content.event-detail-content {
     0 0 5px rgba(0, 0, 0, 0.5);
   background: rgba(3, 10, 30, 0.24);
   border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: transform 2.8s cubic-bezier(0.06, 0.72, 0.08, 1);
 }
 
 .wheel-center-medallion {
@@ -834,16 +835,66 @@ ion-content.event-detail-content {
   hyphens: none;
 }
 
+.double-callout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 14px;
+  padding: 9px 12px;
+  border-radius: 15px;
+  color: #ffea00;
+  background: rgba(255, 234, 0, 0.12);
+  border: 1px solid rgba(255, 234, 0, 0.3);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.double-callout ion-icon {
+  flex-shrink: 0;
+  font-size: 1.05rem;
+}
+
+.duplicate-copy {
+  margin: 10px 0 0;
+  color: #dbeafe;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+.duplicate-copy strong {
+  color: #ffea00;
+}
+
 .double-button,
 .continue-button {
   width: 100%;
   min-height: 46px;
   margin-top: 10px;
+  border: 0;
+  border-radius: 23px;
   font-size: 0.82rem;
+  font-weight: 1000;
 }
 
 .double-button {
+  color: #fff7cc;
+  background: linear-gradient(135deg, #a855f7, #7e22ce);
+  border: 2px solid rgba(250, 204, 21, 0.74);
+  box-shadow:
+    0 7px 0 rgba(88, 28, 135, 0.72),
+    0 14px 22px rgba(0, 0, 0, 0.32);
   animation: doublePulse 1.6s ease-in-out infinite;
+}
+
+.double-button:disabled {
+  color: #cbd5e1;
+  background: rgba(15, 23, 42, 0.62);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+  animation: none;
 }
 
 .continue-button {
