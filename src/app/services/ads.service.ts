@@ -268,32 +268,43 @@ export class AdsService {
           resolve(result);
         };
 
-        rewardedListener = await AdMob.addListener(
-          RewardAdPluginEvents.Rewarded,
-          async (reward: AdMobRewardItem) => {
-            if (reward && reward.amount > 0) {
-              hasReward = true;
-            }
-          },
-        );
+        try {
+          rewardedListener = await AdMob.addListener(
+            RewardAdPluginEvents.Rewarded,
+            async (reward: AdMobRewardItem) => {
+              if (reward && reward.amount > 0) {
+                hasReward = true;
+              }
+            },
+          );
 
-        dismissedListener = await AdMob.addListener(
-          RewardAdPluginEvents.Dismissed,
-          async () => {
-            await finish(hasReward);
-          },
-        );
+          dismissedListener = await AdMob.addListener(
+            RewardAdPluginEvents.Dismissed,
+            async () => {
+              await finish(hasReward);
+            },
+          );
 
-        failedListener = await AdMob.addListener(
-          RewardAdPluginEvents.FailedToShow,
-          async () => {
-            await finish(false);
-          },
-        );
+          failedListener = await AdMob.addListener(
+            RewardAdPluginEvents.FailedToShow,
+            async () => {
+              await finish(false);
+            },
+          );
 
-        timeout = setTimeout(() => {
-          void finish(false);
-        }, 60000);
+          timeout = setTimeout(() => {
+            void finish(false);
+          }, 60000);
+        } catch (error) {
+          /*
+           * Questo executor e' async: un errore qui non farebbe mai
+           * risolvere/rifiutare resultPromise (la Promise costruita ignora
+           * il return dell'executor), lasciando rewardedAdInProgress bloccato
+           * a true per sempre. finish(false) garantisce sempre una risoluzione.
+           */
+          console.error('Errore registrazione listener rewarded video:', error);
+          await finish(false);
+        }
       });
 
       await AdMob.prepareRewardVideoAd(options);
