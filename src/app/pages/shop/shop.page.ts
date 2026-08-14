@@ -10,6 +10,7 @@ import {
 import { AdsService } from 'src/app/services/ads.service';
 import { CoinsService } from 'src/app/services/coins.service';
 import { LivesService } from 'src/app/services/lives';
+import { PurchasesService } from 'src/app/services/purchases.service';
 import {
   AnteprimaForziere,
   ShopService,
@@ -62,6 +63,7 @@ export class ShopPage implements OnInit, OnDestroy {
     private coinsService: CoinsService,
     private livesService: LivesService,
     private shopService: ShopService,
+    private purchasesService: PurchasesService,
     private alertController: AlertController,
   ) {
     this.coins$ = this.coinsService.coins$;
@@ -91,11 +93,18 @@ export class ShopPage implements OnInit, OnDestroy {
 
       if (!confermato) return;
 
-      const pagamentoOk = await this.avviaPagamentoPlaceholder(
+      const esitoAcquisto = await this.purchasesService.purchaseProduct(
         anteprima.config.productId,
       );
 
-      if (!pagamentoOk) return;
+      // Annullamento utente (chiusura del dialog di pagamento): flusso
+      // normale, nessun errore da mostrare.
+      if (esitoAcquisto.status === 'cancelled') return;
+
+      if (esitoAcquisto.status === 'error') {
+        await this.mostraErroreAcquisto(esitoAcquisto.message);
+        return;
+      }
 
       const risultato = await this.shopService.riscattaForziere(tipo);
 
@@ -170,12 +179,6 @@ export class ShopPage implements OnInit, OnDestroy {
     ];
   }
 
-  // Placeholder temporaneo: qui collegheremo Google Play Billing.
-  private async avviaPagamentoPlaceholder(productId: string): Promise<boolean> {
-    console.log('Pagamento placeholder per productId:', productId);
-    return true;
-  }
-
   // Mostra la cinematica del premio ricevuto dopo l'acquisto.
   private async mostraPremioForziere(
     titolo: string,
@@ -234,10 +237,11 @@ export class ShopPage implements OnInit, OnDestroy {
   }
 
   // Mostra una modale generica in caso di errore acquisto.
-  private async mostraErroreAcquisto(): Promise<void> {
+  private async mostraErroreAcquisto(message?: string): Promise<void> {
     const alert = await this.alertController.create({
       header: 'Acquisto non completato',
       message:
+        message ??
         'Si è verificato un problema durante l’acquisto. Riprova tra poco.',
       buttons: ['Ok'],
       cssClass: 'shop-alert',

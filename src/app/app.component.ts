@@ -24,6 +24,7 @@ import { DailyRewardAutoOpenService } from './services/daily-reward-auto-open.se
 import { AssetPreloadService } from './services/asset-preload.service';
 import { AchievementToastService } from './services/achievement-toast.service';
 import { NotificationsService } from './services/notifications.service';
+import { PurchasesService } from './services/purchases.service';
 import { NavigationTab } from './models/navigation.model';
 import { APP_CONFIG } from 'src/app/config/app.config';
 import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
@@ -80,10 +81,12 @@ export class AppComponent implements OnDestroy {
     private assetPreload: AssetPreloadService,
     private achievementToast: AchievementToastService,
     private notificationsService: NotificationsService,
+    private purchasesService: PurchasesService,
     private router: Router,
   ) {
     this.bannerHeightPx$ = this.adsService.bannerHeight$;
     void this.dailyEventsService;
+    void this.purchasesService;
     this.initializeApp();
     this.listenToRouteChanges();
     this.listenToLevelChanges();
