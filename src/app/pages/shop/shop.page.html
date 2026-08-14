@@ -109,43 +109,6 @@
       </div>
 
       <div class="chests-top-grid">
-        <div class="chest-card traveler-chest">
-          <div class="chest-shine"></div>
-          <div class="chest-badge bronze">Starter</div>
-
-          <div class="chest-emoji">🧳</div>
-
-          <div class="chest-text">
-            <h4>Viaggiatore</h4>
-            <p>Il pacchetto perfetto per iniziare.</p>
-          </div>
-
-          <div class="reward-list">
-            <div class="reward-line">
-              <img class="reward-coin-icon" [src]="coinIconPath" alt="Coins" />
-              <strong>50</strong>
-              <span>TurtleCoins</span>
-            </div>
-
-            <div class="reward-line">
-              <span class="reward-symbol">⭐</span>
-              <strong>50</strong>
-              <span>XP</span>
-            </div>
-          </div>
-
-          <ion-button
-            expand="block"
-            class="chest-button"
-            (click)="compraForziere('viaggiatore')"
-            [disabled]="!!chestLoading || coinsLoading || lifeLoading"
-          >
-            @if (chestLoading !== 'viaggiatore') { €1,99 } @else {
-            <ion-spinner name="dots"></ion-spinner>
-            }
-          </ion-button>
-        </div>
-
         <div class="chest-card master-chest">
           <div class="chest-shine"></div>
           <div class="chest-badge gold">Più scelto</div>
@@ -183,6 +146,43 @@
             [disabled]="!!chestLoading || coinsLoading || lifeLoading"
           >
             @if (chestLoading !== 'maestro') { €2,99 } @else {
+            <ion-spinner name="dots"></ion-spinner>
+            }
+          </ion-button>
+        </div>
+
+        <div class="chest-card traveler-chest">
+          <div class="chest-shine"></div>
+          <div class="chest-badge bronze">Starter</div>
+
+          <div class="chest-emoji">🧳</div>
+
+          <div class="chest-text">
+            <h4>Viaggiatore</h4>
+            <p>Il pacchetto perfetto per iniziare.</p>
+          </div>
+
+          <div class="reward-list">
+            <div class="reward-line">
+              <img class="reward-coin-icon" [src]="coinIconPath" alt="Coins" />
+              <strong>50</strong>
+              <span>TurtleCoins</span>
+            </div>
+
+            <div class="reward-line">
+              <span class="reward-symbol">⭐</span>
+              <strong>50</strong>
+              <span>XP</span>
+            </div>
+          </div>
+
+          <ion-button
+            expand="block"
+            class="chest-button"
+            (click)="compraForziere('viaggiatore')"
+            [disabled]="!!chestLoading || coinsLoading || lifeLoading"
+          >
+            @if (chestLoading !== 'viaggiatore') { €1,99 } @else {
             <ion-spinner name="dots"></ion-spinner>
             }
           </ion-button>
