@@ -24,6 +24,13 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // Config pubblica letta all'avvio (es. minVersionCode per il force update).
+    // Aggiornata a mano da console, mai dal client.
+    match /appConfig/{document} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
     match /users/{uid} {
       allow read: if isOwner(uid) || isAdmin();
       allow create: if isOwner(uid);

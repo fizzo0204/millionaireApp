@@ -18,6 +18,7 @@ import { GameLoaderComponent } from './components/game-loader/game-loader.compon
 import { LevelUpModalComponent } from './components/level-up-modal/level-up-modal.component';
 import { TutorialOverlayComponent } from './components/tutorial-overlay/tutorial-overlay.component';
 import { AchievementToastComponent } from './components/achievement-toast/achievement-toast.component';
+import { ForceUpdateOverlayComponent } from './components/force-update-overlay/force-update-overlay.component';
 import { LevelUpModalService } from './services/level-up-modal.service';
 import { DailyEventsService } from './services/daily-events.service';
 import { DailyRewardAutoOpenService } from './services/daily-reward-auto-open.service';
@@ -41,6 +42,7 @@ import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
     LevelUpModalComponent,
     TutorialOverlayComponent,
     AchievementToastComponent,
+    ForceUpdateOverlayComponent,
   ],
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],

@@ -1,0 +1,29 @@
+@if (updateRequired$ | async) {
+  <div
+    class="force-update-backdrop"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Aggiornamento richiesto"
+  >
+    <div class="force-update-card">
+      <div class="force-update-icon">
+        <ion-icon name="cloud-download-outline"></ion-icon>
+      </div>
+
+      <h2>Nuovo aggiornamento disponibile</h2>
+
+      <p>
+        Questa versione di TurtleMind non è più supportata. Aggiorna l'app
+        dal Play Store per continuare a giocare.
+      </p>
+
+      <button
+        class="force-update-button"
+        type="button"
+        (click)="openStore()"
+      >
+        Aggiorna ora
+      </button>
+    </div>
+  </div>
+}
