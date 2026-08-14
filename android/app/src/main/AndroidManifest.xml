@@ -3,6 +3,8 @@
     <!-- 🔐 Necessario per AdMob -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- 💳 Necessario per gli acquisti in-app (Google Play Billing) -->
+    <uses-permission android:name="com.android.vending.BILLING" />
 
     <application
         android:allowBackup="true"

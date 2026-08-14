@@ -34,6 +34,7 @@
     "@capacitor/status-bar": "^7.0.3",
     "@ionic/angular": "^8.0.0",
     "@ionic/pwa-elements": "^3.3.0",
+    "@revenuecat/purchases-capacitor": "^11.3.2",
     "firebase": "^11.10.0",
     "ionicons": "^7.0.0",
     "localforage": "^1.10.0",
