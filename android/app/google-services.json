@@ -30,6 +30,14 @@
           }
         },
         {
+          "client_id": "419647253271-v58bgcsvag57n3s7tepdp7ndlpds0p4c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.turtlemind.app",
+            "certificate_hash": "ac1ff53be775b36361ae956e30bdc99b30bc5c17"
+          }
+        },
+        {
           "client_id": "419647253271-kohvq0q3git46j9me69clkd5p15r77n0.apps.googleusercontent.com",
           "client_type": 3
         }
