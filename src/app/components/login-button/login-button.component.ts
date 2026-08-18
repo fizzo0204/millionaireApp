@@ -96,13 +96,20 @@ export class LoginButtonComponent {
 
   getPlayerTag(user: User, profile?: AppUserProfile): string {
     if (user.isAnonymous) return 'GUEST';
-    if (this.hasProvider(user, profile, AUTH_CONFIG.providers.google)) {
-      return 'GOOGLE';
-    }
     if (this.hasProvider(user, profile, AUTH_CONFIG.providers.facebook)) {
       return 'FACEBOOK';
     }
+    /*
+     * Play Games va controllato prima di Google: Firebase registra sempre
+     * anche il provider "google.com" quando l'utente si collega con Play
+     * Games (e un account Google sotto, per come funziona Play Games su
+     * Android), quindi hasProvider(google) risulterebbe vero anche per chi
+     * ha usato solo Play Games e mai collegato Google esplicitamente.
+     */
     if (this.isPlayGamesProfile(user, profile)) return 'PLAY GAMES';
+    if (this.hasProvider(user, profile, AUTH_CONFIG.providers.google)) {
+      return 'GOOGLE';
+    }
 
     return 'PLAYER';
   }

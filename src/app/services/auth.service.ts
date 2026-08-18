@@ -316,6 +316,18 @@ export class AuthService {
             );
 
             if (!signedIn) return false;
+          } else if (err.code === 'auth/provider-already-linked') {
+            /*
+             * Firebase vede gia un provider google.com sull'utente corrente:
+             * e il companion automatico di Play Games (stesso account Google),
+             * non un secondo account da gestire. Confermiamo il profilo
+             * attuale con i dati Google reali, senza cambiare uid.
+             */
+            await this.completeCurrentProfileAccountLink(
+              currentUser!,
+              AUTH_CONFIG.providers.google,
+            );
+            this.debug('Google gia collegato tramite Play Games: confermato');
           } else {
             throw err;
           }
@@ -805,13 +817,23 @@ export class AuthService {
       user,
       AUTH_CONFIG.providers.playGames,
     );
-    const hasGoogle = this.userHasProvider(user, AUTH_CONFIG.providers.google);
+
+    if (!hasPlayGames) return false;
+
     const hasFacebook = this.userHasProvider(
       user,
       AUTH_CONFIG.providers.facebook,
     );
 
-    return hasPlayGames && !hasGoogle && !hasFacebook;
+    /*
+     * Non controlliamo hasGoogle qui: Play Games su Android registra sempre
+     * anche un provider "google.com" companion (e legato allo stesso account
+     * Google), quindi risulterebbe sempre presente anche se l'utente non ha
+     * mai collegato Google esplicitamente. Usarlo bloccherebbe per sempre il
+     * bottone "Collega account" e il vero collegamento Google per chi ha
+     * fatto solo login Play Games.
+     */
+    return !hasFacebook;
   }
 
   isPlayGamesBaseProfile(user: User | null): boolean {
