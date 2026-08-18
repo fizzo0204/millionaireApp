@@ -76,7 +76,7 @@ export class ProfilePage {
   tempSelectedAvatar = this.selectedAvatar;
   unlockedAvatarIds: string[] = [];
   tempNickname = '';
-  nicknameMaxLength = 16;
+  nicknameMaxLength = 10;
   nicknameSaving = false;
 
   showAvatarModal = false;
@@ -100,13 +100,13 @@ export class ProfilePage {
   readonly avatars: AvatarModel[] = [...AVATARS];
 
   private readonly specialNicknameAvatarIds: Record<string, string[]> = {
-    prof_tonino: ['special_1_turtle'],
-    avv_chicchina: ['special_2_turtle'],
+    prof_tony: ['special_1_turtle'],
+    avv_chicca: ['special_2_turtle'],
   };
 
   private readonly specialIntroByNickname: Record<string, SpecialIntroConfig> =
     {
-      prof_tonino: {
+      prof_tony: {
         avatarId: 'special_1_turtle',
         title: 'Avatar speciale sbloccato',
         text:
@@ -114,7 +114,7 @@ export class ProfilePage {
           'innanzitutto la ringrazio per aver preso parte al gioco TurtleMind, anche se lei \u00e8 la padrona, si sa. Il team TurtleMind voleva regalarLe questo fantastico avatar, tutto per lei!\n\n' +
           'Si diverta, mi raccomando!',
       },
-      avv_chicchina: {
+      avv_chicca: {
         avatarId: 'special_2_turtle',
         title: 'Avatar speciale sbloccato',
         text:
