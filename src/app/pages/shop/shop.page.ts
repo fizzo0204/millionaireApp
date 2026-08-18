@@ -13,6 +13,7 @@ import { LivesService } from 'src/app/services/lives';
 import { PurchasesService } from 'src/app/services/purchases.service';
 import {
   AnteprimaForziere,
+  PurchaseGrantPendingError,
   ShopService,
   TipoForziere,
 } from 'src/app/services/shop.service';
@@ -79,6 +80,32 @@ export class ShopPage implements OnInit, OnDestroy {
 
       this.previousLives = lives;
     });
+
+    this.riscattaAcquistiSospesi();
+  }
+
+  // Recupera eventuali forzieri pagati in una sessione precedente ma mai
+  // accreditati (es. app chiusa o Firestore irraggiungibile subito dopo il
+  // pagamento). Mostra la cinematica premio per ognuno recuperato.
+  private async riscattaAcquistiSospesi(): Promise<void> {
+    try {
+      const recuperati = await this.shopService.riscattaAcquistiSospesi();
+
+      for (const risultato of recuperati) {
+        this.triggerCoinPulse();
+
+        await this.mostraPremioForziere(
+          risultato.titolo,
+          risultato.coins,
+          risultato.xp,
+          risultato.avatar?.label,
+          risultato.avatar?.icon,
+          risultato.fallbackUsato,
+        );
+      }
+    } catch (error) {
+      console.error('Errore riconciliazione acquisti sospesi:', error);
+    }
   }
 
   // Avvia il flusso di acquisto del forziere selezionato.
@@ -106,18 +133,33 @@ export class ShopPage implements OnInit, OnDestroy {
         return;
       }
 
-      const risultato = await this.shopService.riscattaForziere(tipo);
+      try {
+        const risultato = await this.shopService.riscattaForzierePagato(
+          tipo,
+          esitoAcquisto.transactionIdentifier,
+        );
 
-      this.triggerCoinPulse();
+        this.triggerCoinPulse();
 
-      await this.mostraPremioForziere(
-        anteprima.config.titolo,
-        risultato.coins,
-        risultato.xp,
-        risultato.avatar?.label,
-        risultato.avatar?.icon,
-        risultato.fallbackUsato,
-      );
+        await this.mostraPremioForziere(
+          anteprima.config.titolo,
+          risultato.coins,
+          risultato.xp,
+          risultato.avatar?.label,
+          risultato.avatar?.icon,
+          risultato.fallbackUsato,
+        );
+      } catch (grantError) {
+        if (grantError instanceof PurchaseGrantPendingError) {
+          // Il pagamento è già andato a buon fine: non è un errore da far
+          // ripagare, solo l'accredito da completare (vedi
+          // riscattaAcquistiSospesi, richiamato alla riapertura dello shop).
+          await this.mostraPremioInSospeso();
+          return;
+        }
+
+        throw grantError;
+      }
     } catch (error) {
       console.error('Errore acquisto forziere:', error);
       await this.mostraErroreAcquisto();
@@ -234,6 +276,19 @@ export class ShopPage implements OnInit, OnDestroy {
     this.purchaseRewardLabel = '';
     this.purchaseRewardAvatarImage = '';
     this.purchaseRewardAvatarLabel = '';
+  }
+
+  // Mostra un avviso quando il pagamento è riuscito ma l'accredito è ancora in sospeso.
+  private async mostraPremioInSospeso(): Promise<void> {
+    const alert = await this.alertController.create({
+      header: 'Pagamento riuscito',
+      message:
+        'Il premio non è stato ancora assegnato per un problema di connessione. Verrà accreditato automaticamente: riapri lo shop tra poco per riceverlo.',
+      buttons: ['Ok'],
+      cssClass: 'shop-alert',
+    });
+
+    await alert.present();
   }
 
   // Mostra una modale generica in caso di errore acquisto.

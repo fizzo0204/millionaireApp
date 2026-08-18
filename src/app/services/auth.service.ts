@@ -854,6 +854,24 @@ export class AuthService {
      */
     if (!this.isBaseProfile(user)) return false;
 
+    if (
+      providerId === AUTH_CONFIG.providers.google &&
+      this.userHasProvider(user!, AUTH_CONFIG.providers.playGames)
+    ) {
+      /*
+       * Il companion google.com di Play Games (vedi isBaseProfile) NON e' un
+       * vero collegamento Google. Se lo trattassimo come gia collegato, qui
+       * sotto restituiremmo false: googleSignIn() salterebbe linkWithCredential
+       * e farebbe un signInWithCredential pieno, che puo' creare/caricare un
+       * account Google diverso con un uid diverso, perdendo i progressi Play
+       * Games (bug reale riscontrato su device il 2026-08-18). Tentiamo
+       * comunque il link: se Firebase risponde con auth/provider-already-linked
+       * (stesso account Google sotto il cofano), googleSignIn() lo gestisce
+       * gia' come conferma sullo stesso uid, senza switch.
+       */
+      return true;
+    }
+
     return !this.userHasProvider(user!, providerId);
   }
 
@@ -925,7 +943,7 @@ export class AuthService {
 
           return true;
         } catch (error) {
-          await this.restoreDeletedAnonymousSnapshotIfNeeded(
+          await this.retryImportedProfileSnapshotAfterFailure(
             profileSnapshot,
             profiloOspiteEliminato,
           );
@@ -1031,32 +1049,40 @@ export class AuthService {
           profileSnapshot,
         );
 
-      const signedInUser = await signInWithCredential(
-        firebaseAuth,
-        freshPlayGamesResult.credential,
-      );
+      try {
+        const signedInUser = await signInWithCredential(
+          firebaseAuth,
+          freshPlayGamesResult.credential,
+        );
 
-      if (profileSnapshot) {
-        await this.userStatsService.restoreProfileSnapshotIntoLinkedAccount(
+        if (profileSnapshot) {
+          await this.userStatsService.restoreProfileSnapshotIntoLinkedAccount(
+            signedInUser.user,
+            profileSnapshot,
+          );
+        }
+
+        await this.syncSignedInProviderProfile(
           signedInUser.user,
-          profileSnapshot,
+          AUTH_CONFIG.providers.playGames,
+          freshPlayGamesResult.profile,
         );
-      }
 
-      await this.syncSignedInProviderProfile(
-        signedInUser.user,
-        AUTH_CONFIG.providers.playGames,
-        freshPlayGamesResult.profile,
-      );
+        if (!profiloOspiteEliminato) {
+          await this.deleteProfileSnapshotIfAnonymous(
+            profileSnapshot,
+            signedInUser.user.uid,
+          );
+        }
 
-      if (!profiloOspiteEliminato) {
-        await this.deleteProfileSnapshotIfAnonymous(
+        return true;
+      } catch (error) {
+        await this.retryImportedProfileSnapshotAfterFailure(
           profileSnapshot,
-          signedInUser.user.uid,
+          profiloOspiteEliminato,
         );
+        throw error;
       }
-
-      return true;
     }
 
     const shouldSwitch = await this.confirmExistingProviderSwitch(
@@ -1080,25 +1106,33 @@ export class AuthService {
         profileSnapshot,
       );
 
-    const signedInUser = await signInWithCredential(
-      firebaseAuth,
-      freshPlayGamesResult.credential,
-    );
-
-    await this.syncSignedInProviderProfile(
-      signedInUser.user,
-      AUTH_CONFIG.providers.playGames,
-      freshPlayGamesResult.profile,
-    );
-
-    if (!profiloOspiteEliminato) {
-      await this.deleteProfileSnapshotIfAnonymous(
-        profileSnapshot,
-        signedInUser.user.uid,
+    try {
+      const signedInUser = await signInWithCredential(
+        firebaseAuth,
+        freshPlayGamesResult.credential,
       );
-    }
 
-    return true;
+      await this.syncSignedInProviderProfile(
+        signedInUser.user,
+        AUTH_CONFIG.providers.playGames,
+        freshPlayGamesResult.profile,
+      );
+
+      if (!profiloOspiteEliminato) {
+        await this.deleteProfileSnapshotIfAnonymous(
+          profileSnapshot,
+          signedInUser.user.uid,
+        );
+      }
+
+      return true;
+    } catch (error) {
+      await this.restoreDeletedAnonymousSnapshotIfNeeded(
+        profileSnapshot,
+        profiloOspiteEliminato,
+      );
+      throw error;
+    }
   }
 
   private async signInWithFreshPlayGamesCredential(
@@ -1151,15 +1185,35 @@ export class AuthService {
 
       return true;
     } catch (error) {
-      await this.restoreDeletedAnonymousSnapshotIfNeeded(
-        profileSnapshot,
-        profiloOspiteEliminato,
-      );
+      /*
+       * Stessa distinzione di handleExistingPlayGamesProfile: se stiamo
+       * importando il profilo corrente (nessun rischio di sovrascrivere un
+       * account con progressi propri), il ripristino va tentato sull'utente
+       * corrente qualunque esso sia; altrimenti va limitato al caso in cui
+       * siamo ancora sull'ospite.
+       */
+      if (importCurrentProfile) {
+        await this.retryImportedProfileSnapshotAfterFailure(
+          profileSnapshot,
+          profiloOspiteEliminato,
+        );
+      } else {
+        await this.restoreDeletedAnonymousSnapshotIfNeeded(
+          profileSnapshot,
+          profiloOspiteEliminato,
+        );
+      }
       throw error;
     }
   }
 
   // Ripristina il profilo anonimo se il passaggio al provider fallisce dopo la cancellazione preventiva.
+  // Usato solo quando l'account di destinazione aveva GIA' un proprio profilo TurtleMind
+  // (flusso "carico profilo salvato"): se il login e' fallito del tutto siamo ancora
+  // sull'ospite (stesso uid dello snapshot) e possiamo ridargli i suoi dati. Se invece il
+  // login e' riuscito ma un passo successivo e' fallito, l'utente corrente e' gia'
+  // sull'altro account con i suoi progressi reali: NON dobbiamo scriverci sopra lo
+  // snapshot dell'ospite, quindi non facciamo nulla (uid diverso da profileSnapshot.uid).
   private async restoreDeletedAnonymousSnapshotIfNeeded(
     profileSnapshot: UserProfileMigrationSnapshot | null,
     profiloOspiteEliminato: boolean,
@@ -1180,6 +1234,40 @@ export class AuthService {
     } catch (error) {
       console.warn(
         'Non sono riuscito a ripristinare il profilo ospite dopo il login fallito:',
+        error,
+      );
+    }
+  }
+
+  /*
+   * Variante usata solo nel flusso "importa profilo ospite" (l'account di
+   * destinazione NON aveva ancora un proprio profilo TurtleMind, quindi non
+   * c'e' rischio di sovrascrivere progressi altrui). A differenza di
+   * restoreDeletedAnonymousSnapshotIfNeeded, qui il ripristino va tentato
+   * sull'utente Firebase corrente qualunque esso sia: se signInWithCredential
+   * e' fallito siamo ancora sull'ospite (stesso uid dello snapshot); se invece
+   * e' riuscito ma un passo successivo (merge/sync) e' fallito, l'utente
+   * corrente e' gia' il nuovo account e il ripristino va completato li' -
+   * altrimenti i progressi dell'ospite, gia' cancellati, andrebbero persi.
+   */
+  private async retryImportedProfileSnapshotAfterFailure(
+    profileSnapshot: UserProfileMigrationSnapshot | null,
+    profiloOspiteEliminato: boolean,
+  ): Promise<void> {
+    if (!profileSnapshot || !profiloOspiteEliminato) return;
+
+    const currentUser = firebaseAuth.currentUser;
+
+    if (!currentUser) return;
+
+    try {
+      await this.userStatsService.restoreProfileSnapshotIntoLinkedAccount(
+        currentUser,
+        profileSnapshot,
+      );
+    } catch (error) {
+      console.warn(
+        "Non sono riuscito a completare l'importazione del profilo ospite dopo un errore:",
         error,
       );
     }

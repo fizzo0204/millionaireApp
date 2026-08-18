@@ -1,13 +1,38 @@
-import { Injectable, inject } from '@angular/core';
+import {
+  EnvironmentInjector,
+  Injectable,
+  inject,
+  runInInjectionContext,
+} from '@angular/core';
+import {
+  Firestore,
+  arrayUnion,
+  doc,
+  getDoc,
+  updateDoc,
+} from '@angular/fire/firestore';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthService } from './auth.service';
 import { CoinsService } from './coins.service';
 import { UserStatsService } from './user-stats.service';
 import { UserAvatarDataService } from './user-avatar-data.service';
+import { PurchasesService } from './purchases.service';
 
 import { AvatarModel, AvatarSource } from 'src/app/models/avatar.model';
 import { AVATARS } from '../data/avatars.data';
+
+// Lanciato quando un acquisto e' stato pagato ma l'accredito su Firestore non
+// e' andato a buon fine: il chiamante NON deve far ripagare l'utente, il
+// recupero avviene alla riapertura dello shop (vedi riscattaAcquistiSospesi).
+export class PurchaseGrantPendingError extends Error {
+  constructor() {
+    super(
+      "Pagamento riuscito, ma l'accredito del premio non è ancora completato.",
+    );
+    this.name = 'PurchaseGrantPendingError';
+  }
+}
 
 export type TipoForziere = 'viaggiatore' | 'maestro' | 'leggendario';
 
@@ -39,6 +64,10 @@ export interface RisultatoForziere {
   fallbackUsato: boolean;
 }
 
+export interface RisultatoForziereRecuperato extends RisultatoForziere {
+  titolo: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -47,6 +76,9 @@ export class ShopService {
   private coinsService = inject(CoinsService);
   private userStatsService = inject(UserStatsService);
   private userAvatarDataService = inject(UserAvatarDataService);
+  private purchasesService = inject(PurchasesService);
+  private firestore = inject(Firestore);
+  private injector = inject(EnvironmentInjector);
 
   readonly forzieri: ConfigForziere[] = [
     {
@@ -178,6 +210,137 @@ export class ShopService {
       avatar: avatarSbloccato,
       fallbackUsato,
     };
+  }
+
+  /*
+   * Completa un acquisto gia' pagato: assegna la ricompensa e segna la
+   * transazione come accreditata, con un tentativo aggiuntivo in caso di
+   * errore transitorio (rete/Firestore) subito dopo il pagamento reale.
+   *
+   * Se anche il secondo tentativo fallisce, NON viene propagato l'errore
+   * originale: il chiamante deve sapere che l'utente ha gia' pagato, non che
+   * deve ripagare. Il recupero avviene alla riapertura dello shop, vedi
+   * riscattaAcquistiSospesi(). Nota: riscattaForziere() non e' un'unica
+   * transazione atomica (avatar, coins e xp sono tre scritture separate), per
+   * cui un fallimento a meta' seguito da un retry riuscito puo', in casi
+   * rari, assegnare un secondo avatar o monete bonus in piu' del dovuto:
+   * un rischio residuo accettato perche' favorisce il giocatore, non causa
+   * mai la perdita del pagamento.
+   */
+  async riscattaForzierePagato(
+    tipo: TipoForziere,
+    transactionIdentifier: string,
+  ): Promise<RisultatoForziere> {
+    const tentativiMax = 2;
+
+    for (let tentativo = 1; tentativo <= tentativiMax; tentativo++) {
+      try {
+        const risultato = await this.riscattaForziere(tipo);
+        const user = await firstValueFrom(this.auth.user$);
+
+        if (user) {
+          await this.markTransactionGranted(user.uid, transactionIdentifier);
+        }
+
+        return risultato;
+      } catch (error) {
+        console.error(
+          `Errore accredito forziere pagato (tentativo ${tentativo}/${tentativiMax}):`,
+          error,
+        );
+
+        if (tentativo === tentativiMax) {
+          throw new PurchaseGrantPendingError();
+        }
+
+        await this.wait(700);
+      }
+    }
+
+    throw new PurchaseGrantPendingError();
+  }
+
+  /*
+   * Assegna eventuali forzieri pagati ma non ancora accreditati su Firestore
+   * (es. l'app e' stata chiusa, o riscattaForzierePagato ha esaurito i
+   * tentativi). RevenueCat resta la fonte di verita' su "e' stato pagato":
+   * confrontiamo la sua cronologia transazioni con l'elenco di quelle gia'
+   * accreditate salvato sul profilo utente. Va richiamato all'apertura dello
+   * shop.
+   */
+  async riscattaAcquistiSospesi(): Promise<RisultatoForziereRecuperato[]> {
+    const user = await firstValueFrom(this.auth.user$);
+    if (!user) return [];
+
+    const transazioni =
+      await this.purchasesService.getNonSubscriptionTransactions();
+    if (transazioni.length === 0) return [];
+
+    const idsGiaAccreditati = await this.getGrantedTransactionIds(user.uid);
+    const risultati: RisultatoForziereRecuperato[] = [];
+
+    for (const transazione of transazioni) {
+      if (idsGiaAccreditati.includes(transazione.transactionIdentifier)) {
+        continue;
+      }
+
+      const config = this.forzieri.find(
+        (item) => item.productId === transazione.productIdentifier,
+      );
+
+      if (!config) continue; // Prodotto non riconosciuto (es. rimosso dal catalogo).
+
+      try {
+        const risultato = await this.riscattaForziere(config.tipo);
+
+        await this.markTransactionGranted(
+          user.uid,
+          transazione.transactionIdentifier,
+        );
+
+        risultati.push({ ...risultato, titolo: config.titolo });
+      } catch (error) {
+        console.error(
+          'Errore riscatto acquisto sospeso:',
+          transazione.transactionIdentifier,
+          error,
+        );
+        // Non segnata come accreditata: si ritentera' alla prossima apertura.
+      }
+    }
+
+    return risultati;
+  }
+
+  private async getGrantedTransactionIds(uid: string): Promise<string[]> {
+    const userRef = doc(this.firestore, `users/${uid}`);
+    const snapshot = await this.runFirestore(() => getDoc(userRef));
+
+    if (!snapshot.exists()) return [];
+
+    const purchases = snapshot.data()['purchases'];
+    return purchases?.grantedTransactionIds ?? [];
+  }
+
+  private async markTransactionGranted(
+    uid: string,
+    transactionIdentifier: string,
+  ): Promise<void> {
+    const userRef = doc(this.firestore, `users/${uid}`);
+
+    await this.runFirestore(() =>
+      updateDoc(userRef, {
+        'purchases.grantedTransactionIds': arrayUnion(transactionIdentifier),
+      }),
+    );
+  }
+
+  private runFirestore<T>(operation: () => T): T {
+    return runInInjectionContext(this.injector, operation);
+  }
+
+  private wait(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   // Restituisce solo gli avatar della tipologia richiesta.

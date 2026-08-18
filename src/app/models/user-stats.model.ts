@@ -30,6 +30,10 @@ export interface UserOnboardingData {
   tutorialSkippedAt?: unknown;
 }
 
+export interface UserPurchasesData {
+  grantedTransactionIds: string[];
+}
+
 export interface UserArcadeData {
   currentLevel: number;
   bestLevel: number;
@@ -68,6 +72,7 @@ export interface AppUserProfile {
   onboarding?: UserOnboardingData;
   arcade?: UserArcadeData;
   achievements?: UserAchievementsData;
+  purchases?: UserPurchasesData;
 }
 
 export interface QuizHistoryItem {

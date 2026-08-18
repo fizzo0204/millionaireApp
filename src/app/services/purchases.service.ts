@@ -5,6 +5,7 @@ import {
   PRODUCT_CATEGORY,
   PURCHASES_ERROR_CODE,
   PurchasesError,
+  PurchasesStoreTransaction,
   LOG_LEVEL,
 } from '@revenuecat/purchases-capacitor';
 import { firstValueFrom } from 'rxjs';
@@ -12,7 +13,7 @@ import { AuthService } from './auth.service';
 import { PURCHASES_CONFIG } from 'src/app/config/purchases.config';
 
 export type PurchaseOutcome =
-  | { status: 'purchased' }
+  | { status: 'purchased'; transactionIdentifier: string }
   | { status: 'cancelled' }
   | { status: 'error'; message: string };
 
@@ -84,12 +85,80 @@ export class PurchasesService {
         };
       }
 
-      await Purchases.purchaseStoreProduct({ product });
+      const { customerInfo } = await Purchases.purchaseStoreProduct({
+        product,
+      });
 
-      return { status: 'purchased' };
+      const transactionIdentifier = this.findLatestTransactionId(
+        customerInfo.nonSubscriptionTransactions,
+        productId,
+      );
+
+      if (!transactionIdentifier) {
+        /*
+         * Il pagamento e' comunque andato a buon fine lato store: non
+         * trattarlo come annullato/non riuscito, altrimenti il chiamante
+         * potrebbe far ripagare l'utente. Segnaliamo un errore esplicito cosi'
+         * la UI puo' distinguere "pagato ma non tracciabile" da "non pagato".
+         */
+        return {
+          status: 'error',
+          message:
+            "Pagamento riuscito ma non è stato possibile confermare la transazione. Riapri lo shop tra poco: il premio verrà assegnato automaticamente.",
+        };
+      }
+
+      return { status: 'purchased', transactionIdentifier };
     } catch (error) {
       return this.mapPurchaseError(error);
     }
+  }
+
+  /*
+   * Cronologia degli acquisti non-subscription noti a RevenueCat (fonte di
+   * verita' per "e' stato davvero pagato"), usata per riconciliare eventuali
+   * acquisti pagati ma mai accreditati su Firestore (es. l'app e' stata
+   * chiusa o la scrittura e' fallita subito dopo il pagamento).
+   */
+  async getNonSubscriptionTransactions(): Promise<
+    PurchasesStoreTransaction[]
+  > {
+    if (!Capacitor.isNativePlatform()) return [];
+
+    try {
+      const user = await firstValueFrom(this.auth.user$);
+
+      if (!user) return [];
+
+      await this.syncIdentity(user.uid);
+
+      const { customerInfo } = await Purchases.getCustomerInfo();
+
+      return customerInfo.nonSubscriptionTransactions;
+    } catch (error) {
+      console.error('Errore lettura transazioni RevenueCat:', error);
+      return [];
+    }
+  }
+
+  // Tra le transazioni di un prodotto, quella con la data di acquisto più recente.
+  private findLatestTransactionId(
+    transactions: PurchasesStoreTransaction[],
+    productId: string,
+  ): string | undefined {
+    const delProdotto = transactions.filter(
+      (transazione) => transazione.productIdentifier === productId,
+    );
+
+    if (delProdotto.length === 0) return undefined;
+
+    const piuRecente = delProdotto.reduce((latest, current) =>
+      Date.parse(current.purchaseDate) > Date.parse(latest.purchaseDate)
+        ? current
+        : latest,
+    );
+
+    return piuRecente.transactionIdentifier;
   }
 
   /*
