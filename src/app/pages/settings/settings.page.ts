@@ -26,6 +26,7 @@ import { LEGAL_CONFIG } from 'src/app/config/legal.config';
 })
 export class SettingsPage {
   user$ = this.authService.user$;
+  shouldOfferAccountLink$ = this.authService.shouldOfferAccountLink$;
 
   musicEnabled = true;
   clickEnabled = true;
@@ -70,10 +71,6 @@ export class SettingsPage {
     } else {
       void this.notificationsService.cancelAll();
     }
-  }
-
-  shouldShowLinkAccount(user: User | null): boolean {
-    return this.authService.isBaseProfile(user);
   }
 
   isAdmin(user: User | null): boolean {

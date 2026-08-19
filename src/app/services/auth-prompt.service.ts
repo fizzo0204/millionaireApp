@@ -3,7 +3,10 @@ import { Router } from '@angular/router';
 import { ModalController } from '@ionic/angular/standalone';
 import { firstValueFrom } from 'rxjs';
 import { AUTH_CONFIG } from 'src/app/config/auth.config';
-import { AnonymousModalComponent } from 'src/app/components/anonymous-modal/anonymous-modal.component';
+import {
+  ANONYMOUS_MODAL_ID,
+  AnonymousModalComponent,
+} from 'src/app/components/anonymous-modal/anonymous-modal.component';
 import { AuthService } from './auth.service';
 import { AppUserProfile } from 'src/app/models/user-stats.model';
 import { UserStatsService } from './user-stats.service';
@@ -35,6 +38,15 @@ export class AuthPromptService {
     const profile = user
       ? await firstValueFrom(this.userStatsService.getUserProfile(user.uid))
       : undefined;
+
+    /*
+     * isBaseProfile() da sola non distingue un vero collegamento Google dal
+     * companion google.com automatico di Play Games (vedi AuthService). Se
+     * l'utente ha gia' un collegamento reale (auth.loginRewardClaimed, mai
+     * impostato dal solo auto-login Play Games), non riproponiamo l'invito.
+     */
+    if (!user?.isAnonymous && profile?.auth?.loginRewardClaimed) return;
+
     const isPlayGamesProfile = this.isStoredPlayGamesProfile(profile);
 
     /*
@@ -53,6 +65,7 @@ export class AuthPromptService {
     try {
       const modal = await this.modalCtrl.create({
         component: AnonymousModalComponent,
+        id: ANONYMOUS_MODAL_ID,
         cssClass: 'anon-modal',
         backdropDismiss: false,
       });

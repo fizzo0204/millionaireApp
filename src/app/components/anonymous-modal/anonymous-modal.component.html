@@ -65,6 +65,16 @@
               ? "Accesso Google..."
               : "Continua con Google"
           }}
+          @if (!isProviderLoading("google") && (showLinkRewardBadge$ | async)) {
+            <span class="reward-badge">
+              +{{ linkRewardCoins }}
+              <img
+                src="assets/ui/coin-turtle.webp"
+                alt="TurtleCoins"
+                class="reward-badge-icon"
+              />
+            </span>
+          }
         </span>
       </button>
 
@@ -84,6 +94,16 @@
               ? "Accesso Facebook..."
               : "Continua con Facebook"
           }}
+          @if (!isProviderLoading("facebook") && (showLinkRewardBadge$ | async)) {
+            <span class="reward-badge">
+              +{{ linkRewardCoins }}
+              <img
+                src="assets/ui/coin-turtle.webp"
+                alt="TurtleCoins"
+                class="reward-badge-icon"
+              />
+            </span>
+          }
         </span>
       </button>
 

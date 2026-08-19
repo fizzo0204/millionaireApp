@@ -19,6 +19,14 @@ export interface UserAuthProfile {
   migratedFromProviderId?: AppAuthProviderId;
   migratedFromAnonymousUid?: string;
   migratedAt?: unknown;
+  /*
+   * true solo dopo un vero collegamento Google confermato dall'utente (mai
+   * dal solo companion google.com di Play Games, sempre presente in
+   * providerIds anche senza collegamento esplicito - vedi AuthService).
+   * Usato per decidere se il badge in navbar deve mostrare GOOGLE invece di
+   * PLAY GAMES.
+   */
+  googleLinkConfirmed?: boolean;
 }
 
 export interface ProviderProfileMetadata {

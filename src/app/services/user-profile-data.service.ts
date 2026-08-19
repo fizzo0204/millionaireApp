@@ -562,6 +562,28 @@ export class UserProfileDataService {
     );
   }
 
+  /*
+   * Marca un vero collegamento Google confermato dall'utente, da distinguere
+   * dal companion google.com sempre presente in providerIds per i profili
+   * Play Games. Usato dal badge in navbar per mostrare GOOGLE invece di
+   * PLAY GAMES dopo un collegamento reale.
+   */
+  async markGoogleLinkConfirmed(uid: string): Promise<void> {
+    const userRef = doc(this.firestore, `users/${uid}`);
+
+    await this.runFirestore(() =>
+      setDoc(
+        userRef,
+        {
+          auth: {
+            googleLinkConfirmed: true,
+          },
+        },
+        { merge: true },
+      ),
+    );
+  }
+
   getUserProfile(uid: string): Observable<AppUserProfile | undefined> {
     return this.runFirestore(() => {
       const userRef = doc(this.firestore, `users/${uid}`);

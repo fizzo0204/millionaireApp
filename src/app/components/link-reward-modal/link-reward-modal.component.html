@@ -1,0 +1,34 @@
+<div class="reward-scene" (click)="close()">
+  <div class="scene-bg-glow"></div>
+  <div class="scene-stars"></div>
+  <div class="scene-particles"></div>
+
+  <div class="reward-ribbon">
+    <div class="ribbon-side left"></div>
+    <div class="ribbon-main">ACCOUNT COLLEGATO!</div>
+    <div class="ribbon-side right"></div>
+  </div>
+
+  <div class="reward-content" (click)="$event.stopPropagation()">
+    <div class="reward-subtitle">Progressi al sicuro. Ecco il tuo premio</div>
+
+    <div class="floating-reward">
+      <div class="reward-light"></div>
+
+      <img [src]="coinIconPath" alt="TurtleCoins" class="reward-icon-img" />
+
+      <div class="reward-label">
+        @if (coins > 0) {
+          <span>+{{ coins }} TurtleCoins</span>
+        }
+        @if (xp > 0) {
+          <span>+{{ xp }} XP</span>
+        }
+      </div>
+    </div>
+
+    <button class="reward-continue-btn" type="button" (click)="close()">
+      Fantastico!
+    </button>
+  </div>
+</div>

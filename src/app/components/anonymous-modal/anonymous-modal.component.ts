@@ -19,6 +19,16 @@ import { GameLoaderComponent } from 'src/app/components/game-loader/game-loader.
 
 type LoginProviderAction = 'google' | 'facebook' | 'playGames';
 
+/*
+ * Id esplicito richiesto da ModalController.dismiss(): il collegamento
+ * account puo' aprire la link-reward-modal SOPRA questa (vedi
+ * AuthService.showLinkRewardToast) mentre questa e' ancora presentata. Senza
+ * un id, dismiss() chiude sempre la modale in cima allo stack Ionic, quindi
+ * chiuderebbe quella sbagliata (la reward, mai vista dall'utente) invece di
+ * se stessa.
+ */
+export const ANONYMOUS_MODAL_ID = 'anonymous-modal';
+
 @Component({
   selector: 'app-anonymous-modal',
   standalone: true,
@@ -52,6 +62,18 @@ export class AnonymousModalComponent {
       ([user, profile]) =>
         this.auth.canConnectPlayGames(user) &&
         !this.isPlayGamesProfile(user, profile),
+    ),
+  );
+
+  readonly linkRewardCoins = AUTH_CONFIG.linkReward.coins;
+
+  // Il premio una tantum e' ancora da riscuotere ogni volta che questa modale
+  // e' legittimamente mostrata (l'apertura e' gia' gated su questa stessa
+  // condizione, vedi AuthPromptService), quindi basta leggere il profilo.
+  showLinkRewardBadge$ = this.profile$.pipe(
+    map(
+      (profile) =>
+        AUTH_CONFIG.linkReward.enabled && !profile?.auth?.loginRewardClaimed,
     ),
   );
 
@@ -175,9 +197,9 @@ export class AnonymousModalComponent {
     await new Promise((resolve) => setTimeout(resolve, remainingMs));
   }
 
-  // Chiude la modale Ionic corrente.
+  // Chiude questa modale specifica (mai quella in cima allo stack, vedi ANONYMOUS_MODAL_ID).
   private async close() {
-    await this.modalCtrl.dismiss();
+    await this.modalCtrl.dismiss(undefined, undefined, ANONYMOUS_MODAL_ID);
   }
 
   private isPlayGamesProfile(

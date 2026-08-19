@@ -166,6 +166,11 @@ export class UserStatsService {
     return this.profileData.ensureProfileMigrationMarkers(uid);
   }
 
+  // Marca un vero collegamento Google confermato (badge navbar).
+  async markGoogleLinkConfirmed(uid: string): Promise<void> {
+    return this.profileData.markGoogleLinkConfirmed(uid);
+  }
+
   // Restituisce il profilo utente osservabile.
   getUserProfile(uid: string): Observable<AppUserProfile | undefined> {
     return this.profileData.getUserProfile(uid);

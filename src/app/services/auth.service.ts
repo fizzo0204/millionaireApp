@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { ToastController } from '@ionic/angular/standalone';
-import { BehaviorSubject } from 'rxjs';
+import { ModalController } from '@ionic/angular/standalone';
+import { BehaviorSubject, Observable, map, of, switchMap } from 'rxjs';
 import {
   signInWithCredential,
   GoogleAuthProvider,
@@ -32,6 +32,10 @@ import {
   ExistingProviderProfileState,
 } from './auth-account-link.service';
 import { UserProfileMigrationSnapshot } from 'src/app/models/user-stats.model';
+import {
+  LINK_REWARD_MODAL_ID,
+  LinkRewardModalComponent,
+} from 'src/app/components/link-reward-modal/link-reward-modal.component';
 
 export type DeleteAccountResult = 'success' | 'requires-recent-login' | 'error';
 
@@ -46,6 +50,30 @@ export class AuthService {
   user$ = this.userSubject.asObservable();
   isLoading$ = this.loadingSubject.asObservable();
 
+  /*
+   * Versione "consapevole del vero collegamento" di isBaseProfile(), da usare
+   * per decidere se mostrare l'invito/bottone "Collega account" (Impostazioni,
+   * tap sul profilo in navbar, prompt periodico). isBaseProfile() da sola non
+   * puo' bastare qui: per un profilo Play Games senza Facebook resta sempre
+   * true anche dopo un vero collegamento Google, perche' providerData non
+   * distingue quel collegamento dal companion google.com automatico (vedi
+   * isBaseProfile). auth.loginRewardClaimed pero' e' un segnale affidabile:
+   * viene impostato solo da un vero primo collegamento
+   * (completeCurrentProfileAccountLink), mai dal solo auto-login Play Games
+   * silenzioso, quindi lo usiamo per correggere il caso ambiguo.
+   */
+  shouldOfferAccountLink$: Observable<boolean> = this.user$.pipe(
+    switchMap((user) => {
+      if (!user) return of(false);
+      if (user.isAnonymous) return of(true);
+      if (!this.isBaseProfile(user)) return of(false);
+
+      return this.userStatsService
+        .getUserProfile(user.uid)
+        .pipe(map((profile) => !profile?.auth?.loginRewardClaimed));
+    }),
+  );
+
   private initialAuthResolved = false;
 
   constructor(
@@ -53,7 +81,7 @@ export class AuthService {
     private playGamesAuthService: PlayGamesAuthService,
     private authProfileSyncService: AuthProfileSyncService,
     private authAccountLinkService: AuthAccountLinkService,
-    private toastCtrl: ToastController,
+    private modalCtrl: ModalController,
   ) {
     onAuthStateChanged(firebaseAuth, async (user) => {
       this.debug(
@@ -332,6 +360,29 @@ export class AuthService {
             throw err;
           }
         }
+      } else if (
+        currentUser &&
+        this.userHasProvider(currentUser, AUTH_CONFIG.providers.playGames)
+      ) {
+        /*
+         * Google companion di Play Games (vedi shouldLinkCurrentProfileToProvider):
+         * nessuna vera operazione Firebase Auth, confermiamo il collegamento
+         * sullo stesso uid, esattamente come per auth/provider-already-linked
+         * qui sopra. Riscontrato su device il 2026-08-19 che un vero tentativo
+         * di link/sign-in con questa credenziale crea sistematicamente un
+         * account separato invece di riconoscere lo stesso account.
+         *
+         * Nota: la `credential` appena ottenuta dal picker Google non viene
+         * usata/verificata qui (Firebase non permette di verificarla in modo
+         * affidabile in questo caso, vedi sopra). Coerente col resto dell'app,
+         * che si fida del client: se l'utente arriva fin qui e conferma,
+         * assumiamo sia lo stesso account Google gia' dietro Play Games.
+         */
+        await this.completeCurrentProfileAccountLink(
+          currentUser,
+          AUTH_CONFIG.providers.google,
+        );
+        this.debug('Google gia collegato tramite Play Games: confermato (companion)');
       } else {
         await signInWithCredential(firebaseAuth, credential);
       }
@@ -736,6 +787,15 @@ export class AuthService {
       );
     }
 
+    if (linkedProviderId === AUTH_CONFIG.providers.google) {
+      /*
+       * Marca il collegamento Google come confermato dall'utente (non solo
+       * companion di Play Games): il badge in navbar lo usa per mostrare
+       * GOOGLE invece di PLAY GAMES dopo un vero collegamento.
+       */
+      await this.userStatsService.markGoogleLinkConfirmed(user.uid);
+    }
+
     try {
       await user.reload();
     } catch {
@@ -749,20 +809,20 @@ export class AuthService {
     coins: number;
     xp: number;
   }): Promise<void> {
-    const parts: string[] = [];
+    if (reward.coins <= 0 && reward.xp <= 0) return;
 
-    if (reward.coins > 0) parts.push(`+${reward.coins} TurtleCoins`);
-    if (reward.xp > 0) parts.push(`+${reward.xp} XP`);
-
-    if (parts.length === 0) return;
-
-    const toast = await this.toastCtrl.create({
-      message: `🎉 ${parts.join(' e ')} per aver collegato l'account!`,
-      duration: 3000,
-      position: 'bottom',
+    const modal = await this.modalCtrl.create({
+      component: LinkRewardModalComponent,
+      id: LINK_REWARD_MODAL_ID,
+      componentProps: {
+        coins: reward.coins,
+        xp: reward.xp,
+      },
+      cssClass: 'link-reward-ion-modal',
+      backdropDismiss: false,
     });
 
-    await toast.present();
+    await modal.present();
   }
 
   // Mostra i log solo in sviluppo, evitando console.log sparsi in produzione.
@@ -854,22 +914,24 @@ export class AuthService {
      */
     if (!this.isBaseProfile(user)) return false;
 
+    /*
+     * NON tentiamo mai linkWithCredential/signInWithCredential per Google
+     * quando l'utente ha gia' Play Games (companion google.com, vedi
+     * isBaseProfile): riscontrato su device il 2026-08-19 che Firebase tratta
+     * il companion e una credenziale Google interattiva come identita' DIVERSE
+     * a livello di backend. Un vero tentativo di linkWithCredential non genera
+     * mai auth/provider-already-linked in questo caso: cade invece nel ramo
+     * "questo Google esiste gia' altrove" e crea/carica sistematicamente un
+     * account separato con un uid diverso (non solo nel raro caso di
+     * collisione con un vecchio account reale, come si pensava ieri). Per
+     * questo caso specifico il collegamento va confermato senza nessuna vera
+     * operazione Firebase Auth: vedi il ramo `else` di googleSignIn().
+     */
     if (
       providerId === AUTH_CONFIG.providers.google &&
       this.userHasProvider(user!, AUTH_CONFIG.providers.playGames)
     ) {
-      /*
-       * Il companion google.com di Play Games (vedi isBaseProfile) NON e' un
-       * vero collegamento Google. Se lo trattassimo come gia collegato, qui
-       * sotto restituiremmo false: googleSignIn() salterebbe linkWithCredential
-       * e farebbe un signInWithCredential pieno, che puo' creare/caricare un
-       * account Google diverso con un uid diverso, perdendo i progressi Play
-       * Games (bug reale riscontrato su device il 2026-08-18). Tentiamo
-       * comunque il link: se Firebase risponde con auth/provider-already-linked
-       * (stesso account Google sotto il cofano), googleSignIn() lo gestisce
-       * gia' come conferma sullo stesso uid, senza switch.
-       */
-      return true;
+      return false;
     }
 
     return !this.userHasProvider(user!, providerId);

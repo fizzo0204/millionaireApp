@@ -370,6 +370,18 @@ ion-modal.anon-modal::part(content) {
   background: transparent;
 }
 
+.link-reward-ion-modal {
+  --width: 100vw;
+  --height: 100vh;
+  --border-radius: 0;
+  --background: transparent;
+  --box-shadow: none;
+}
+
+.link-reward-ion-modal::part(content) {
+  background: transparent;
+}
+
 .coin-icon {
   width: 34px;
   height: 34px;

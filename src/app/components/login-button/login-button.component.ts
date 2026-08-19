@@ -100,12 +100,17 @@ export class LoginButtonComponent {
       return 'FACEBOOK';
     }
     /*
-     * Play Games va controllato prima di Google: Firebase registra sempre
-     * anche il provider "google.com" quando l'utente si collega con Play
-     * Games (e un account Google sotto, per come funziona Play Games su
-     * Android), quindi hasProvider(google) risulterebbe vero anche per chi
-     * ha usato solo Play Games e mai collegato Google esplicitamente.
+     * googleLinkConfirmed e' il segnale autoritativo di un vero collegamento
+     * Google confermato dall'utente (impostato da
+     * AuthService.completeCurrentProfileAccountLink). Va controllato PRIMA
+     * di affidarsi a hasProvider(google): il companion google.com di Play
+     * Games non è garantito comparire in providerData/providerIds (visto su
+     * device il 2026-08-19 - un account con solo "playgames.google.com" e
+     * nessun "google.com"), quindi hasProvider(google) da solo puo' restare
+     * falso anche dopo un collegamento Google riuscito, facendo cadere il
+     * badge sul fallback "PLAYER" invece di "GOOGLE".
      */
+    if (profile?.auth?.googleLinkConfirmed) return 'GOOGLE';
     if (this.isPlayGamesProfile(user, profile)) return 'PLAY GAMES';
     if (this.hasProvider(user, profile, AUTH_CONFIG.providers.google)) {
       return 'GOOGLE';
@@ -144,9 +149,11 @@ export class LoginButtonComponent {
   }
 
   async navigateToProfile() {
-    const user = await firstValueFrom(this.user$);
+    const shouldOfferAccountLink = await firstValueFrom(
+      this.auth.shouldOfferAccountLink$,
+    );
 
-    if (this.auth.isBaseProfile(user)) {
+    if (shouldOfferAccountLink) {
       // Da profilo base il bottone profilo diventa un invito gentile a collegare l'account.
       await this.authPromptService.openGuestLoginPrompt({
         force: true,

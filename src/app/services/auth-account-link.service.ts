@@ -141,18 +141,35 @@ export class AuthAccountLinkService {
   ): Promise<boolean> {
     if (!profileSnapshot) return false;
     if (!this.isAnonymousOnlySnapshot(profileSnapshot)) return false;
-    if (firebaseAuth.currentUser?.uid !== profileSnapshot.uid) return false;
 
-    try {
-      await this.userStatsService.deleteUserProfileData(profileSnapshot.uid);
-      return true;
-    } catch (error) {
-      console.warn(
-        'Profilo ospite non eliminato prima del cambio account:',
-        error,
-      );
-      return false;
+    /*
+     * NON blocchiamo piu' qui su firebaseAuth.currentUser?.uid !== profileSnapshot.uid:
+     * tra la cattura dello snapshot e questa chiamata possono passare diversi
+     * secondi (fino a due flussi nativi Play Games in sequenza, che portano
+     * l'utente fuori dall'app verso l'account picker di sistema - vedi
+     * CLAUDE.md sulle interferenze Android durante il backgrounding). Un
+     * controllo troppo rigido qui bloccava la cancellazione in silenzio
+     * (nessun log, solo un return false) anche quando l'operazione sarebbe
+     * comunque riuscita. Le firestore.rules restano la vera protezione: se
+     * non siamo davvero piu' autenticati come quell'uid, l'operazione fallira'
+     * con un errore che ora logghiamo, invece di abortire prima di provare.
+     */
+    for (let tentativo = 1; tentativo <= 2; tentativo++) {
+      try {
+        await this.userStatsService.deleteUserProfileData(profileSnapshot.uid);
+        return true;
+      } catch (error) {
+        if (tentativo === 2) {
+          console.error(
+            `Profilo ospite non eliminato prima del cambio account (uid ${profileSnapshot.uid}), dopo ${tentativo} tentativi:`,
+            error,
+          );
+          return false;
+        }
+      }
     }
+
+    return false;
   }
 
   // Fallback non bloccante: elimina il profilo ospite dopo il cambio account, se le rules lo permettono.

@@ -67,7 +67,7 @@
         <ion-icon class="login-arrow" name="chevron-forward-outline"></ion-icon>
       </button>
 
-      @if (user$ | async; as user) { @if (shouldShowLinkAccount(user)) {
+      @if (user$ | async; as user) { @if (shouldOfferAccountLink$ | async) {
       <button class="login-card" type="button" (click)="openLoginPrompt()">
         <div class="login-icon">
           <ion-icon name="person-outline"></ion-icon>

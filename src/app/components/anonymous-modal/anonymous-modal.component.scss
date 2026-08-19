@@ -358,7 +358,31 @@ p {
 
 .provider-btn > span:last-child {
   grid-column: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
   text-align: center;
+}
+
+.reward-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.18rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999rem;
+  font-size: 0.76em;
+  font-weight: 1000;
+  color: #7c2d12;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 0 0 0.07rem rgba(255, 255, 255, 0.5);
+}
+
+.reward-badge-icon {
+  width: 1em;
+  height: 1em;
+  object-fit: contain;
 }
 
 .provider-btn ion-icon {
