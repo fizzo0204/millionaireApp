@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { ModalController } from '@ionic/angular/standalone';
+import { AlertController, ModalController } from '@ionic/angular/standalone';
 import { BehaviorSubject, Observable, map, of, switchMap } from 'rxjs';
 import {
   signInWithCredential,
@@ -82,6 +82,7 @@ export class AuthService {
     private authProfileSyncService: AuthProfileSyncService,
     private authAccountLinkService: AuthAccountLinkService,
     private modalCtrl: ModalController,
+    private alertCtrl: AlertController,
   ) {
     onAuthStateChanged(firebaseAuth, async (user) => {
       this.debug(
@@ -366,23 +367,30 @@ export class AuthService {
       ) {
         /*
          * Google companion di Play Games (vedi shouldLinkCurrentProfileToProvider):
-         * nessuna vera operazione Firebase Auth, confermiamo il collegamento
-         * sullo stesso uid, esattamente come per auth/provider-already-linked
-         * qui sopra. Riscontrato su device il 2026-08-19 che un vero tentativo
-         * di link/sign-in con questa credenziale crea sistematicamente un
-         * account separato invece di riconoscere lo stesso account.
-         *
-         * Nota: la `credential` appena ottenuta dal picker Google non viene
-         * usata/verificata qui (Firebase non permette di verificarla in modo
-         * affidabile in questo caso, vedi sopra). Coerente col resto dell'app,
-         * che si fida del client: se l'utente arriva fin qui e conferma,
-         * assumiamo sia lo stesso account Google gia' dietro Play Games.
+         * nessuna vera operazione Firebase Auth sulla sessione corrente,
+         * confermiamo il collegamento sullo stesso uid, esattamente come per
+         * auth/provider-already-linked qui sopra. Riscontrato su device il
+         * 2026-08-19 che un vero tentativo di link/sign-in con questa
+         * credenziale crea sistematicamente un account separato invece di
+         * riconoscere lo stesso account. Coerente col resto dell'app, che si
+         * fida del client: se l'utente arriva fin qui e conferma, assumiamo
+         * sia lo stesso account Google gia' dietro Play Games.
          */
         await this.completeCurrentProfileAccountLink(
           currentUser,
           AUTH_CONFIG.providers.google,
         );
         this.debug('Google gia collegato tramite Play Games: confermato (companion)');
+
+        /*
+         * Registriamo (su una app Firebase temporanea, non tocca la sessione
+         * corrente) che questa credenziale Google appartiene a currentUser.
+         * Senza questo, un tentativo futuro di collegare la stessa
+         * credenziale da un'altra sessione (es. dopo un logout) non trova
+         * nulla lato Firebase e crea un secondo account duplicato invece di
+         * riconoscere il conflitto - riscontrato su device il 2026-08-19.
+         */
+        await this.claimGoogleCompanionCredential(credential, currentUser.uid);
       } else {
         await signInWithCredential(firebaseAuth, credential);
       }
@@ -805,6 +813,17 @@ export class AuthService {
     this.userSubject.next(firebaseAuth.currentUser ?? user);
   }
 
+  private async showAlreadyLinkedElsewhereAlert(): Promise<void> {
+    const alert = await this.alertCtrl.create({
+      header: 'Account già collegato',
+      message:
+        'Questo account Google è già collegato a un altro profilo TurtleMind. Accedi con il provider giusto (es. Play Games) per ritrovare i tuoi progressi.',
+      buttons: ['Ok'],
+    });
+
+    await alert.present();
+  }
+
   private async showLinkRewardToast(reward: {
     coins: number;
     xp: number;
@@ -967,6 +986,19 @@ export class AuthService {
     if (credential && profileSnapshot) {
       const existingProfileState =
         await this.getExistingProviderProfileState(credential);
+
+      if (existingProfileState?.companionClaimOwnerUid) {
+        /*
+         * Questo Google e' gia' il companion confermato di un altro profilo
+         * (di solito Play Games), vedi claimGoogleCompanionCredential(). Non
+         * esiste un vero profilo da caricare qui: la modale di conflitto
+         * normale sarebbe fuorviante (mostrerebbe un account vuoto). Avvisa
+         * con un messaggio chiaro e resta sul profilo corrente, invece di
+         * creare un secondo account duplicato.
+         */
+        await this.showAlreadyLinkedElsewhereAlert();
+        return false;
+      }
 
       if (existingProfileState && !existingProfileState.profileExists) {
         /*
@@ -1433,5 +1465,26 @@ export class AuthService {
       profileSnapshot,
       targetUid,
     );
+  }
+
+  /*
+   * Registra lato Firebase che una credenziale Google (companion di Play
+   * Games) appartiene a ownerUid, cosi' un tentativo futuro di collegarla da
+   * un'altra sessione riconosce il conflitto invece di creare un account
+   * duplicato. Best-effort: un fallimento qui non deve mai far fallire il
+   * collegamento (gia' confermato localmente a questo punto).
+   */
+  private async claimGoogleCompanionCredential(
+    credential: AuthCredential,
+    ownerUid: string,
+  ): Promise<void> {
+    try {
+      await this.authAccountLinkService.claimGoogleCompanionCredential(
+        credential,
+        ownerUid,
+      );
+    } catch (error) {
+      console.warn('Claim companion Google non riuscito:', error);
+    }
   }
 }

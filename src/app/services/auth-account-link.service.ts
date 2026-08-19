@@ -14,6 +14,8 @@ import {
   getDoc as getFirestoreDoc,
   getDocs as getFirestoreDocs,
   getFirestore as getFirebaseFirestore,
+  setDoc as setFirestoreDoc,
+  serverTimestamp,
 } from 'firebase/firestore';
 import { firebaseAuth } from 'src/app/config/firebase.config';
 import { AUTH_CONFIG } from 'src/app/config/auth.config';
@@ -27,6 +29,12 @@ export interface ExistingProviderProfileState {
   uid: string;
   profileExists: boolean;
   hasSavedProgress: boolean;
+  /*
+   * Presente quando questo provider (Google) non ha un vero profilo, ma solo
+   * un segnaposto scritto da claimGoogleCompanionCredential(): l'utente
+   * proprietario e' questo uid, non quello (vuoto) trovato dal check.
+   */
+  companionClaimOwnerUid?: string;
 }
 
 @Injectable({
@@ -83,15 +91,22 @@ export class AuthAccountLinkService {
         }
       }
 
+      const profileData = profileSnapshot.exists()
+        ? profileSnapshot.data()
+        : undefined;
+
       return {
         uid: existingUser.user.uid,
         profileExists: profileSnapshot.exists(),
         hasSavedProgress:
           profileSnapshot.exists() &&
           this.userStatsService.hasMeaningfulSavedProgress(
-            profileSnapshot.data(),
+            profileData,
             hasSubcollectionData,
           ),
+        companionClaimOwnerUid: profileData?.['companionClaimOwnerUid'] as
+          | string
+          | undefined,
       };
     } catch (error) {
       console.warn(
@@ -115,6 +130,85 @@ export class AuthAccountLinkService {
         } catch {
           // La app temporanea potrebbe non aver completato il login: va bene cosi.
         }
+      }
+
+      try {
+        await deleteApp(tempApp);
+      } catch {
+        // Evita rumore in console se Firebase ha gia pulito la app temporanea.
+      }
+    }
+  }
+
+  /*
+   * Registra, tramite una Firebase app temporanea, che una credenziale
+   * Google (di solito il companion di Play Games, mai davvero collegata a
+   * livello di Firebase Auth - vedi AuthService.googleSignIn) appartiene di
+   * fatto a ownerUid. Senza questo passo, un tentativo successivo di
+   * collegare la stessa credenziale da una sessione diversa (es. dopo un
+   * logout) non trova nulla di registrato lato Firebase e crea un account
+   * duplicato invece di riconoscere il collegamento gia' confermato -
+   * riscontrato su device il 2026-08-19.
+   *
+   * A differenza di getExistingProviderProfileState(), l'account Firebase
+   * Auth creato da questo controllo NON viene eliminato: deve restare come
+   * segnaposto permanente. Se pero' esiste gia' un vero profilo altrove (con
+   * dati di gioco reali, non solo il nostro segnaposto), non lo tocchiamo:
+   * quel caso raro resta un limite noto, da gestire con il flusso di
+   * conflitto normale se mai si ripresenta.
+   */
+  async claimGoogleCompanionCredential(
+    credential: AuthCredential,
+    ownerUid: string,
+  ): Promise<void> {
+    const tempAppName = `google-companion-claim-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2)}`;
+    const tempApp = initializeApp(environment.firebase, tempAppName);
+    const tempAuth = getFirebaseAuth(tempApp);
+
+    try {
+      const signedIn = await signInWithCredential(tempAuth, credential);
+      const tempFirestore = getFirebaseFirestore(tempApp);
+      const userRef = firestoreDoc(
+        tempFirestore,
+        `users/${signedIn.user.uid}`,
+      );
+      const snapshot = await getFirestoreDoc(userRef);
+
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        const isOwnMarker = data?.['companionClaimOwnerUid'] === ownerUid;
+        const hasRealProfile =
+          !isOwnMarker && data?.['companionClaimOwnerUid'] === undefined;
+
+        if (hasRealProfile) {
+          console.warn(
+            'Companion Google gia associato a un profilo reale, segnaposto non scritto:',
+            signedIn.user.uid,
+          );
+          return;
+        }
+      }
+
+      await setFirestoreDoc(
+        userRef,
+        {
+          companionClaimOwnerUid: ownerUid,
+          companionClaimUpdatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
+    } catch (error) {
+      console.warn(
+        'Registrazione companion Google non riuscita (non bloccante):',
+        error,
+      );
+    } finally {
+      try {
+        await signOutFirebaseAuth(tempAuth);
+      } catch {
+        // La app temporanea potrebbe non aver completato il login: va bene cosi.
       }
 
       try {
