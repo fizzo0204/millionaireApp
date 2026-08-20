@@ -8,6 +8,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { AdsService } from 'src/app/services/ads.service';
 import { CoinsService } from 'src/app/services/coins.service';
 import { LivesService } from 'src/app/services/lives';
+import { LIVES_CONFIG } from 'src/app/config/lives.config';
 import { CATEGORIES } from 'src/app/data/categories.data';
 import { CategoryModel } from 'src/app/models/category.model';
 import { AuthPromptService } from 'src/app/services/auth-prompt.service';
@@ -27,7 +28,7 @@ export class HomePage implements OnInit, OnDestroy {
 
   activeView: 'menu' | 'categories' = 'menu';
   private previousLives?: number;
-  readonly maxLives = 5;
+  readonly maxLives = LIVES_CONFIG.maxLives;
 
   coinsLoading = false;
   lifeLoading = false;

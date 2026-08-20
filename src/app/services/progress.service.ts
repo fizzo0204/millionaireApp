@@ -75,31 +75,6 @@ export class ProgressService {
     return snapshot.exists();
   }
 
-  async completeLevel(
-    uid: string,
-    categoryId: string,
-    difficultyId: DifficultyId,
-    levelNumber: number,
-  ): Promise<void> {
-    const levelRef = this.getCompletedLevelRef(
-      uid,
-      categoryId,
-      difficultyId,
-      levelNumber,
-    );
-
-    await this.runFirestore(() => setDoc(
-      levelRef,
-      {
-        categoryId,
-        difficultyId,
-        levelNumber,
-        completedAt: serverTimestamp(),
-      },
-      { merge: true },
-    ));
-  }
-
   async isDifficultyFullyCompleted(
     uid: string,
     categoryId: string,

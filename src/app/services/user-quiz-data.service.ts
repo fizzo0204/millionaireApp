@@ -22,12 +22,14 @@ import { QuizHistoryItem, UserStats } from 'src/app/models/user-stats.model';
 import { DifficultyId } from 'src/app/models/difficulty.model';
 import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
 import { getLevelFromXp } from 'src/app/utils/level-progress.util';
+import { ProgressService } from './progress.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class UserQuizDataService {
   private firestore = inject(Firestore);
+  private progressService = inject(ProgressService);
   private injector = inject(EnvironmentInjector);
 
   readonly defaultStats: UserStats = {
@@ -61,7 +63,31 @@ export class UserQuizDataService {
     uid: string,
     correctAnswers: number,
     totalQuestions: number,
+    /*
+     * Se presente, marca anche il livello come completato nella STESSA
+     * transazione. Prima erano due scritture separate (recordQuizResult poi
+     * progressService.completeLevel): un errore di rete tra le due lasciava
+     * XP/monete gia' accreditate ma il livello non completato, quindi
+     * rigiocabile per incassare di nuovo lo stesso premio. Bug reale trovato
+     * il 2026-08-20.
+     */
+    levelCompletion?: {
+      categoryId: string;
+      difficultyId: DifficultyId;
+      levelNumber: number;
+    },
   ): Promise<void> {
+    const levelRef = levelCompletion
+      ? doc(
+          this.firestore,
+          `users/${uid}/completedLevels/${this.progressService.getLevelId(
+            levelCompletion.categoryId,
+            levelCompletion.difficultyId,
+            levelCompletion.levelNumber,
+          )}`,
+        )
+      : null;
+
     await this.runFirestore(() =>
       runTransaction(this.firestore, async (transaction) => {
         const userRef = doc(this.firestore, `users/${uid}`);
@@ -123,6 +149,19 @@ export class UserQuizDataService {
           'stats.streakDays': updatedStreakDays,
           'stats.lastQuizPlayedAt': new Date(),
         });
+
+        if (levelRef && levelCompletion) {
+          transaction.set(
+            levelRef,
+            {
+              categoryId: levelCompletion.categoryId,
+              difficultyId: levelCompletion.difficultyId,
+              levelNumber: levelCompletion.levelNumber,
+              completedAt: serverTimestamp(),
+            },
+            { merge: true },
+          );
+        }
       }),
     );
   }

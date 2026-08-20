@@ -53,17 +53,22 @@ export class QuizCompletamentoService {
     }
 
     try {
+      /*
+       * XP/monete e il completamento del livello vengono scritti nella stessa
+       * transazione Firestore (vedi UserQuizDataService.recordQuizResult):
+       * prima erano due scritture separate, e un errore di rete tra le due
+       * lasciava il premio gia' accreditato ma il livello non completato,
+       * quindi rigiocabile per incassare di nuovo lo stesso premio.
+       */
       await this.userStatsService.recordQuizResult(
         params.user.uid,
         params.correctAnswers,
         params.totalQuestions,
-      );
-
-      await this.progressService.completeLevel(
-        params.user.uid,
-        params.categoryId,
-        params.difficultyId,
-        params.levelNumber,
+        {
+          categoryId: params.categoryId,
+          difficultyId: params.difficultyId,
+          levelNumber: params.levelNumber,
+        },
       );
 
       await this.salvaStorico(params);

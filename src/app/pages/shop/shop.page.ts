@@ -10,6 +10,7 @@ import {
 import { AdsService } from 'src/app/services/ads.service';
 import { CoinsService } from 'src/app/services/coins.service';
 import { LivesService } from 'src/app/services/lives';
+import { LIVES_CONFIG } from 'src/app/config/lives.config';
 import { PurchasesService } from 'src/app/services/purchases.service';
 import {
   AnteprimaForziere,
@@ -53,7 +54,7 @@ export class ShopPage implements OnInit, OnDestroy {
   private purchaseConfirmResolver?: (value: boolean) => void;
   private previousLives?: number;
 
-  readonly maxLives = 5;
+  readonly maxLives = LIVES_CONFIG.maxLives;
 
   coins$: Observable<number>;
   lives$: Observable<number>;

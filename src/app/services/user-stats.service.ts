@@ -280,13 +280,24 @@ export class UserStatsService {
     return this.avatarData.updateAvatarData(uid, data);
   }
 
-  // Registra il risultato aggregato di un quiz.
+  // Registra il risultato aggregato di un quiz, opzionalmente marcando anche
+  // il livello come completato nella stessa transazione (vedi UserQuizDataService).
   async recordQuizResult(
     uid: string,
     correctAnswers: number,
     totalQuestions: number,
+    levelCompletion?: {
+      categoryId: string;
+      difficultyId: DifficultyId;
+      levelNumber: number;
+    },
   ): Promise<void> {
-    return this.quizData.recordQuizResult(uid, correctAnswers, totalQuestions);
+    return this.quizData.recordQuizResult(
+      uid,
+      correctAnswers,
+      totalQuestions,
+      levelCompletion,
+    );
   }
 
   // Aggiunge una riga nello storico quiz dell'utente.
