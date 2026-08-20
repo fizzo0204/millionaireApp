@@ -762,7 +762,10 @@ export class QuizPage implements OnInit, OnDestroy {
     this.adInProgress = true;
 
     try {
-      await this.quizVideoRewardService.guardaVideoPerMonete(10);
+      const reward =
+        await this.quizVideoRewardService.guardaVideoPerMonete(10);
+
+      if (!reward) return;
 
       this.showCoinsModal = false;
       if (!this.answered && this.currentQuestion && this.timeLeft > 0) {

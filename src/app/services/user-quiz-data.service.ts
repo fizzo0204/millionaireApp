@@ -257,7 +257,18 @@ export class UserQuizDataService {
           typeof stats?.levelRewardLastClaimedLevel === 'number'
             ? stats.levelRewardLastClaimedLevel
             : previousLevel;
-        const rewardFromLevel = Math.max(lastClaimedLevel, previousLevel);
+        /*
+         * NON fare Math.max(lastClaimedLevel, previousLevel): previousLevel
+         * e' solo il livello di partenza di QUESTA chiamata, non
+         * necessariamente l'ultimo davvero riscosso. Se un secondo level-up
+         * scatta prima che il primo sia stato riscosso (es. l'utente guarda
+         * un video e raddoppia XP subito dopo un level-up da quiz, prima di
+         * toccare "Continua"), previousLevel qui e' gia' il livello del
+         * PRIMO level-up non riscosso: usarlo come floor avrebbe scartato in
+         * silenzio il premio in monete di quel livello intermedio. Bug reale
+         * trovato il 2026-08-20.
+         */
+        const rewardFromLevel = lastClaimedLevel;
         const levelsToReward = Math.max(0, currentLevel - rewardFromLevel);
 
         if (levelsToReward <= 0) {

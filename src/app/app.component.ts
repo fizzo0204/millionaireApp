@@ -257,10 +257,14 @@ export class AppComponent implements OnDestroy {
     currentLevel: number,
     lastClaimedLevel: number | null,
   ) {
-    const rewardFromLevel = Math.max(
-      lastClaimedLevel ?? previousLevel,
-      previousLevel,
-    );
+    /*
+     * NON fare Math.max(..., previousLevel): stessa correzione di
+     * UserQuizDataService.claimLevelUpCoinsReward, che e' la fonte di verita'
+     * per le monete davvero assegnate - qui calcoliamo solo l'anteprima
+     * mostrata nella modale, deve restare coerente con quel calcolo o
+     * l'utente vede un numero e ne riceve un altro.
+     */
+    const rewardFromLevel = lastClaimedLevel ?? previousLevel;
     const levelsToReward = Math.max(0, currentLevel - rewardFromLevel);
     const coinsReward = levelsToReward * USER_STATS_CONFIG.levelUpCoinsReward;
 
