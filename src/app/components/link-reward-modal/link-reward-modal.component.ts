@@ -1,14 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalController } from '@ionic/angular/standalone';
-
-/*
- * Id esplicito richiesto da ModalController.dismiss(): questa modale puo'
- * essere presentata mentre la anonymous-modal e' ancora aperta sotto di lei
- * (vedi AuthService.showLinkRewardToast). Senza un id, dismiss() chiude
- * sempre la modale in cima allo stack Ionic, non necessariamente questa.
- */
-export const LINK_REWARD_MODAL_ID = 'link-reward-modal';
+import { LINK_REWARD_MODAL_ID } from 'src/app/config/modal-ids.config';
 
 @Component({
   selector: 'app-link-reward-modal',

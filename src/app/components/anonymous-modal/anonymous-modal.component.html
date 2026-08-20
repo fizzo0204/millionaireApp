@@ -59,12 +59,14 @@
           <ion-icon name="logo-google"></ion-icon>
         </span>
 
-        <span>
-          {{
-            isProviderLoading("google")
-              ? "Accesso Google..."
-              : "Continua con Google"
-          }}
+        <span class="provider-label">
+          <span class="provider-label-text">
+            {{
+              isProviderLoading("google")
+                ? "Accesso Google..."
+                : "Continua con Google"
+            }}
+          </span>
           @if (!isProviderLoading("google") && (showLinkRewardBadge$ | async)) {
             <span class="reward-badge">
               +{{ linkRewardCoins }}
@@ -88,12 +90,14 @@
           <ion-icon name="logo-facebook"></ion-icon>
         </span>
 
-        <span>
-          {{
-            isProviderLoading("facebook")
-              ? "Accesso Facebook..."
-              : "Continua con Facebook"
-          }}
+        <span class="provider-label">
+          <span class="provider-label-text">
+            {{
+              isProviderLoading("facebook")
+                ? "Accesso Facebook..."
+                : "Continua con Facebook"
+            }}
+          </span>
           @if (!isProviderLoading("facebook") && (showLinkRewardBadge$ | async)) {
             <span class="reward-badge">
               +{{ linkRewardCoins }}
@@ -106,27 +110,6 @@
           }
         </span>
       </button>
-
-      @if (showPlayGamesButton$ | async) {
-        <button
-          class="provider-btn play-games-btn"
-          type="button"
-          (click)="playGamesLogin()"
-          [disabled]="isLoading"
-        >
-          <span class="provider-icon">
-            <ion-icon name="game-controller-outline"></ion-icon>
-          </span>
-
-          <span>
-            {{
-              isProviderLoading("playGames")
-                ? "Accesso Play Games..."
-                : "Continua con Play Games"
-            }}
-          </span>
-        </button>
-      }
 
       <button
         class="provider-btn guest-btn"

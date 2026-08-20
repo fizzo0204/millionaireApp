@@ -15,7 +15,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     kind: 'intro',
     eyebrow: 'La guida inizia',
     title: 'Sono la tua tartaruga saggia',
-    body: 'Ti accompagno in un giro veloce tra categorie, Scalata, livelli e aiuti. Arriva fino in fondo e ti regalo 30 TurtleCoins piu il mio avatar speciale.',
+    body: 'Ti accompagno in un giro veloce tra categorie, Scalata, livelli e aiuti. Arriva fino in fondo e ti regalo 30 TurtleCoins più il mio avatar speciale.',
   },
   {
     id: 'categories',
@@ -117,7 +117,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
       },
       {
         title: 'Pubblico',
-        description: 'Ti suggerisce la risposta piu probabile.',
+        description: 'Ti suggerisce la risposta più probabile.',
       },
       {
         title: 'Cambio',

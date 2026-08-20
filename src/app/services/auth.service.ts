@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { AlertController, ModalController } from '@ionic/angular/standalone';
+import { ModalController } from '@ionic/angular/standalone';
 import { BehaviorSubject, Observable, map, of, switchMap } from 'rxjs';
 import {
   signInWithCredential,
@@ -32,10 +32,8 @@ import {
   ExistingProviderProfileState,
 } from './auth-account-link.service';
 import { UserProfileMigrationSnapshot } from 'src/app/models/user-stats.model';
-import {
-  LINK_REWARD_MODAL_ID,
-  LinkRewardModalComponent,
-} from 'src/app/components/link-reward-modal/link-reward-modal.component';
+import { LinkRewardModalComponent } from 'src/app/components/link-reward-modal/link-reward-modal.component';
+import { LINK_REWARD_MODAL_ID } from 'src/app/config/modal-ids.config';
 
 export type DeleteAccountResult = 'success' | 'requires-recent-login' | 'error';
 
@@ -82,7 +80,6 @@ export class AuthService {
     private authProfileSyncService: AuthProfileSyncService,
     private authAccountLinkService: AuthAccountLinkService,
     private modalCtrl: ModalController,
-    private alertCtrl: AlertController,
   ) {
     onAuthStateChanged(firebaseAuth, async (user) => {
       this.debug(
@@ -813,17 +810,6 @@ export class AuthService {
     this.userSubject.next(firebaseAuth.currentUser ?? user);
   }
 
-  private async showAlreadyLinkedElsewhereAlert(): Promise<void> {
-    const alert = await this.alertCtrl.create({
-      header: 'Account già collegato',
-      message:
-        'Questo account Google è già collegato a un altro profilo TurtleMind. Accedi con il provider giusto (es. Play Games) per ritrovare i tuoi progressi.',
-      buttons: ['Ok'],
-    });
-
-    await alert.present();
-  }
-
   private async showLinkRewardToast(reward: {
     coins: number;
     xp: number;
@@ -871,16 +857,6 @@ export class AuthService {
       displayName: displayName ?? undefined,
       photoURL: photoURL ?? undefined,
     };
-  }
-
-  canConnectPlayGames(user: User | null): boolean {
-    /*
-     * Il bottone manuale Play Games serve solo agli ospiti Android.
-     * Chi e gia Play Games deve vedere Google/Facebook come collegamento forte.
-     */
-    return (
-      this.playGamesAuthService.canUsePlayGames && Boolean(user?.isAnonymous)
-    );
   }
 
   isBaseProfile(user: User | null): boolean {
@@ -991,13 +967,15 @@ export class AuthService {
         /*
          * Questo Google e' gia' il companion confermato di un altro profilo
          * (di solito Play Games), vedi claimGoogleCompanionCredential(). Non
-         * esiste un vero profilo da caricare qui: la modale di conflitto
-         * normale sarebbe fuorviante (mostrerebbe un account vuoto). Avvisa
-         * con un messaggio chiaro e resta sul profilo corrente, invece di
-         * creare un secondo account duplicato.
+         * possiamo autenticare via Google su quel profilo (il vero
+         * collegamento registrato lato Firebase e' solo verso Play Games, un
+         * credential Google non e' mai stato davvero linkato li'): rifacciamo
+         * silenziosamente il login Play Games, che per questo uid trova un
+         * profilo esistente e mostra la stessa modale di conflitto usata
+         * altrove nell'app - l'utente sceglie se caricarlo esattamente come
+         * per un vero conflitto, invece di un vicolo cieco.
          */
-        await this.showAlreadyLinkedElsewhereAlert();
-        return false;
+        return this.playGamesSignIn();
       }
 
       if (existingProfileState && !existingProfileState.profileExists) {
@@ -1027,6 +1005,23 @@ export class AuthService {
           );
 
           await this.syncSignedInProviderProfile(signedInUser.user, providerId);
+
+          /*
+           * Questo e' comunque un vero primo collegamento a un provider reale
+           * (Google/Facebook, mai Play Games - vedi i chiamanti), solo che
+           * l'account Auth esisteva gia' senza profilo TurtleMind. A
+           * differenza di completeCurrentProfileAccountLink() (chiamato solo
+           * quando l'uid resta lo stesso), qui non veniva mai assegnato il
+           * premio una tantum: bug reale trovato il 2026-08-20, non solo un
+           * caso limite del companion Google/Play Games.
+           */
+          const linkReward = await this.userStatsService.claimLinkReward(
+            signedInUser.user.uid,
+          );
+
+          if (linkReward) {
+            await this.showLinkRewardToast(linkReward);
+          }
 
           if (!profiloOspiteEliminato) {
             await this.deleteProfileSnapshotIfAnonymous(

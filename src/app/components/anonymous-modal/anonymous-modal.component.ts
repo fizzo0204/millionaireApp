@@ -12,22 +12,13 @@ import {
   switchMap,
 } from 'rxjs';
 import { AUTH_CONFIG } from 'src/app/config/auth.config';
+import { ANONYMOUS_MODAL_ID } from 'src/app/config/modal-ids.config';
 import { AppUserProfile } from 'src/app/models/user-stats.model';
 import { AuthService } from 'src/app/services/auth.service';
 import { UserStatsService } from 'src/app/services/user-stats.service';
 import { GameLoaderComponent } from 'src/app/components/game-loader/game-loader.component';
 
-type LoginProviderAction = 'google' | 'facebook' | 'playGames';
-
-/*
- * Id esplicito richiesto da ModalController.dismiss(): il collegamento
- * account puo' aprire la link-reward-modal SOPRA questa (vedi
- * AuthService.showLinkRewardToast) mentre questa e' ancora presentata. Senza
- * un id, dismiss() chiude sempre la modale in cima allo stack Ionic, quindi
- * chiuderebbe quella sbagliata (la reward, mai vista dall'utente) invece di
- * se stessa.
- */
-export const ANONYMOUS_MODAL_ID = 'anonymous-modal';
+type LoginProviderAction = 'google' | 'facebook';
 
 @Component({
   selector: 'app-anonymous-modal',
@@ -54,14 +45,6 @@ export class AnonymousModalComponent {
       this.isPlayGamesProfile(user, profile)
         ? 'Continua con Play Games'
         : 'Continua come ospite',
-    ),
-  );
-
-  showPlayGamesButton$ = combineLatest([this.auth.user$, this.profile$]).pipe(
-    map(
-      ([user, profile]) =>
-        this.auth.canConnectPlayGames(user) &&
-        !this.isPlayGamesProfile(user, profile),
     ),
   );
 
@@ -94,7 +77,6 @@ export class AnonymousModalComponent {
   get loaderTitle(): string {
     if (this.activeLoginProvider === 'google') return 'Accesso Google...';
     if (this.activeLoginProvider === 'facebook') return 'Accesso Facebook...';
-    if (this.activeLoginProvider === 'playGames') return 'Accesso Play Games...';
 
     return 'Accesso in corso...';
   }
@@ -106,10 +88,6 @@ export class AnonymousModalComponent {
 
     if (this.activeLoginProvider === 'facebook') {
       return 'Colleghiamo il tuo profilo Facebook ai progressi';
-    }
-
-    if (this.activeLoginProvider === 'playGames') {
-      return 'Recuperiamo il tuo profilo Play Games';
     }
 
     return 'Stiamo proteggendo i tuoi progressi';
@@ -130,15 +108,6 @@ export class AnonymousModalComponent {
       'facebook',
       () => this.auth.facebookSignIn(),
       'Login Facebook non completato o annullato.',
-    );
-  }
-
-  // Collega l'ospite a Play Games su Android mantenendo i progressi attuali.
-  async playGamesLogin() {
-    await this.runLoginAction(
-      'playGames',
-      () => this.auth.playGamesSignIn(),
-      'Accesso Play Games non completato o annullato.',
     );
   }
 

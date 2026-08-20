@@ -3,10 +3,8 @@ import { Router } from '@angular/router';
 import { ModalController } from '@ionic/angular/standalone';
 import { firstValueFrom } from 'rxjs';
 import { AUTH_CONFIG } from 'src/app/config/auth.config';
-import {
-  ANONYMOUS_MODAL_ID,
-  AnonymousModalComponent,
-} from 'src/app/components/anonymous-modal/anonymous-modal.component';
+import { ANONYMOUS_MODAL_ID } from 'src/app/config/modal-ids.config';
+import { AnonymousModalComponent } from 'src/app/components/anonymous-modal/anonymous-modal.component';
 import { AuthService } from './auth.service';
 import { AppUserProfile } from 'src/app/models/user-stats.model';
 import { UserStatsService } from './user-stats.service';
