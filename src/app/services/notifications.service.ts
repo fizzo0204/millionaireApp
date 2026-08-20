@@ -88,7 +88,30 @@ export class NotificationsService {
     localStorage.setItem(STORAGE_KEYS.notificationsPermissionAsked, 'true');
   }
 
+  private scheduleQueue: Promise<void> = Promise.resolve();
+
+  /*
+   * Richiamato spesso e da piu' punti (ogni emissione di lives$, claim del
+   * daily reward): se due chiamate si sovrappongono, le rispettive
+   * LocalNotifications.schedule() (bridge nativo asincrono) possono risolvere
+   * fuori ordine, lasciando schedulata la notifica della chiamata piu'
+   * vecchia con un orario ormai stantio invece di quella piu' recente. Bug
+   * reale trovato il 2026-08-20. Le chiamate ora vengono messe in coda ed
+   * eseguite una alla volta, nell'ordine di invocazione: ognuna rilegge lo
+   * stato corrente solo quando tocca davvero a lei, quindi l'ultima in coda
+   * vince sempre con i dati piu' freschi.
+   */
   async scheduleAll(): Promise<void> {
+    this.scheduleQueue = this.scheduleQueue
+      .catch(() => {
+        // Un errore nella chiamata precedente non deve bloccare le successive.
+      })
+      .then(() => this.scheduleAllNow());
+
+    return this.scheduleQueue;
+  }
+
+  private async scheduleAllNow(): Promise<void> {
     if (!(await this.canDeliver())) {
       await this.cancelAll();
       return;

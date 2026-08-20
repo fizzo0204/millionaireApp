@@ -170,7 +170,9 @@ export class QuizPage implements OnInit, OnDestroy {
       );
 
       this.setupLabels();
-      await this.setupLevelProgress();
+      const canProceed = await this.setupLevelProgress();
+
+      if (!canProceed) return;
     }
 
     await this.listenToAppState();
@@ -181,36 +183,72 @@ export class QuizPage implements OnInit, OnDestroy {
     this.audioService.suspendMusicForGame();
   }
 
-  private async setupLevelProgress() {
+  // Ritorna false se il livello/difficoltà richiesti sono bloccati (es. link diretto costruito a mano):
+  // in quel caso reindirizza invece di avviare comunque il quiz.
+  private async setupLevelProgress(): Promise<boolean> {
     const user = await firstValueFrom(this.auth.user$);
 
-    const [difficultyLevelNumbers, levelAlreadyCompleted] = await Promise.all([
-      this.questionsService.getDifficultyLevelNumbers(
-        this.categoryId,
-        this.difficultyId,
-      ),
-      user
-        ? this.progressService.isLevelCompleted(
-            user.uid,
-            this.categoryId,
-            this.difficultyId,
-            this.levelNumber,
-          )
-        : Promise.resolve(false),
-    ]);
+    const [difficultyLevelNumbers, completedLevelNumbers, difficultyUnlocked] =
+      await Promise.all([
+        this.questionsService.getDifficultyLevelNumbers(
+          this.categoryId,
+          this.difficultyId,
+        ),
+        user
+          ? this.progressService.getCompletedLevelNumbers(
+              user.uid,
+              this.categoryId,
+              this.difficultyId,
+            )
+          : Promise.resolve([] as number[]),
+        user
+          ? this.progressService.isDifficultyUnlocked(
+              user.uid,
+              this.categoryId,
+              this.difficultyId,
+            )
+          : Promise.resolve(true),
+      ]);
 
     this.difficultyLevelNumbers = difficultyLevelNumbers;
-    this.levelAlreadyCompleted = levelAlreadyCompleted;
+    this.levelAlreadyCompleted = completedLevelNumbers.includes(
+      this.levelNumber,
+    );
 
     const currentLevelIndex = this.difficultyLevelNumbers.indexOf(
       this.levelNumber,
     );
+
+    /*
+     * LevelsPage/DifficultyPage impediscono di navigare verso un livello o
+     * una difficolta' bloccati, ma QuizPage stessa non ricontrollava nulla:
+     * un link diretto (o un URL costruito a mano) raggiungeva comunque il
+     * quiz. Stessa logica di sblocco di LevelsPage: il primo livello e'
+     * sempre sbloccato, gli altri solo se il precedente e' completato.
+     * currentLevelIndex -1 (numero livello inesistente nella difficolta')
+     * conta come bloccato.
+     */
+    const levelUnlocked =
+      currentLevelIndex === 0 ||
+      (currentLevelIndex > 0 &&
+        completedLevelNumbers.includes(
+          this.difficultyLevelNumbers[currentLevelIndex - 1],
+        ));
+
+    if (!difficultyUnlocked || !levelUnlocked) {
+      await this.navigation.navigateByUrl(
+        `/levels/${this.categoryId}/${this.difficultyId}`,
+      );
+      return false;
+    }
 
     this.totalLevels = this.difficultyLevelNumbers.length;
     this.displayLevelNumber =
       currentLevelIndex >= 0 ? currentLevelIndex + 1 : this.levelNumber;
 
     this.aggiornaPulsanteLivelloSuccessivo(currentLevelIndex);
+
+    return true;
   }
 
   /**
@@ -251,6 +289,16 @@ export class QuizPage implements OnInit, OnDestroy {
       questionsPromise,
       this.wait(minLoaderMs),
     ]);
+
+    /*
+     * Se l'utente preme "indietro" mentre siamo ancora in questa finestra di
+     * caricamento (this.loading e' vero, goBack() imposta navigatingAway e
+     * naviga via subito), questa promise pendente completava comunque e
+     * avviava startCurrentQuestion() -> startTimer()/audio - servizi singleton
+     * globali - sulla pagina gia' abbandonata. Bug reale trovato il
+     * 2026-08-20.
+     */
+    if (this.navigatingAway) return;
 
     this.questions = questions;
     this.trackedDailyQuestionIndexes.clear();

@@ -15,6 +15,7 @@ import {
 } from '@angular/fire/firestore';
 
 import {
+  UserAchievementsData,
   UserArcadeData,
   UserAvatarData,
   UserOnboardingData,
@@ -78,6 +79,14 @@ export class UserDebugDataService {
     lastCompletedAt: null,
   };
 
+  readonly defaultAchievements: UserAchievementsData = {
+    claimedRewards: [],
+    unlockedTitles: [],
+    selectedTitle: null,
+    unlockedFrames: [],
+    unlockedBadges: [],
+  };
+
   async deleteUserProfileData(uid: string): Promise<void> {
     const userRef = doc(this.firestore, `users/${uid}`);
 
@@ -123,6 +132,7 @@ export class UserDebugDataService {
         avatar: this.defaultAvatar,
         onboarding: this.defaultOnboarding,
         arcade: this.defaultArcade,
+        achievements: this.defaultAchievements,
         dailyEvents: deleteField(),
         nickname: deleteField(),
       }),
