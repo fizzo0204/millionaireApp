@@ -27,6 +27,8 @@ export interface DailyRewardState {
   lastClaimDate: string | null;
   lastClaimedAt?: unknown | null;
   claimedToday: boolean;
+  doubledDate?: string | null;
+  doubledAt?: unknown | null;
 }
 
 export interface UserDailyRewardData {
@@ -34,6 +36,8 @@ export interface UserDailyRewardData {
   lastClaimDate: string | null;
   lastClaimedAt?: unknown | null;
   claimedToday: boolean;
+  doubledDate?: string | null;
+  doubledAt?: unknown | null;
 }
 
 export interface DailyRewardClaimPayload {

@@ -58,6 +58,8 @@ export class UserDailyRewardDataService {
     lastClaimDate: null,
     lastClaimedAt: null,
     claimedToday: false,
+    doubledDate: null,
+    doubledAt: null,
   };
 
   async getDailyRewardData(uid: string): Promise<UserDailyRewardData> {
@@ -238,6 +240,7 @@ export class UserDailyRewardDataService {
     rewardPayload: DailyRewardClaimPayload,
   ): Promise<boolean> {
     const userRef = doc(this.firestore, `users/${uid}`);
+    const todayKey = getTodayKey();
 
     return this.runFirestore(() =>
       runTransaction(this.firestore, async (transaction) => {
@@ -246,7 +249,25 @@ export class UserDailyRewardDataService {
         if (!snapshot.exists()) return false;
 
         const data = snapshot.data();
-        const updates: UpdateData<DocumentData> = {};
+        const dailyReward = (data['dailyReward'] ??
+          {}) as Partial<UserDailyRewardData>;
+
+        /*
+         * A differenza di ruota/missioni/sfida giornaliera, questo raddoppio
+         * non aveva alcun controllo lato Firestore: bastava richiamare la
+         * funzione piu' volte (doppio tap, o bypassando la UI) per ottenere
+         * il bonus ripetutamente. Stesso pattern degli altri tre: si puo'
+         * raddoppiare solo il premio del giorno corrente, e solo una volta.
+         */
+        const claimedToday = dailyReward.lastClaimDate === todayKey;
+        const alreadyDoubledToday = dailyReward.doubledDate === todayKey;
+
+        if (!claimedToday || alreadyDoubledToday) return false;
+
+        const updates: UpdateData<DocumentData> = {
+          'dailyReward.doubledDate': todayKey,
+          'dailyReward.doubledAt': serverTimestamp(),
+        };
         const stats = data['stats'] ?? {};
         const currentCoins =
           typeof stats?.coins === 'number'
@@ -266,8 +287,6 @@ export class UserDailyRewardDataService {
           updates['stats.xp'] = updatedXp;
           updates['stats.level'] = updatedLevel;
         }
-
-        if (Object.keys(updates).length === 0) return false;
 
         transaction.update(userRef, updates);
 

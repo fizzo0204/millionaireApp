@@ -83,6 +83,8 @@ export class UserStatsService {
     lastClaimDate: null,
     lastClaimedAt: null,
     claimedToday: false,
+    doubledDate: null,
+    doubledAt: null,
   };
 
   readonly defaultOnboarding: UserOnboardingData = {

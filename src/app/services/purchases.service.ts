@@ -11,6 +11,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from './auth.service';
 import { PURCHASES_CONFIG } from 'src/app/config/purchases.config';
+import { environment } from 'src/environments/environment';
 
 export type PurchaseOutcome =
   | { status: 'purchased'; transactionIdentifier: string }
@@ -179,7 +180,7 @@ export class PurchasesService {
     if (!this.syncPromise) {
       const operation = this.hasConfigured
         ? Purchases.logIn({ appUserID: uid })
-        : this.configureWithDebugLogging(uid);
+        : this.configurePurchases(uid);
 
       this.syncPromise = operation
         .then(() => {
@@ -195,13 +196,17 @@ export class PurchasesService {
   }
 
   /*
-   * TEMPORANEO per diagnosticare il flusso d'acquisto sul canale di test
-   * interno: livello DEBUG per vedere in Logcat se Play Billing viene
-   * davvero invocato, se i prodotti vengono trovati, ecc. Da riportare a un
-   * livello meno verboso prima del rilascio pubblico.
+   * Livello DEBUG solo in sviluppo (per vedere in Logcat se Play Billing
+   * viene davvero invocato, se i prodotti vengono trovati, ecc.); in
+   * produzione resta su WARN per non scrivere nel log del device dettagli
+   * delle transazioni degli utenti reali. Prima era DEBUG incondizionato,
+   * lasciato attivo "temporaneamente" per diagnosticare il canale di test
+   * interno e mai riportato indietro.
    */
-  private async configureWithDebugLogging(uid: string): Promise<void> {
-    await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
+  private async configurePurchases(uid: string): Promise<void> {
+    await Purchases.setLogLevel({
+      level: environment.production ? LOG_LEVEL.WARN : LOG_LEVEL.DEBUG,
+    });
 
     await Purchases.configure({
       apiKey: PURCHASES_CONFIG.googlePlayApiKey,
