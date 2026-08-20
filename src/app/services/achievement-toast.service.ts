@@ -8,6 +8,7 @@ import { STORAGE_KEYS } from 'src/app/config/storage-keys.config';
 import { AppUserProfile } from 'src/app/models/user-stats.model';
 import { AuthService } from './auth.service';
 import { UserStatsService } from './user-stats.service';
+import { LevelUpModalService } from './level-up-modal.service';
 
 export interface AchievementToast {
   id: string;
@@ -26,6 +27,7 @@ export class AchievementToastService implements OnDestroy {
   private readonly toastGapMs = 260;
 
   private subscription?: Subscription;
+  private levelUpModalSub?: Subscription;
   private activeTimer?: ReturnType<typeof setTimeout>;
   private queue: AchievementToast[] = [];
   private currentUid: string | null = null;
@@ -39,6 +41,7 @@ export class AchievementToastService implements OnDestroy {
   constructor(
     private auth: AuthService,
     private userStatsService: UserStatsService,
+    private levelUpModal: LevelUpModalService,
   ) {}
 
   start(): void {
@@ -65,6 +68,25 @@ export class AchievementToastService implements OnDestroy {
 
         this.handleProfileUpdate(snapshot.uid, snapshot.profile);
       });
+
+    /*
+     * La modale di level-up e' un overlay opaco a schermo intero con z-index
+     * piu' alto: se un achievement si sblocca mentre e' visibile, il toast
+     * nasceva coperto per tutta la sua durata fissa e spariva senza che
+     * l'utente lo vedesse mai (nessuna perdita di dati, l'achievement resta
+     * comunque riscattabile da Profilo - solo la notifica visiva andava
+     * persa). Bug reale trovato il 2026-08-20. Quando la modale si chiude,
+     * riproviamo a mostrare la coda invece di lasciarla in attesa per sempre.
+     */
+    this.levelUpModalSub = this.levelUpModal.state$.subscribe((state) => {
+      if (
+        !state.visible &&
+        this.queue.length > 0 &&
+        !this.currentToastSubject.value
+      ) {
+        this.showNextToast();
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -74,6 +96,8 @@ export class AchievementToastService implements OnDestroy {
   stop(): void {
     this.subscription?.unsubscribe();
     this.subscription = undefined;
+    this.levelUpModalSub?.unsubscribe();
+    this.levelUpModalSub = undefined;
     this.clearTimer();
   }
 
@@ -136,6 +160,14 @@ export class AchievementToastService implements OnDestroy {
   }
 
   private showNextToast(): void {
+    if (this.levelUpModal.getCurrentState().visible) {
+      /*
+       * Non consumiamo la coda ora: il subscriber su levelUpModal.state$ in
+       * start() richiama showNextToast() non appena la modale si chiude.
+       */
+      return;
+    }
+
     const nextToast = this.queue.shift() ?? null;
 
     this.currentToastSubject.next(nextToast);

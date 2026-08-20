@@ -91,77 +91,96 @@ export class DailyRewardAutoOpenService implements OnDestroy {
   }): Promise<boolean> {
     if (!this.started || this.opening) return false;
 
-    if (options?.delayMs) {
-      await this.wait(options.delayMs);
-    }
-
-    if (this.isBlockedRoute(this.router.url)) {
-      this.pendingCheck = true;
-      return false;
-    }
-
-    if (await this.tutorialService.isTutorialPendingForCurrentUser()) {
-      this.pendingCheck = true;
-      return false;
-    }
-
-    if (this.tutorialService.getCurrentState().visible) {
-      this.pendingCheck = true;
-      return false;
-    }
-
-    const topModal = await this.modalCtrl.getTop();
-
-    if (topModal) {
-      this.pendingCheck = true;
-      this.scheduleRetry();
-      return false;
-    }
-
-    const user = await this.waitForUser();
-
-    if (!user) return false;
-
-    await this.dailyRewardService.refreshAvatarCacheForCurrentUser();
-
-    const state = this.dailyRewardService.getState();
-    const todayKey = this.getTodayKey();
-
-    if (state.claimedToday) return false;
-    if (!options?.ignoreSessionGuard && this.autoOpenedDate === todayKey) {
-      return false;
-    }
-
+    /*
+     * La guardia va impostata QUI, prima di qualunque await: più trigger
+     * indipendenti (cambio rotta, tutorial, timer di mezzanotte, resume da
+     * background) possono chiamare checkAndOpen quasi in contemporanea, e se
+     * "opening" diventa true solo più avanti (dopo i controlli su tutorial/
+     * top modal/utente), tutte le chiamate arrivate nel frattempo superano la
+     * guardia iniziale (ancora false) e finiscono per aprire ciascuna la
+     * propria modale, impilandole. Bug reale trovato il 2026-08-20.
+     */
     this.opening = true;
-    this.pendingCheck = false;
-    this.autoOpenedDate = todayKey;
+
+    let retryAfterClose = false;
 
     try {
-      await this.dailyEventsService.trackDailyRewardCheck();
-    } catch (error) {
-      console.warn('Check daily reward non tracciato:', error);
-    }
+      if (options?.delayMs) {
+        await this.wait(options.delayMs);
+      }
 
-    const modal = await this.modalCtrl.create({
-      component: DailyRewardModalComponent,
-      cssClass: 'daily-reward-ion-modal',
-      backdropDismiss: false,
-    });
+      if (this.isBlockedRoute(this.router.url)) {
+        this.pendingCheck = true;
+        return false;
+      }
 
-    await modal.present();
+      if (await this.tutorialService.isTutorialPendingForCurrentUser()) {
+        this.pendingCheck = true;
+        return false;
+      }
 
-    try {
+      if (this.tutorialService.getCurrentState().visible) {
+        this.pendingCheck = true;
+        return false;
+      }
+
+      const topModal = await this.modalCtrl.getTop();
+
+      if (topModal) {
+        this.pendingCheck = true;
+        this.scheduleRetry();
+        return false;
+      }
+
+      const user = await this.waitForUser();
+
+      if (!user) return false;
+
+      await this.dailyRewardService.refreshAvatarCacheForCurrentUser();
+
+      const state = this.dailyRewardService.getState();
+      const todayKey = this.getTodayKey();
+
+      if (state.claimedToday) return false;
+      if (!options?.ignoreSessionGuard && this.autoOpenedDate === todayKey) {
+        return false;
+      }
+
+      this.pendingCheck = false;
+      this.autoOpenedDate = todayKey;
+
+      try {
+        await this.dailyEventsService.trackDailyRewardCheck();
+      } catch (error) {
+        console.warn('Check daily reward non tracciato:', error);
+      }
+
+      const modal = await this.modalCtrl.create({
+        component: DailyRewardModalComponent,
+        cssClass: 'daily-reward-ion-modal',
+        backdropDismiss: false,
+      });
+
+      await modal.present();
       await modal.onDidDismiss();
-    } finally {
-      this.opening = false;
 
       if (this.pendingCheck && !this.isBlockedRoute(this.router.url)) {
         this.pendingCheck = false;
+        retryAfterClose = true;
+      }
+
+      return true;
+    } finally {
+      /*
+       * Reimpostata a false PRIMA di innescare l'eventuale retry, cosi' la
+       * chiamata ricorsiva supera la guardia invece di bloccarsi su se stessa.
+       */
+      this.opening = false;
+
+      if (retryAfterClose) {
         void this.checkAndOpen({ delayMs: 300 });
       }
     }
-
-    return true;
   }
 
   ngOnDestroy(): void {
