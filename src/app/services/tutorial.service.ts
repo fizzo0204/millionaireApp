@@ -408,12 +408,6 @@ export class TutorialService {
     };
   }
 
-  private getLocalFlag(uid: string, name: string): boolean {
-    return (
-      localStorage.getItem(this.getLocalStorageKey(uid, name)) === 'true'
-    );
-  }
-
   private setLocalFlag(uid: string, name: string): void {
     localStorage.setItem(this.getLocalStorageKey(uid, name), 'true');
   }

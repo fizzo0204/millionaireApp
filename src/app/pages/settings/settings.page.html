@@ -81,7 +81,12 @@
         <ion-icon class="login-arrow" name="chevron-forward-outline"></ion-icon>
       </button>
       } @else {
-      <button class="logout-card" type="button" (click)="logout()">
+      <button
+        class="logout-card"
+        type="button"
+        [disabled]="logoutLoading"
+        (click)="logout()"
+      >
         <div class="logout-icon">
           <ion-icon name="log-out-outline"></ion-icon>
         </div>
@@ -91,10 +96,14 @@
           <p>Esci dal tuo account</p>
         </div>
 
+        @if (!logoutLoading) {
         <ion-icon
           class="logout-arrow"
           name="chevron-forward-outline"
         ></ion-icon>
+        } @else {
+        <ion-spinner name="dots"></ion-spinner>
+        }
       </button>
       } @if (shouldShowDeleteAccount(user)) {
       <button

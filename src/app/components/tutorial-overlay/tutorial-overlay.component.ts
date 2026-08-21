@@ -54,7 +54,6 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
 
   private stateSub?: Subscription;
   private routerSub?: Subscription;
-  private rewardRevealTimer?: ReturnType<typeof setTimeout>;
   private syncToken = 0;
 
   constructor(
@@ -83,7 +82,6 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.stateSub?.unsubscribe();
     this.routerSub?.unsubscribe();
-    this.clearRewardRevealTimer();
   }
 
   @HostListener('window:resize')
@@ -333,7 +331,6 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.clearRewardRevealTimer();
     this.showRewardCinematic = false;
     this.rewardCinematicPhase = 'opening';
 
@@ -346,7 +343,7 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
   }
 
   private startRewardReveal(): void {
-    if (this.rewardChestPhase === 'revealed' || this.rewardRevealTimer) return;
+    if (this.rewardChestPhase === 'revealed') return;
 
     this.rewardChestPhase = 'charging';
     this.showRewardCinematic = true;
@@ -356,8 +353,6 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
   }
 
   private async playRewardCinematic(): Promise<void> {
-    this.clearRewardRevealTimer();
-
     await this.wait(1600);
 
     if (!this.showRewardCinematic) return;
@@ -374,17 +369,9 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
   }
 
   private resetRewardChest(): void {
-    this.clearRewardRevealTimer();
     this.rewardChestPhase = 'idle';
     this.showRewardCinematic = false;
     this.rewardCinematicPhase = 'opening';
-  }
-
-  private clearRewardRevealTimer(): void {
-    if (!this.rewardRevealTimer) return;
-
-    clearTimeout(this.rewardRevealTimer);
-    this.rewardRevealTimer = undefined;
   }
 
   private wait(ms: number): Promise<void> {

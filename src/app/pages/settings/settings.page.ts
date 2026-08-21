@@ -32,6 +32,7 @@ export class SettingsPage {
   clickEnabled = true;
   notificationsEnabled = true;
   deleteAccountLoading = false;
+  logoutLoading = false;
   readonly privacyPolicyUrl = LEGAL_CONFIG.privacyPolicyUrl;
   readonly privacyOptionsRequired$ = this.adsService.privacyOptionsRequired$;
 
@@ -87,12 +88,28 @@ export class SettingsPage {
   }
 
   async logout() {
-    const decision = await this.confirmLogout();
+    /*
+     * Il flag va impostato PRIMA di aprire la modale di conferma (che è
+     * async: modalCtrl.create()+present() impiegano qualche istante), non
+     * dopo che l'utente ha già deciso: altrimenti un doppio tap sul bottone
+     * arriva prima che [disabled] abbia effetto e impila due modali di
+     * conferma, la seconda delle quali resta bloccata a schermo (stesso
+     * pattern del bug già risolto per la daily-reward-modal).
+     */
+    if (this.logoutLoading) return;
 
-    if (decision === 'cancel') return;
+    this.logoutLoading = true;
 
-    await this.authService.logout();
-    await this.navigation.navigateByUrl('/home');
+    try {
+      const decision = await this.confirmLogout();
+
+      if (decision === 'cancel') return;
+
+      await this.authService.logout();
+      await this.navigation.navigateByUrl('/home');
+    } finally {
+      this.logoutLoading = false;
+    }
   }
 
   private async confirmLogout(): Promise<LogoutDecision> {
@@ -110,15 +127,21 @@ export class SettingsPage {
   }
 
   async deleteAccount() {
+    /*
+     * Stesso motivo del guard in logout(): il flag va impostato PRIMA di
+     * aprire la modale di conferma (async), non dopo che l'utente ha già
+     * deciso — [disabled] da solo non basta contro un doppio tap arrivato
+     * prima che si aggiorni.
+     */
     if (this.deleteAccountLoading) return;
-
-    const decision = await this.confirmDeleteAccount();
-
-    if (decision === 'cancel') return;
 
     this.deleteAccountLoading = true;
 
     try {
+      const decision = await this.confirmDeleteAccount();
+
+      if (decision === 'cancel') return;
+
       const result = await this.authService.deleteAccount();
 
       /*
