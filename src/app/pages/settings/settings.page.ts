@@ -121,7 +121,14 @@ export class SettingsPage {
     try {
       const result = await this.authService.deleteAccount();
 
-      if (result === 'success') {
+      /*
+       * 'success-partial': i dati sono stati cancellati ma l'account Auth
+       * originale no (vedi AuthService.deleteAccount). Per l'utente
+       * l'esperienza e' identica a 'success' (nuovo profilo ospite pulito),
+       * quindi mostriamo lo stesso messaggio invece di un dettaglio tecnico
+       * che non può comunque risolvere da qui.
+       */
+      if (result === 'success' || result === 'success-partial') {
         await this.navigation.navigateByUrl('/home');
         await this.showToast('Account eliminato. Ora sei un nuovo ospite.');
         return;

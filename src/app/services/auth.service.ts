@@ -36,7 +36,19 @@ import { UserProfileMigrationSnapshot } from 'src/app/models/user-stats.model';
 import { LinkRewardModalComponent } from 'src/app/components/link-reward-modal/link-reward-modal.component';
 import { LINK_REWARD_MODAL_ID } from 'src/app/config/modal-ids.config';
 
-export type DeleteAccountResult = 'success' | 'requires-recent-login' | 'error';
+/*
+ * 'success-partial': i dati Firestore sono stati cancellati ma l'account
+ * Auth originale no (deleteUser() ha esaurito i tentativi per un errore
+ * diverso da requires-recent-login, es. rete). Dal punto di vista
+ * dell'utente l'eliminazione e' comunque avvenuta: viene comunque spostato
+ * su un profilo ospite pulito, vedi AuthService.deleteAccount(). Il
+ * chiamante puo' trattarla come 'success' nell'interfaccia.
+ */
+export type DeleteAccountResult =
+  | 'success'
+  | 'success-partial'
+  | 'requires-recent-login'
+  | 'error';
 
 @Injectable({
   providedIn: 'root',
@@ -720,24 +732,33 @@ export class AuthService {
        */
       await this.userStatsService.deleteUserProfileData(currentUser.uid);
 
-      try {
-        await deleteUser(currentUser);
-      } catch (error: any) {
-        if (error?.code === 'auth/requires-recent-login') {
-          this.debug('Eliminazione account: richiede login recente.');
-          return 'requires-recent-login';
-        }
+      const deletion = await this.deleteFirebaseAuthUserWithRetry(currentUser);
 
-        throw error;
+      if (deletion === 'requires-recent-login') {
+        this.debug('Eliminazione account: richiede login recente.');
+        return 'requires-recent-login';
       }
 
-      await FirebaseAuthentication.signOut();
-      this.suppressInitialPlayGamesAutoSignIn();
+      if (deletion === 'failed') {
+        /*
+         * I dati sono gia' spariti ma l'account Auth originale no: lasciarlo
+         * cosi' e' pericoloso, perche' ensureUserProfile() lo "resusciterebbe"
+         * in automatico con un profilo vuoto al prossimo avvio (vedi
+         * resolveInitialAuthState, chiamato ad ogni apertura app). Spostiamo
+         * quindi comunque l'utente su una sessione ospite pulita: l'oggetto
+         * Auth originale resta un residuo orfano senza profilo TurtleMind,
+         * ma per l'utente l'eliminazione e' comunque completa (nessun dato,
+         * nessun accesso residuo agli account collegati).
+         */
+        console.error(
+          'Eliminazione account Auth non riuscita dopo i tentativi: dati gia cancellati, sposto su un profilo ospite pulito.',
+        );
 
-      const anon = await signInAnonymously(firebaseAuth);
-      await this.userStatsService.ensureUserProfile(anon.user);
-      this.userSubject.next(anon.user);
+        await this.startFreshGuestSessionAfterAccountDeletion();
+        return 'success-partial';
+      }
 
+      await this.startFreshGuestSessionAfterAccountDeletion();
       return 'success';
     } catch (error) {
       console.error('❌ Errore durante eliminazione account:', error);
@@ -745,6 +766,49 @@ export class AuthService {
     } finally {
       this.loadingSubject.next(false);
     }
+  }
+
+  // Prova a cancellare l'account Auth con un tentativo aggiuntivo per errori transitori (es. rete).
+  private async deleteFirebaseAuthUserWithRetry(
+    user: User,
+  ): Promise<'deleted' | 'requires-recent-login' | 'failed'> {
+    const tentativiMax = 2;
+
+    for (let tentativo = 1; tentativo <= tentativiMax; tentativo++) {
+      try {
+        await deleteUser(user);
+        return 'deleted';
+      } catch (error: any) {
+        if (error?.code === 'auth/requires-recent-login') {
+          return 'requires-recent-login';
+        }
+
+        console.error(
+          `Errore eliminazione account Auth (tentativo ${tentativo}/${tentativiMax}):`,
+          error,
+        );
+
+        if (tentativo < tentativiMax) {
+          await this.wait(700);
+        }
+      }
+    }
+
+    return 'failed';
+  }
+
+  // Disconnette la sessione corrente e apre un profilo ospite pulito, usato a fine eliminazione account.
+  private async startFreshGuestSessionAfterAccountDeletion(): Promise<void> {
+    await FirebaseAuthentication.signOut();
+    this.suppressInitialPlayGamesAutoSignIn();
+
+    const anon = await signInAnonymously(firebaseAuth);
+    await this.userStatsService.ensureUserProfile(anon.user);
+    this.userSubject.next(anon.user);
+  }
+
+  private wait(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private requiresRecentLoginForDeletion(user: User): boolean {

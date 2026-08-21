@@ -157,6 +157,7 @@ export class NotificationsService {
 
   private async scheduleDailyRewardNotification(): Promise<void> {
     if (this.dailyRewardService.getState().claimedToday) {
+      this.clearStoredDailyRewardFallback();
       await this.cancelNotification(NOTIFICATIONS_CONFIG.ids.dailyReward);
       return;
     }
@@ -175,16 +176,81 @@ export class NotificationsService {
     const at =
       todayAtReminderHour > now
         ? todayAtReminderHour
-        : new Date(
-            now.getTime() +
-              NOTIFICATIONS_CONFIG.fallbackDelayMinutes * 60 * 1000,
-          );
+        : this.getOrCreateFallbackReminderTime(now);
 
     await this.scheduleNotification(
       NOTIFICATIONS_CONFIG.ids.dailyReward,
       NOTIFICATIONS_CONFIG.copy.dailyReward,
       at,
     );
+  }
+
+  /*
+   * scheduleAll() e' richiamato molte volte in una sessione (ogni emissione
+   * di lives$): se ricalcolassimo "adesso + fallbackDelayMinutes" ad ogni
+   * chiamata, l'orario di consegna slitterebbe sempre piu' avanti ogni volta
+   * che cambia il numero di vite dopo le dailyReminderHour, arrivando molto
+   * piu' tardi del previsto (o mai, in una sera abbastanza attiva). Bug
+   * reale trovato durante un audit pre-pubblicazione. Fissiamo quindi il
+   * fallback la prima volta che serve in giornata e lo riusiamo per le
+   * chiamate successive, finche' non e' gia' passato o non cambia il giorno.
+   */
+  private getOrCreateFallbackReminderTime(now: Date): Date {
+    const todayKey = this.getTodayKey(now);
+    const stored = this.readStoredDailyRewardFallback();
+
+    if (stored && stored.dateKey === todayKey && stored.at > now.getTime()) {
+      return new Date(stored.at);
+    }
+
+    const at = new Date(
+      now.getTime() + NOTIFICATIONS_CONFIG.fallbackDelayMinutes * 60 * 1000,
+    );
+
+    localStorage.setItem(
+      STORAGE_KEYS.dailyRewardNotificationFallback,
+      JSON.stringify({ dateKey: todayKey, at: at.getTime() }),
+    );
+
+    return at;
+  }
+
+  private readStoredDailyRewardFallback(): {
+    dateKey: string;
+    at: number;
+  } | null {
+    const raw = localStorage.getItem(
+      STORAGE_KEYS.dailyRewardNotificationFallback,
+    );
+
+    if (!raw) return null;
+
+    try {
+      const parsed = JSON.parse(raw);
+
+      if (
+        typeof parsed?.dateKey === 'string' &&
+        typeof parsed?.at === 'number'
+      ) {
+        return parsed;
+      }
+    } catch {
+      // Valore corrotto/vecchio formato: ignoralo, ne calcoliamo uno nuovo.
+    }
+
+    return null;
+  }
+
+  private clearStoredDailyRewardFallback(): void {
+    localStorage.removeItem(STORAGE_KEYS.dailyRewardNotificationFallback);
+  }
+
+  private getTodayKey(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
   }
 
   private async scheduleNotification(

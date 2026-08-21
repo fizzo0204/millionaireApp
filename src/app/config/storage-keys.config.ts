@@ -5,4 +5,5 @@ export const STORAGE_KEYS = {
   notifiedAchievements: 'notified_achievements',
   notificationsEnabled: 'notifications_enabled',
   notificationsPermissionAsked: 'notifications_permission_asked',
+  dailyRewardNotificationFallback: 'daily_reward_notification_fallback',
 };
