@@ -231,6 +231,61 @@ export class UserQuizDataService {
     );
   }
 
+  /*
+   * Raddoppia l'XP di un livello quiz normale appena completato, dopo un
+   * video rewarded. A differenza di ruota/sfida giornaliera (che hanno un
+   * flag "gia' raddoppiato" lato Firestore), prima questo raddoppio si
+   * fidava solo di un booleano client: chiamando il servizio direttamente
+   * (o con timing sfortunato) si poteva raddoppiare piu' volte lo stesso
+   * premio. Il documento completedLevels/{levelId} puo' essere creato una
+   * sola volta per livello (vedi recordQuizResult), quindi e' il posto
+   * naturale per un flag "xpDoubled" analogo a lastSpinDoubled/
+   * rewardDoubledDate: consumabile una sola volta per livello, per sempre.
+   */
+  async raddoppiaXpLivelloCompletato(
+    uid: string,
+    categoryId: string,
+    difficultyId: DifficultyId,
+    levelNumber: number,
+    xpBonus: number,
+  ): Promise<number> {
+    if (xpBonus <= 0) return 0;
+
+    const userRef = doc(this.firestore, `users/${uid}`);
+    const levelRef = doc(
+      this.firestore,
+      `users/${uid}/completedLevels/${this.progressService.getLevelId(
+        categoryId,
+        difficultyId,
+        levelNumber,
+      )}`,
+    );
+
+    return this.runFirestore(() =>
+      runTransaction(this.firestore, async (transaction) => {
+        const userSnapshot = await transaction.get(userRef);
+        const levelSnapshot = await transaction.get(levelRef);
+
+        if (!userSnapshot.exists() || !levelSnapshot.exists()) return 0;
+        if (levelSnapshot.data()?.['xpDoubled']) return 0;
+
+        const stats = userSnapshot.data()['stats'];
+        const currentXp =
+          typeof stats?.xp === 'number' ? stats.xp : this.defaultStats.xp;
+        const updatedXp = currentXp + xpBonus;
+
+        transaction.update(userRef, {
+          'stats.xp': updatedXp,
+          'stats.level': getLevelFromXp(updatedXp),
+        });
+
+        transaction.set(levelRef, { xpDoubled: true }, { merge: true });
+
+        return xpBonus;
+      }),
+    );
+  }
+
   async claimLevelUpCoinsReward(
     uid: string,
     previousLevel: number,

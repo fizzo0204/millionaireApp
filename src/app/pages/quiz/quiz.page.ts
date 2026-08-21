@@ -1,9 +1,10 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import { IonicModule, Platform } from '@ionic/angular';
 import { ActivatedRoute, Router } from '@angular/router';
 import { App as CapacitorApp } from '@capacitor/app';
 import type { PluginListenerHandle } from '@capacitor/core';
+import type { Subscription } from 'rxjs';
 import { UserStatsService } from 'src/app/services/user-stats.service';
 import { ProgressService } from 'src/app/services/progress.service';
 import { QuestionsService } from 'src/app/services/questions.service';
@@ -61,8 +62,10 @@ export class QuizPage implements OnInit, OnDestroy {
   private quizCompletamentoService = inject(QuizCompletamentoService);
   private quizVideoRewardService = inject(QuizVideoRewardService);
   private quizScalataService = inject(QuizScalataService);
+  private platform = inject(Platform);
 
   private appStateListener?: PluginListenerHandle;
+  private backButtonSub?: Subscription;
 
   private adInProgress = false;
   private lifeLostForLeaving = false;
@@ -176,6 +179,7 @@ export class QuizPage implements OnInit, OnDestroy {
     }
 
     await this.listenToAppState();
+    this.listenToHardwareBackButton();
     await this.loadQuestions();
   }
 
@@ -376,6 +380,52 @@ export class QuizPage implements OnInit, OnDestroy {
         }
       },
     );
+  }
+
+  /*
+   * Senza questo handler il tasto back fisico Android fa un pop diretto
+   * della history (comportamento di default di Ionic), bypassando
+   * showExitModal e la conseguente perdita di una vita: un modo concreto
+   * per abbandonare un livello/quiz a meta' senza mai pagarne il costo.
+   * Priorita' 10 per intercettare l'evento prima del default di Ionic
+   * (registrato a priorita' 0). Registrato solo mentre la pagina e' viva
+   * (rimosso in ngOnDestroy), quindi non tocca il comportamento del back
+   * fisico altrove nell'app.
+   */
+  private listenToHardwareBackButton(): void {
+    this.backButtonSub = this.platform.backButton.subscribeWithPriority(
+      10,
+      () => this.handleHardwareBackButton(),
+    );
+  }
+
+  private handleHardwareBackButton(): void {
+    if (this.showExitModal) {
+      this.closeExitModal();
+      return;
+    }
+
+    /*
+     * Le altre modali (risposta sbagliata, tempo scaduto, monete
+     * insufficienti, premio, transizione/forziere Scalata) si chiudono solo
+     * dai loro bottoni dedicati: il bottone "indietro" in-app e' comunque
+     * coperto dal loro backdrop e non cliccabile in questi stati, quindi
+     * ignoriamo il back fisico invece di offrire una scorciatoia che il tap
+     * non permetterebbe.
+     */
+    if (
+      this.showWrongModal ||
+      this.showTimeModal ||
+      this.showCoinsModal ||
+      this.showRewardModal ||
+      this.arcadeTransitionVisible ||
+      this.showArcadeChestRewardModal ||
+      this.helpAnimation
+    ) {
+      return;
+    }
+
+    this.goBack();
   }
 
   private async handleAppBackgrounded() {
@@ -912,6 +962,9 @@ export class QuizPage implements OnInit, OnDestroy {
 
       const bonusXp = await this.quizVideoRewardService.raddoppiaXpQuizNormale(
         user.uid,
+        this.categoryId,
+        this.difficultyId,
+        this.levelNumber,
         this.rewardXp,
       );
 
@@ -1344,5 +1397,6 @@ export class QuizPage implements OnInit, OnDestroy {
 
     this.stopTimer();
     this.appStateListener?.remove();
+    this.backButtonSub?.unsubscribe();
   }
 }

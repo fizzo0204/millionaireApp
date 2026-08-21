@@ -330,6 +330,24 @@ export class UserStatsService {
     return this.quizData.addXp(uid, amount);
   }
 
+  // Raddoppia l'XP di un livello quiz normale appena completato (una sola
+  // volta per livello, vedi UserQuizDataService.raddoppiaXpLivelloCompletato).
+  async raddoppiaXpLivelloCompletato(
+    uid: string,
+    categoryId: string,
+    difficultyId: DifficultyId,
+    levelNumber: number,
+    xpBonus: number,
+  ): Promise<number> {
+    return this.quizData.raddoppiaXpLivelloCompletato(
+      uid,
+      categoryId,
+      difficultyId,
+      levelNumber,
+      xpBonus,
+    );
+  }
+
   // Riscatta le TurtleCoins per il level up.
   async claimLevelUpCoinsReward(
     uid: string,

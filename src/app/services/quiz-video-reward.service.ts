@@ -3,6 +3,7 @@ import { AdsService } from 'src/app/services/ads.service';
 import { CoinsService } from 'src/app/services/coins.service';
 import { DailyEventsService } from 'src/app/services/daily-events.service';
 import { UserStatsService } from 'src/app/services/user-stats.service';
+import { DifficultyId } from 'src/app/models/difficulty.model';
 
 @Injectable({
   providedIn: 'root',
@@ -29,17 +30,32 @@ export class QuizVideoRewardService {
     return reward;
   }
 
-  // Raddoppia il premio XP di un quiz normale dopo un video rewarded.
+  /*
+   * Raddoppia il premio XP di un quiz normale dopo un video rewarded.
+   * A differenza di ruota/sfida giornaliera, in precedenza qui non c'era
+   * alcun controllo server-side "gia' raddoppiato": ci si fidava solo di un
+   * booleano del componente. Ora il consumo passa da
+   * raddoppiaXpLivelloCompletato, che usa completedLevels/{levelId} come
+   * flag persistente e consumabile una sola volta per livello.
+   */
   async raddoppiaXpQuizNormale(
     userId: string,
+    categoryId: string,
+    difficultyId: DifficultyId,
+    levelNumber: number,
     premioXpAttuale: number,
   ): Promise<number> {
     const reward = await this.guardaVideoReward();
 
     if (!reward || premioXpAttuale <= 0) return 0;
 
-    await this.userStatsService.addXp(userId, premioXpAttuale);
-    return premioXpAttuale;
+    return this.userStatsService.raddoppiaXpLivelloCompletato(
+      userId,
+      categoryId,
+      difficultyId,
+      levelNumber,
+      premioXpAttuale,
+    );
   }
 
   // Raddoppia il premio della sfida giornaliera dopo un video rewarded.
