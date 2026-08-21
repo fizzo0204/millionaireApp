@@ -181,29 +181,6 @@ export class AdminUsersPage implements OnInit {
     }
   }
 
-  async confirmDelete(): Promise<void> {
-    const user = this.menuUser;
-
-    if (!user) return;
-
-    const confirmed = confirm(
-      `Vuoi eliminare definitivamente l'account di ${this.displayLabel(user)}? L'operazione non è reversibile.`,
-    );
-
-    if (!confirmed) return;
-
-    try {
-      await this.adminUsersService.deleteUser(user.uid);
-      this.users = this.users.filter((row) => row.uid !== user.uid);
-      this.applyFilter();
-      this.closeMenu();
-      await this.showToast('Account eliminato');
-    } catch (error) {
-      console.error('Errore eliminazione account admin:', error);
-      await this.showToast('Errore durante l\'eliminazione');
-    }
-  }
-
   private displayLabel(user: AdminUserRow): string {
     return user.email ?? user.nickname ?? user.displayName ?? user.uid;
   }

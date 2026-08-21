@@ -227,7 +227,49 @@ export class PurchasesService {
 
     return {
       status: 'error',
-      message: purchasesError?.message ?? "Errore durante l'acquisto.",
+      message: this.getPurchaseErrorMessage(purchasesError?.code),
     };
+  }
+
+  /*
+   * purchasesError.message arriva dall'SDK RevenueCat quasi sempre in
+   * inglese, incoerente con il resto dell'app (tutta in italiano). Mappiamo
+   * i codici errore piu' comuni lato Google Play a un messaggio in
+   * italiano, invece di mostrare il testo grezzo dell'SDK.
+   */
+  private getPurchaseErrorMessage(
+    code: PURCHASES_ERROR_CODE | undefined,
+  ): string {
+    switch (code) {
+      case PURCHASES_ERROR_CODE.NETWORK_ERROR:
+      case PURCHASES_ERROR_CODE.OFFLINE_CONNECTION_ERROR:
+        return 'Connessione assente o instabile. Controlla la rete e riprova.';
+
+      case PURCHASES_ERROR_CODE.PAYMENT_PENDING_ERROR:
+        return 'Pagamento in attesa di conferma da Google Play. Se va a buon fine, il premio verrà assegnato automaticamente riaprendo lo shop.';
+
+      case PURCHASES_ERROR_CODE.PRODUCT_ALREADY_PURCHASED_ERROR:
+        return 'Risulta già un acquisto in corso per questo prodotto. Riprova tra qualche istante.';
+
+      case PURCHASES_ERROR_CODE.PRODUCT_NOT_AVAILABLE_FOR_PURCHASE_ERROR:
+        return 'Prodotto non disponibile al momento su Google Play.';
+
+      case PURCHASES_ERROR_CODE.PURCHASE_NOT_ALLOWED_ERROR:
+        return "Questo account Google Play non è autorizzato ad acquistare (controlli parentali o restrizioni del dispositivo).";
+
+      case PURCHASES_ERROR_CODE.STORE_PROBLEM_ERROR:
+        return 'Google Play non è raggiungibile in questo momento. Riprova tra poco.';
+
+      case PURCHASES_ERROR_CODE.OPERATION_ALREADY_IN_PROGRESS_ERROR:
+        return 'Un altro acquisto è già in corso. Attendi che si concluda prima di riprovare.';
+
+      case PURCHASES_ERROR_CODE.RECEIPT_ALREADY_IN_USE_ERROR:
+      case PURCHASES_ERROR_CODE.INVALID_RECEIPT_ERROR:
+      case PURCHASES_ERROR_CODE.MISSING_RECEIPT_FILE_ERROR:
+        return 'Non siamo riusciti a verificare la ricevuta di Google Play. Riprova tra poco.';
+
+      default:
+        return "Errore durante l'acquisto. Riprova più tardi.";
+    }
   }
 }

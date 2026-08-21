@@ -214,15 +214,6 @@
   color: #facc15;
 }
 
-.danger-item {
-  --color: #f87171;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.danger-item ion-icon[slot='start'] {
-  color: #f87171;
-}
-
 .admin-avatar-label {
   overflow: hidden;
   text-overflow: ellipsis;

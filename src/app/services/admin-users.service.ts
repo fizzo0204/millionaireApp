@@ -107,11 +107,6 @@ export class AdminUsersService {
     return this.userStatsService.resetUserDebugData(uid);
   }
 
-  // Elimina definitivamente il documento profilo e le sottocollezioni.
-  async deleteUser(uid: string): Promise<void> {
-    return this.userStatsService.deleteUserProfileData(uid);
-  }
-
   private toAdminUserRow(
     uid: string,
     data: Partial<AppUserProfile>,
