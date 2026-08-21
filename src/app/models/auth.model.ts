@@ -35,3 +35,11 @@ export interface ProviderProfileMetadata {
 }
 
 export type AccountConflictDecision = 'use-existing-profile' | 'keep-current';
+
+// Monete/XP dei due profili a confronto nella modale di conflitto account.
+export interface AccountConflictComparison {
+  currentCoins: number;
+  currentXp: number;
+  existingCoins: number;
+  existingXp: number;
+}

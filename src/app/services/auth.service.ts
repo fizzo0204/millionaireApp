@@ -22,6 +22,7 @@ import { firebaseAuth } from 'src/app/config/firebase.config';
 import { environment } from 'src/environments/environment';
 import { AUTH_CONFIG } from 'src/app/config/auth.config';
 import {
+  AccountConflictComparison,
   AppAuthProviderId,
   ProviderProfileMetadata,
 } from 'src/app/models/auth.model';
@@ -580,6 +581,8 @@ export class AuthService {
            */
           const shouldSwitch = await this.confirmExistingProviderSwitch(
             AUTH_CONFIG.providers.playGames,
+            profileSnapshot,
+            existingProfileState,
           );
 
           if (!shouldSwitch) {
@@ -629,7 +632,9 @@ export class AuthService {
             this.debug('Profilo corrente collegato a Play Games');
           } catch (err: any) {
             if (this.isCredentialAlreadyInUseError(err)) {
-              const signedIn = await this.handleExistingPlayGamesProfile();
+              const signedIn = await this.handleExistingPlayGamesProfile(
+                freshPlayGamesResult.credential,
+              );
 
               if (!signedIn) return false;
             } else {
@@ -958,10 +963,12 @@ export class AuthService {
     signInFallback?: () => Promise<unknown>,
   ): Promise<boolean> {
     const profileSnapshot = await this.createCurrentProfileSnapshot();
+    let existingProfileState: ExistingProviderProfileState | null = null;
 
     if (credential && profileSnapshot) {
-      const existingProfileState =
-        await this.getExistingProviderProfileState(credential);
+      existingProfileState = await this.getExistingProviderProfileState(
+        credential,
+      );
 
       if (existingProfileState?.companionClaimOwnerUid) {
         /*
@@ -1041,7 +1048,11 @@ export class AuthService {
       }
     }
 
-    const shouldSwitch = await this.confirmExistingProviderSwitch(providerId);
+    const shouldSwitch = await this.confirmExistingProviderSwitch(
+      providerId,
+      profileSnapshot,
+      existingProfileState,
+    );
 
     if (!shouldSwitch) {
       console.warn('Account gia esistente: resto sul profilo attuale');
@@ -1176,6 +1187,8 @@ export class AuthService {
 
     const shouldSwitch = await this.confirmExistingProviderSwitch(
       AUTH_CONFIG.providers.playGames,
+      profileSnapshot,
+      existingProfileState,
     );
 
     if (!shouldSwitch) {
@@ -1433,13 +1446,47 @@ export class AuthService {
     );
   }
 
-  // Chiede conferma prima di passare a un provider che ha già un profilo.
+  // Chiede conferma prima di passare a un provider che ha già un profilo,
+  // mostrando monete/XP di entrambi i profili a confronto.
   private async confirmExistingProviderSwitch(
     providerId: AppAuthProviderId,
+    profileSnapshot: UserProfileMigrationSnapshot | null,
+    existingProfileState: ExistingProviderProfileState | null,
   ): Promise<boolean> {
+    const currentStats = this.extractStatsFromSnapshot(profileSnapshot);
+    const comparison: AccountConflictComparison = {
+      currentCoins: currentStats.coins,
+      currentXp: currentStats.xp,
+      existingCoins:
+        existingProfileState?.coins ?? this.userStatsService.defaultStats.coins,
+      existingXp:
+        existingProfileState?.xp ?? this.userStatsService.defaultStats.xp,
+    };
+
     return this.authAccountLinkService.confirmExistingProviderSwitch(
       providerId,
+      comparison,
     );
+  }
+
+  // Estrae monete/XP da uno snapshot del profilo corrente, con i default per un profilo mai giocato.
+  private extractStatsFromSnapshot(
+    profileSnapshot: UserProfileMigrationSnapshot | null,
+  ): { coins: number; xp: number } {
+    const stats = profileSnapshot?.profile?.['stats'] as
+      | { coins?: unknown; xp?: unknown }
+      | undefined;
+
+    return {
+      coins:
+        typeof stats?.coins === 'number'
+          ? stats.coins
+          : this.userStatsService.defaultStats.coins,
+      xp:
+        typeof stats?.xp === 'number'
+          ? stats.xp
+          : this.userStatsService.defaultStats.xp,
+    };
   }
 
   // Elimina il profilo ospite prima del cambio account, finché le rules lo permettono.

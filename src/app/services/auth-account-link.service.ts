@@ -19,7 +19,11 @@ import {
 } from 'firebase/firestore';
 import { firebaseAuth } from 'src/app/config/firebase.config';
 import { AUTH_CONFIG } from 'src/app/config/auth.config';
-import { AppAuthProviderId, UserAuthProfile } from 'src/app/models/auth.model';
+import {
+  AccountConflictComparison,
+  AppAuthProviderId,
+  UserAuthProfile,
+} from 'src/app/models/auth.model';
 import { UserProfileMigrationSnapshot } from 'src/app/models/user-stats.model';
 import { environment } from 'src/environments/environment';
 import { UserStatsService } from './user-stats.service';
@@ -29,6 +33,10 @@ export interface ExistingProviderProfileState {
   uid: string;
   profileExists: boolean;
   hasSavedProgress: boolean;
+  // Monete/XP del profilo trovato, per mostrarli nella modale di conflitto
+  // a confronto con quelli del profilo attuale: 0 se il profilo non esiste.
+  coins: number;
+  xp: number;
   /*
    * Presente quando questo provider (Google) non ha un vero profilo, ma solo
    * un segnaposto scritto da claimGoogleCompanionCredential(): l'utente
@@ -94,6 +102,9 @@ export class AuthAccountLinkService {
       const profileData = profileSnapshot.exists()
         ? profileSnapshot.data()
         : undefined;
+      const stats = profileData?.['stats'] as
+        | { coins?: unknown; xp?: unknown }
+        | undefined;
 
       return {
         uid: existingUser.user.uid,
@@ -104,6 +115,14 @@ export class AuthAccountLinkService {
             profileData,
             hasSubcollectionData,
           ),
+        coins:
+          typeof stats?.coins === 'number'
+            ? stats.coins
+            : this.userStatsService.defaultStats.coins,
+        xp:
+          typeof stats?.xp === 'number'
+            ? stats.xp
+            : this.userStatsService.defaultStats.xp,
         companionClaimOwnerUid: profileData?.['companionClaimOwnerUid'] as
           | string
           | undefined,
@@ -222,9 +241,12 @@ export class AuthAccountLinkService {
   // Mostra la modale di conferma quando il provider scelto ha già un profilo salvato.
   async confirmExistingProviderSwitch(
     providerId: AppAuthProviderId,
+    comparison: AccountConflictComparison,
   ): Promise<boolean> {
-    const decision =
-      await this.accountLinkService.confirmExistingAccountSwitch(providerId);
+    const decision = await this.accountLinkService.confirmExistingAccountSwitch(
+      providerId,
+      comparison,
+    );
 
     return decision === 'use-existing-profile';
   }

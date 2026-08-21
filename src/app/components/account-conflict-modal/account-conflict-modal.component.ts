@@ -12,6 +12,10 @@ import { AccountConflictDecision } from 'src/app/models/auth.model';
 })
 export class AccountConflictModalComponent {
   @Input() providerLabel = 'questo account';
+  @Input() currentCoins = 0;
+  @Input() currentXp = 0;
+  @Input() existingCoins = 0;
+  @Input() existingXp = 0;
 
   constructor(private modalCtrl: ModalController) {}
 

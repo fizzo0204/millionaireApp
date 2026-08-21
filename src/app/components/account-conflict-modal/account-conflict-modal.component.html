@@ -7,9 +7,41 @@
     <h2>Progressi già presenti</h2>
 
     <p>
-      Questo account {{ providerLabel }} ha già progressi salvati in TurtleMind.
-      Se continui, caricheremo quel profilo e i progressi attuali verranno
-      persi.
+      Questo account {{ providerLabel }} ha già progressi salvati in
+      TurtleMind. Confronta i due profili prima di scegliere.
+    </p>
+
+    <div class="comparison">
+      <div class="comparison-col">
+        <span class="comparison-label">Profilo attuale</span>
+        <div class="comparison-stat">
+          <img src="assets/ui/coin-turtle.webp" alt="" />
+          <span>{{ currentCoins }}</span>
+        </div>
+        <div class="comparison-stat">
+          <span class="xp-badge">XP</span>
+          <span>{{ currentXp }}</span>
+        </div>
+      </div>
+
+      <div class="comparison-divider">VS</div>
+
+      <div class="comparison-col">
+        <span class="comparison-label">Profilo {{ providerLabel }}</span>
+        <div class="comparison-stat">
+          <img src="assets/ui/coin-turtle.webp" alt="" />
+          <span>{{ existingCoins }}</span>
+        </div>
+        <div class="comparison-stat">
+          <span class="xp-badge">XP</span>
+          <span>{{ existingXp }}</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="warning-text">
+      Se continui, caricheremo il profilo {{ providerLabel }} e i progressi
+      del profilo attuale verranno persi.
     </p>
 
     <div class="actions">
