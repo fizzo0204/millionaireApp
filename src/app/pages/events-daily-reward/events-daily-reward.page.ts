@@ -21,6 +21,7 @@ export class EventsDailyRewardPage implements OnInit {
   private dailyRewardService = inject(DailyRewardService);
 
   loading = true;
+  opening = false;
 
   async ngOnInit(): Promise<void> {
     await this.refresh();
@@ -55,18 +56,33 @@ export class EventsDailyRewardPage implements OnInit {
   }
 
   async openDailyReward(): Promise<void> {
-    await this.dailyEventsService.trackDailyRewardCheck();
-    await this.refresh();
+    // Guardia anti-doppio-tap/doppia-apertura: senza, un tap rapido o una
+    // rete lenta possono impilare due DailyRewardModalComponent (lo stesso
+    // problema gia' risolto altrove per l'apertura automatica, ma qui non
+    // era coperto). Controlla anche modalCtrl.getTop() per non aprirne una
+    // seconda se una e' gia' in scena per un altro motivo (es. auto-open).
+    if (this.opening || (await this.modalCtrl.getTop())) return;
 
-    const modal = await this.modalCtrl.create({
-      component: DailyRewardModalComponent,
-      cssClass: 'daily-reward-ion-modal',
-      backdropDismiss: false,
-    });
+    this.opening = true;
 
-    await modal.present();
-    await modal.onDidDismiss();
-    await this.refresh();
+    try {
+      await this.dailyEventsService.trackDailyRewardCheck();
+      await this.refresh();
+
+      if (await this.modalCtrl.getTop()) return;
+
+      const modal = await this.modalCtrl.create({
+        component: DailyRewardModalComponent,
+        cssClass: 'daily-reward-ion-modal',
+        backdropDismiss: false,
+      });
+
+      await modal.present();
+      await modal.onDidDismiss();
+      await this.refresh();
+    } finally {
+      this.opening = false;
+    }
   }
 
   goBack(): void {

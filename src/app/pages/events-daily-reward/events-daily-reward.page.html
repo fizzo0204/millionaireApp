@@ -51,7 +51,12 @@
         controllarla quando vuoi.
       </p>
 
-      <button type="button" class="primary-action" (click)="openDailyReward()">
+      <button
+        type="button"
+        class="primary-action"
+        [disabled]="opening"
+        (click)="openDailyReward()"
+      >
         Controlla reward
       </button>
     </section>

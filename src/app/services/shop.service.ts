@@ -214,50 +214,60 @@ export class ShopService {
 
   /*
    * Completa un acquisto gia' pagato: assegna la ricompensa e segna la
-   * transazione come accreditata, con un tentativo aggiuntivo in caso di
-   * errore transitorio (rete/Firestore) subito dopo il pagamento reale.
+   * transazione come accreditata.
    *
-   * Se anche il secondo tentativo fallisce, NON viene propagato l'errore
-   * originale: il chiamante deve sapere che l'utente ha gia' pagato, non che
-   * deve ripagare. Il recupero avviene alla riapertura dello shop, vedi
-   * riscattaAcquistiSospesi(). Nota: riscattaForziere() non e' un'unica
-   * transazione atomica (avatar, coins e xp sono tre scritture separate), per
-   * cui un fallimento a meta' seguito da un retry riuscito puo', in casi
-   * rari, assegnare un secondo avatar o monete bonus in piu' del dovuto:
-   * un rischio residuo accettato perche' favorisce il giocatore, non causa
-   * mai la perdita del pagamento.
+   * Il retry riguarda SOLO la registrazione "transazione accreditata"
+   * (markTransactionGranted), non l'intero riscattaForziere(): se il grant
+   * e' gia' andato a buon fine, ripeterlo per un errore transitorio nel solo
+   * passo di bookkeeping finale duplicherebbe coins/xp/avatar di un
+   * pagamento che l'utente ha gia' ricevuto per intero.
+   *
+   * Se riscattaForziere() stesso fallisce (grant non completato, o solo
+   * parzialmente), NON viene propagato l'errore originale: il chiamante deve
+   * sapere che l'utente ha gia' pagato, non che deve ripagare. Il recupero
+   * avviene alla riapertura dello shop, vedi riscattaAcquistiSospesi(). Nota:
+   * riscattaForziere() non e' un'unica transazione atomica (avatar, coins e
+   * xp sono tre scritture separate): un fallimento a meta' seguito da un
+   * retry riuscito (qui, o nella riconciliazione) puo', in casi rari,
+   * assegnare un secondo avatar o monete bonus in piu' del dovuto: un
+   * rischio residuo accettato perche' favorisce il giocatore, non causa mai
+   * la perdita del pagamento.
    */
   async riscattaForzierePagato(
     tipo: TipoForziere,
     transactionIdentifier: string,
   ): Promise<RisultatoForziere> {
-    const tentativiMax = 2;
+    let risultato: RisultatoForziere;
 
-    for (let tentativo = 1; tentativo <= tentativiMax; tentativo++) {
-      try {
-        const risultato = await this.riscattaForziere(tipo);
-        const user = await firstValueFrom(this.auth.user$);
+    try {
+      risultato = await this.riscattaForziere(tipo);
+    } catch (error) {
+      console.error('Errore accredito forziere pagato:', error);
+      throw new PurchaseGrantPendingError();
+    }
 
-        if (user) {
-          await this.markTransactionGranted(user.uid, transactionIdentifier);
-        }
+    const user = await firstValueFrom(this.auth.user$);
 
-        return risultato;
-      } catch (error) {
+    if (user) {
+      const registrata = await this.markTransactionGrantedWithRetry(
+        user.uid,
+        transactionIdentifier,
+      );
+
+      if (!registrata) {
+        // Il premio e' gia' stato assegnato per intero: non e' un pagamento
+        // senza accredito, quindi non lanciamo PurchaseGrantPendingError.
+        // Resta solo il rischio residuo, gia' accettato, che
+        // riscattaAcquistiSospesi() non veda ancora questo id nella lista
+        // "gia' accreditati" e lo riassegni alla prossima apertura shop.
         console.error(
-          `Errore accredito forziere pagato (tentativo ${tentativo}/${tentativiMax}):`,
-          error,
+          'Transazione accreditata ma non registrata come tale:',
+          transactionIdentifier,
         );
-
-        if (tentativo === tentativiMax) {
-          throw new PurchaseGrantPendingError();
-        }
-
-        await this.wait(700);
       }
     }
 
-    throw new PurchaseGrantPendingError();
+    return risultato;
   }
 
   /*
@@ -293,12 +303,22 @@ export class ShopService {
       try {
         const risultato = await this.riscattaForziere(config.tipo);
 
-        await this.markTransactionGranted(
+        risultati.push({ ...risultato, titolo: config.titolo });
+
+        // Il grant e' gia' andato a buon fine: da qui in poi ritentiamo solo
+        // la registrazione, mai riscattaForziere(), per non duplicare coins/
+        // xp/avatar per un errore transitorio del solo bookkeeping.
+        const registrata = await this.markTransactionGrantedWithRetry(
           user.uid,
           transazione.transactionIdentifier,
         );
 
-        risultati.push({ ...risultato, titolo: config.titolo });
+        if (!registrata) {
+          console.error(
+            'Acquisto sospeso accreditato ma non registrato come tale:',
+            transazione.transactionIdentifier,
+          );
+        }
       } catch (error) {
         console.error(
           'Errore riscatto acquisto sospeso:',
@@ -333,6 +353,34 @@ export class ShopService {
         'purchases.grantedTransactionIds': arrayUnion(transactionIdentifier),
       }),
     );
+  }
+
+  // Ritenta solo la registrazione "gia' accreditato", mai il grant vero e
+  // proprio: va chiamata solo DOPO che riscattaForziere() e' gia' riuscito.
+  private async markTransactionGrantedWithRetry(
+    uid: string,
+    transactionIdentifier: string,
+  ): Promise<boolean> {
+    const tentativiMax = 2;
+
+    for (let tentativo = 1; tentativo <= tentativiMax; tentativo++) {
+      try {
+        await this.markTransactionGranted(uid, transactionIdentifier);
+        return true;
+      } catch (error) {
+        console.error(
+          `Errore registrazione transazione accreditata (tentativo ${tentativo}/${tentativiMax}):`,
+          transactionIdentifier,
+          error,
+        );
+
+        if (tentativo < tentativiMax) {
+          await this.wait(700);
+        }
+      }
+    }
+
+    return false;
   }
 
   private runFirestore<T>(operation: () => T): T {

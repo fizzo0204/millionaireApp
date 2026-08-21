@@ -24,6 +24,10 @@ export class DailyRewardAutoOpenService implements OnDestroy {
     '/quiz',
     '/daily-challenge',
     '/arcade/play',
+    // La pagina dedicata gestisce da sola l'apertura (bottone "Controlla
+    // reward"): l'auto-open qui sopra creerebbe una seconda modale in race
+    // con quella aperta manualmente dall'utente.
+    '/events/daily-reward',
   ];
 
   private routeSub?: Subscription;
