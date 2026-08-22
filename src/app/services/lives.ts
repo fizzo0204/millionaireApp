@@ -9,7 +9,6 @@ import {
   Firestore,
   doc,
   docData,
-  updateDoc,
   serverTimestamp,
   UpdateData,
   DocumentData,
@@ -193,40 +192,68 @@ export class LivesService {
 
       if (!user) return;
 
-      const lives = this.getLives();
-
-      if (lives >= LIVES_CONFIG.maxLives) {
+      // Uscita anticipata sulla cache locale: gira ogni secondo, non ha
+      // senso aprire una transazione quando il caso comune (vite gia'
+      // piene, o nessun timestamp di recupero pendente) e' evidente dallo
+      // stream lives$ gia' in memoria. Il valore autoritativo viene
+      // comunque riletto dentro la transazione sotto prima di scrivere.
+      if (this.getLives() >= LIVES_CONFIG.maxLives) {
         this.countdownSubject.next('');
         return;
       }
 
+      if (!this.lastLifeUpdateTime) return;
+
       const userRef = doc(this.firestore, `users/${user.uid}`);
-      const lastUpdateTime = this.lastLifeUpdateTime;
 
-      if (!lastUpdateTime) return;
-      const now = Date.now();
+      /*
+       * Transazionale come spendLife()/addLife(): un updateDoc "cieco"
+       * basato sulla cache locale (this.getLives()/this.lastLifeUpdateTime)
+       * poteva sovrascrivere in silenzio una spendLife() o un addLife()
+       * committati proprio nella finestra tra la lettura della cache e
+       * questo updateDoc (es. un video per una vita extra guardato mentre
+       * scatta questo tick al secondo).
+       */
+      await this.runFirestore(() =>
+        runTransaction(this.firestore, async (transaction) => {
+          const snapshot = await transaction.get(userRef);
 
-      const diff = now - lastUpdateTime;
-      const recoveredLives = Math.floor(diff / LIVES_CONFIG.recoveryTime);
+          if (!snapshot.exists()) return;
 
-      if (recoveredLives <= 0) return;
+          const profile = snapshot.data() as AppUserProfile;
+          const lives = profile.stats?.lives ?? LIVES_CONFIG.maxLives;
 
-      const updatedLives = Math.min(
-        LIVES_CONFIG.maxLives,
-        lives + recoveredLives,
+          if (lives >= LIVES_CONFIG.maxLives) return;
+
+          const lastUpdateTime = this.getLastLifeUpdateTime(
+            profile.stats?.lastLifeUpdate,
+          );
+
+          if (!lastUpdateTime) return;
+
+          const diff = Date.now() - lastUpdateTime;
+          const recoveredLives = Math.floor(diff / LIVES_CONFIG.recoveryTime);
+
+          if (recoveredLives <= 0) return;
+
+          const updatedLives = Math.min(
+            LIVES_CONFIG.maxLives,
+            lives + recoveredLives,
+          );
+
+          const newLastUpdate =
+            updatedLives >= LIVES_CONFIG.maxLives
+              ? null
+              : new Date(
+                  lastUpdateTime + recoveredLives * LIVES_CONFIG.recoveryTime,
+                );
+
+          transaction.update(userRef, {
+            [LIVES_CONFIG.firestorePaths.lives]: updatedLives,
+            [LIVES_CONFIG.firestorePaths.lastLifeUpdate]: newLastUpdate,
+          });
+        }),
       );
-
-      const newLastUpdate =
-        updatedLives >= LIVES_CONFIG.maxLives
-          ? null
-          : new Date(
-              lastUpdateTime + recoveredLives * LIVES_CONFIG.recoveryTime,
-            );
-
-      await this.runFirestore(() => updateDoc(userRef, {
-        [LIVES_CONFIG.firestorePaths.lives]: updatedLives,
-        [LIVES_CONFIG.firestorePaths.lastLifeUpdate]: newLastUpdate,
-      }));
     } finally {
       this.isRecoveringLives = false;
     }

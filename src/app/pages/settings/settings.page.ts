@@ -10,6 +10,10 @@ import { AudioService } from 'src/app/services/audio';
 import { AuthPromptService } from 'src/app/services/auth-prompt.service';
 import { LogoutDecision } from 'src/app/models/logout.model';
 import { AccountDeletionDecision } from 'src/app/models/account-deletion.model';
+import {
+  LOGOUT_CONFIRM_MODAL_ID,
+  DELETE_ACCOUNT_CONFIRM_MODAL_ID,
+} from 'src/app/config/modal-ids.config';
 import { TutorialService } from 'src/app/services/tutorial.service';
 import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 import { AdminUsersService } from 'src/app/services/admin-users.service';
@@ -114,6 +118,7 @@ export class SettingsPage {
 
   private async confirmLogout(): Promise<LogoutDecision> {
     const modal = await this.modalCtrl.create({
+      id: LOGOUT_CONFIRM_MODAL_ID,
       component: LogoutConfirmModalComponent,
       cssClass: 'logout-confirm-ion-modal',
       backdropDismiss: false,
@@ -172,6 +177,7 @@ export class SettingsPage {
 
   private async confirmDeleteAccount(): Promise<AccountDeletionDecision> {
     const modal = await this.modalCtrl.create({
+      id: DELETE_ACCOUNT_CONFIRM_MODAL_ID,
       component: DeleteAccountConfirmModalComponent,
       cssClass: 'delete-account-confirm-ion-modal',
       backdropDismiss: false,

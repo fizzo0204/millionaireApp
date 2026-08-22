@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { ModalController } from '@ionic/angular/standalone';
 import { LogoutDecision } from 'src/app/models/logout.model';
+import { LOGOUT_CONFIRM_MODAL_ID } from 'src/app/config/modal-ids.config';
 
 @Component({
   selector: 'app-logout-confirm-modal',
@@ -22,6 +23,6 @@ export class LogoutConfirmModalComponent {
   }
 
   private close(decision: LogoutDecision) {
-    this.modalCtrl.dismiss(decision);
+    this.modalCtrl.dismiss(decision, undefined, LOGOUT_CONFIRM_MODAL_ID);
   }
 }

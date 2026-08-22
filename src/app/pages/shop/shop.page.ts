@@ -28,6 +28,7 @@ import {
 })
 export class ShopPage implements OnInit, OnDestroy {
   private livesSub?: Subscription;
+  private destroyed = false;
 
   coinRewardPulse = false;
   coinsLoading = false;
@@ -93,6 +94,12 @@ export class ShopPage implements OnInit, OnDestroy {
       const recuperati = await this.shopService.riscattaAcquistiSospesi();
 
       for (const risultato of recuperati) {
+        // La pagina puo' essere stata distrutta (navigazione via) mentre
+        // questa riconciliazione era ancora in corso: il premio e' comunque
+        // gia' sul profilo, non ha senso continuare a preparare cinematiche
+        // che nessuno vedra'.
+        if (this.destroyed) return;
+
         this.triggerCoinPulse();
 
         await this.mostraPremioForziere(
@@ -231,6 +238,14 @@ export class ShopPage implements OnInit, OnDestroy {
     avatarImage?: string,
     fallbackUsato = false,
   ): Promise<void> {
+    /*
+     * Il premio (coins/xp/avatar) e' gia' stato accreditato su Firestore a
+     * questo punto: se la pagina e' stata distrutta nel frattempo (l'utente
+     * ha navigato via durante il grant) non c'e' nessun impatto economico,
+     * semplicemente non mostriamo una cinematica che nessuno vedrebbe.
+     */
+    if (this.destroyed) return;
+
     this.purchaseRewardTitle = titolo;
     this.purchaseRewardIcon = this.coinIconPath;
 
@@ -281,6 +296,10 @@ export class ShopPage implements OnInit, OnDestroy {
 
   // Mostra un avviso quando il pagamento è riuscito ma l'accredito è ancora in sospeso.
   private async mostraPremioInSospeso(): Promise<void> {
+    // Vedi commento in mostraPremioForziere(): niente overlay su una pagina
+    // che l'utente ha gia' lasciato.
+    if (this.destroyed) return;
+
     const alert = await this.alertController.create({
       header: 'Pagamento riuscito',
       message:
@@ -294,6 +313,10 @@ export class ShopPage implements OnInit, OnDestroy {
 
   // Mostra una modale generica in caso di errore acquisto.
   private async mostraErroreAcquisto(message?: string): Promise<void> {
+    // Vedi commento in mostraPremioForziere(): niente overlay su una pagina
+    // che l'utente ha gia' lasciato.
+    if (this.destroyed) return;
+
     const alert = await this.alertController.create({
       header: 'Acquisto non completato',
       message:
@@ -364,6 +387,7 @@ export class ShopPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
     this.livesSub?.unsubscribe();
 
     /*

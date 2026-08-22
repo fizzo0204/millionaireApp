@@ -10,3 +10,5 @@
 export const ANONYMOUS_MODAL_ID = 'anonymous-modal';
 export const LINK_REWARD_MODAL_ID = 'link-reward-modal';
 export const ACCOUNT_CONFLICT_MODAL_ID = 'account-conflict-modal';
+export const LOGOUT_CONFIRM_MODAL_ID = 'logout-confirm-modal';
+export const DELETE_ACCOUNT_CONFIRM_MODAL_ID = 'delete-account-confirm-modal';

@@ -56,16 +56,26 @@ export class EventsDailyRewardPage implements OnInit {
   }
 
   async openDailyReward(): Promise<void> {
-    // Guardia anti-doppio-tap/doppia-apertura: senza, un tap rapido o una
-    // rete lenta possono impilare due DailyRewardModalComponent (lo stesso
-    // problema gia' risolto altrove per l'apertura automatica, ma qui non
-    // era coperto). Controlla anche modalCtrl.getTop() per non aprirne una
-    // seconda se una e' gia' in scena per un altro motivo (es. auto-open).
-    if (this.opening || (await this.modalCtrl.getTop())) return;
+    if (this.opening) return;
 
+    /*
+     * Guardia anti-doppio-tap/doppia-apertura: senza, un tap rapido o una
+     * rete lenta possono impilare due DailyRewardModalComponent (lo stesso
+     * problema gia' risolto altrove per l'apertura automatica, ma qui non
+     * era coperto). Impostata subito, prima di qualunque await (incluso il
+     * primo modalCtrl.getTop() qui sotto): il vecchio controllo faceva
+     * `this.opening || (await this.modalCtrl.getTop())`, lasciando una
+     * finestra di un microtask in cui due chiamate quasi simultanee
+     * potevano superare entrambe il controllo prima che una delle due
+     * impostasse il flag.
+     */
     this.opening = true;
 
     try {
+      // Non apre una seconda modale se una e' gia' in scena per un altro
+      // motivo (es. auto-open).
+      if (await this.modalCtrl.getTop()) return;
+
       await this.dailyEventsService.trackDailyRewardCheck();
       await this.refresh();
 

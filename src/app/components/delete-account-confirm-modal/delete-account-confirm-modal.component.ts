@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { ModalController } from '@ionic/angular/standalone';
 import { AccountDeletionDecision } from 'src/app/models/account-deletion.model';
+import { DELETE_ACCOUNT_CONFIRM_MODAL_ID } from 'src/app/config/modal-ids.config';
 
 @Component({
   selector: 'app-delete-account-confirm-modal',
@@ -22,6 +23,10 @@ export class DeleteAccountConfirmModalComponent {
   }
 
   private close(decision: AccountDeletionDecision) {
-    this.modalCtrl.dismiss(decision);
+    this.modalCtrl.dismiss(
+      decision,
+      undefined,
+      DELETE_ACCOUNT_CONFIRM_MODAL_ID,
+    );
   }
 }
