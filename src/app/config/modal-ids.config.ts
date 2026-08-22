@@ -9,3 +9,4 @@
  */
 export const ANONYMOUS_MODAL_ID = 'anonymous-modal';
 export const LINK_REWARD_MODAL_ID = 'link-reward-modal';
+export const ACCOUNT_CONFLICT_MODAL_ID = 'account-conflict-modal';

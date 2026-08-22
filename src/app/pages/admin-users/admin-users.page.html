@@ -86,7 +86,7 @@
     </div>
 
     <ion-list class="admin-menu-list" lines="none">
-      <ion-item button (click)="addCoins()">
+      <ion-item button [disabled]="addCoinsLoading" (click)="addCoins()">
         <ion-icon name="add-circle-outline" slot="start"></ion-icon>
         <ion-label>+{{ coinsStep }} TurtleCoins</ion-label>
         <ion-note slot="end">{{ user.coins }}</ion-note>

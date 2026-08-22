@@ -29,38 +29,53 @@ export class AuthPromptService {
 
   // Apre la modale login solo se l'utente corrente e un profilo base collegabile.
   async openGuestLoginPrompt(options: LoginPromptOptions = {}): Promise<void> {
-    const user = await firstValueFrom(this.auth.user$);
-
-    if (!this.auth.isBaseProfile(user) || this.isPromptOpen) return;
-
-    const profile = user
-      ? await firstValueFrom(this.userStatsService.getUserProfile(user.uid))
-      : undefined;
+    if (this.isPromptOpen) return;
 
     /*
-     * isBaseProfile() da sola non distingue un vero collegamento Google dal
-     * companion google.com automatico di Play Games (vedi AuthService). Se
-     * l'utente ha gia' un collegamento reale (auth.loginRewardClaimed, mai
-     * impostato dal solo auto-login Play Games), non riproponiamo l'invito.
+     * Impostato subito, prima di qualunque await: due chiamate quasi
+     * simultanee (es. il timer di scheduleHomeGuestLoginPrompt e un tap
+     * manuale con force:true, o due timer ravvicinati) superavano entrambe
+     * il vecchio controllo (fatto dopo un paio di await) e aprivano due
+     * istanze della stessa modale con lo stesso id. Avvolgiamo l'intero
+     * corpo in un try/finally cosi' il flag resta true per tutta la durata
+     * della chiamata, inclusi gli early return, e si azzera una sola volta
+     * alla fine (anche dopo la chiusura della modale).
      */
-    if (!user?.isAnonymous && profile?.auth?.loginRewardClaimed) return;
-
-    const isPlayGamesProfile = this.isStoredPlayGamesProfile(profile);
-
-    /*
-     * Il prompt automatico in home serve solo per l'ospite anonimo.
-     * Play Games e gia un profilo automatico: gli proponiamo Google/Facebook
-     * solo quando tocca navbar o settings, senza interrompere il rientro in home.
-     */
-    if (options.source === 'home' && (!user?.isAnonymous || isPlayGamesProfile)) {
-      return;
-    }
-
-    if (!options.force && !this.canShowHomePrompt()) return;
-
     this.isPromptOpen = true;
 
     try {
+      const user = await firstValueFrom(this.auth.user$);
+
+      if (!this.auth.isBaseProfile(user)) return;
+
+      const profile = user
+        ? await firstValueFrom(this.userStatsService.getUserProfile(user.uid))
+        : undefined;
+
+      /*
+       * isBaseProfile() da sola non distingue un vero collegamento Google dal
+       * companion google.com automatico di Play Games (vedi AuthService). Se
+       * l'utente ha gia' un collegamento reale (auth.loginRewardClaimed, mai
+       * impostato dal solo auto-login Play Games), non riproponiamo l'invito.
+       */
+      if (!user?.isAnonymous && profile?.auth?.loginRewardClaimed) return;
+
+      const isPlayGamesProfile = this.isStoredPlayGamesProfile(profile);
+
+      /*
+       * Il prompt automatico in home serve solo per l'ospite anonimo.
+       * Play Games e gia un profilo automatico: gli proponiamo Google/Facebook
+       * solo quando tocca navbar o settings, senza interrompere il rientro in home.
+       */
+      if (
+        options.source === 'home' &&
+        (!user?.isAnonymous || isPlayGamesProfile)
+      ) {
+        return;
+      }
+
+      if (!options.force && !this.canShowHomePrompt()) return;
+
       const modal = await this.modalCtrl.create({
         component: AnonymousModalComponent,
         id: ANONYMOUS_MODAL_ID,

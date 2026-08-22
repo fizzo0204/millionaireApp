@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { ModalController } from '@ionic/angular/standalone';
 import { AccountConflictModalComponent } from 'src/app/components/account-conflict-modal/account-conflict-modal.component';
 import { AUTH_PROVIDERS } from 'src/app/data/auth-providers.data';
+import { ACCOUNT_CONFLICT_MODAL_ID } from 'src/app/config/modal-ids.config';
 import {
   AccountConflictComparison,
   AccountConflictDecision,
@@ -21,6 +22,7 @@ export class AccountLinkService {
     const providerLabel = AUTH_PROVIDERS[providerId]?.label ?? 'questo account';
 
     const modal = await this.modalCtrl.create({
+      id: ACCOUNT_CONFLICT_MODAL_ID,
       component: AccountConflictModalComponent,
       componentProps: {
         providerLabel,

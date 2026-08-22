@@ -2,6 +2,7 @@ import { Component, Input } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
 import { ModalController } from '@ionic/angular/standalone';
 import { AccountConflictDecision } from 'src/app/models/auth.model';
+import { ACCOUNT_CONFLICT_MODAL_ID } from 'src/app/config/modal-ids.config';
 
 @Component({
   selector: 'app-account-conflict-modal',
@@ -28,6 +29,6 @@ export class AccountConflictModalComponent {
   }
 
   private close(decision: AccountConflictDecision) {
-    this.modalCtrl.dismiss(decision);
+    this.modalCtrl.dismiss(decision, undefined, ACCOUNT_CONFLICT_MODAL_ID);
   }
 }

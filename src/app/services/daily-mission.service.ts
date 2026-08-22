@@ -184,9 +184,7 @@ export class DailyMissionService {
 
         transaction.set(
           userRef,
-          {
-            dailyEvents,
-          },
+          this.buildDailyEventsPayload(dailyEvents),
           { merge: true },
         );
 
@@ -237,9 +235,7 @@ export class DailyMissionService {
 
         transaction.set(
           userRef,
-          {
-            dailyEvents,
-          },
+          this.buildDailyEventsPayload(dailyEvents),
           { merge: true },
         );
 
@@ -497,7 +493,11 @@ export class DailyMissionService {
           dailyEvents,
         );
 
-        transaction.set(userRef, { dailyEvents }, { merge: true });
+        transaction.set(
+          userRef,
+          this.buildDailyEventsPayload(dailyEvents),
+          { merge: true },
+        );
         updatedDailyEvents = dailyEvents;
       }),
     );
@@ -507,6 +507,30 @@ export class DailyMissionService {
         ? this.getNotificationCountFromData(updatedDailyEvents)
         : null,
     };
+  }
+
+  /*
+   * Trasforma dailyEvents in un payload a path puntati (es.
+   * 'dailyEvents.metrics') per set(...,{merge:true}): passare l'oggetto
+   * nidificato intero sotto un'unica chiave "dailyEvents" fa scattare il
+   * merge RICORSIVO di Firestore sui suoi map annidati, che non cancella mai
+   * le chiavi del giorno precedente quando il nuovo valore e' {} (es. dopo
+   * un cambio giorno: metrics/missionClaims/missionSwitches/
+   * missionProgressBaselines restavano quelli di ieri per sempre). I path
+   * puntati invece sostituiscono per intero il valore a quel path esatto,
+   * niente merge piu' in profondita' - stesso motivo per cui
+   * UserDailyRewardDataService.updateDailyRewardData() li usa gia'.
+   */
+  private buildDailyEventsPayload(
+    dailyEvents: DailyEventsData,
+  ): Record<string, unknown> {
+    const payload: Record<string, unknown> = {};
+
+    for (const [key, value] of Object.entries(dailyEvents)) {
+      payload[`dailyEvents.${key}`] = value;
+    }
+
+    return payload;
   }
 
   // Normalizza i dati dailyEvents gestendo cambio giorno e campi mancanti.
@@ -658,7 +682,9 @@ export class DailyMissionService {
 
     if (dailyEvents.dateKey !== rawDailyEvents?.dateKey) {
       await this.runFirestore(() =>
-        setDoc(userRef, { dailyEvents }, { merge: true }),
+        setDoc(userRef, this.buildDailyEventsPayload(dailyEvents), {
+          merge: true,
+        }),
       );
     }
 

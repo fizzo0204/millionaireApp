@@ -408,8 +408,17 @@ export class AuthService {
       this.debug('✅ Accesso Google completato.');
       return true;
     } catch (error) {
+      /*
+       * Rilanciato (non piu' inghiottito in un semplice `return false`):
+       * un annullamento nativo esplicito passa gia' da `!result` sopra senza
+       * mai finire qui, quindi chi arriva in questo catch e' un errore vero
+       * (rete, Firestore, bug interno). AnonymousModalComponent.runLoginAction()
+       * mostra un alert solo se la promise rifiuta: prima un errore reale
+       * spariva col loader senza alcun feedback visibile, indistinguibile da
+       * un annullamento silenzioso.
+       */
       console.error('❌ Errore login Google:', error);
-      return false;
+      throw error;
     } finally {
       this.loadingSubject.next(false);
     }
@@ -527,8 +536,9 @@ export class AuthService {
       this.debug('✅ Accesso Facebook completato.');
       return true;
     } catch (error) {
+      // Vedi commento nel catch equivalente di googleSignIn().
       console.error('❌ Errore login Facebook:', error);
-      return false;
+      throw error;
     } finally {
       this.loadingSubject.next(false);
     }
@@ -675,8 +685,9 @@ export class AuthService {
       this.clearInitialPlayGamesAutoSignInSuppression();
       return true;
     } catch (error) {
+      // Vedi commento nel catch equivalente di googleSignIn().
       console.error('Errore login Play Games:', error);
-      return false;
+      throw error;
     } finally {
       this.loadingSubject.next(false);
     }
@@ -734,12 +745,7 @@ export class AuthService {
 
       const deletion = await this.deleteFirebaseAuthUserWithRetry(currentUser);
 
-      if (deletion === 'requires-recent-login') {
-        this.debug('Eliminazione account: richiede login recente.');
-        return 'requires-recent-login';
-      }
-
-      if (deletion === 'failed') {
+      if (deletion === 'requires-recent-login' || deletion === 'failed') {
         /*
          * I dati sono gia' spariti ma l'account Auth originale no: lasciarlo
          * cosi' e' pericoloso, perche' ensureUserProfile() lo "resusciterebbe"
@@ -749,9 +755,18 @@ export class AuthService {
          * Auth originale resta un residuo orfano senza profilo TurtleMind,
          * ma per l'utente l'eliminazione e' comunque completa (nessun dato,
          * nessun accesso residuo agli account collegati).
+         *
+         * 'requires-recent-login' a questo punto NON e' lo stesso caso del
+         * controllo preventivo sopra (che blocca PRIMA di cancellare
+         * qualunque cosa): qui la finestra di login recente e' scaduta
+         * DURANTE la cancellazione sequenziale delle sottocollezioni
+         * Firestore, quindi i dati sono gia' spariti. Mostrare all'utente
+         * "accedi di nuovo e riprova" sarebbe fuorviante (non c'e' piu'
+         * nulla da recuperare riautenticandosi): trattiamo il caso come
+         * 'failed', stessa pulizia.
          */
         console.error(
-          'Eliminazione account Auth non riuscita dopo i tentativi: dati gia cancellati, sposto su un profilo ospite pulito.',
+          `Eliminazione account Auth non riuscita (${deletion}): dati gia cancellati, sposto su un profilo ospite pulito.`,
         );
 
         await this.startFreshGuestSessionAfterAccountDeletion();

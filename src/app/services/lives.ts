@@ -124,27 +124,54 @@ export class LivesService {
     }));
   }
 
-  async addLife(amount: number = 1) {
+  async addLife(amount: number = 1): Promise<void> {
     const user = await firstValueFrom(this.auth.user$);
 
     if (!user) return;
 
-    const currentLives = this.getLives();
-    const updatedLives = Math.min(LIVES_CONFIG.maxLives, currentLives + amount);
-
     const userRef = doc(this.firestore, `users/${user.uid}`);
 
-    const updates: UpdateData<DocumentData> = {
-      [LIVES_CONFIG.firestorePaths.lives]: updatedLives,
-    };
+    /*
+     * Transazionale come spendLife(), non piu' un updateDoc "cieco" basato
+     * su this.getLives() (valore cache locale dello stream lives$): una
+     * spendLife()/recoverLivesIfNeeded() concorrente che committa tra la
+     * lettura della cache e questo updateDoc veniva silenziosamente
+     * sovrascritta/persa. Leggiamo lo stato fresco dentro la transazione,
+     * stessa fonte di verita' usata da spendLife().
+     */
+    await this.runFirestore(() =>
+      runTransaction(this.firestore, async (transaction) => {
+        const snapshot = await transaction.get(userRef);
 
-    if (updatedLives >= LIVES_CONFIG.maxLives) {
-      updates[LIVES_CONFIG.firestorePaths.lastLifeUpdate] = null;
-    } else if (!this.lastLifeUpdateTime) {
-      updates[LIVES_CONFIG.firestorePaths.lastLifeUpdate] = serverTimestamp();
-    }
+        if (!snapshot.exists()) return;
 
-    await this.runFirestore(() => updateDoc(userRef, updates));
+        const profile = snapshot.data() as AppUserProfile;
+        const currentLives = profile.stats?.lives ?? LIVES_CONFIG.maxLives;
+        const updatedLives = Math.min(
+          LIVES_CONFIG.maxLives,
+          currentLives + amount,
+        );
+
+        const updates: UpdateData<DocumentData> = {
+          [LIVES_CONFIG.firestorePaths.lives]: updatedLives,
+        };
+
+        if (updatedLives >= LIVES_CONFIG.maxLives) {
+          updates[LIVES_CONFIG.firestorePaths.lastLifeUpdate] = null;
+        } else {
+          const lastLifeUpdateTime = this.getLastLifeUpdateTime(
+            profile.stats?.lastLifeUpdate,
+          );
+
+          if (!lastLifeUpdateTime) {
+            updates[LIVES_CONFIG.firestorePaths.lastLifeUpdate] =
+              serverTimestamp();
+          }
+        }
+
+        transaction.update(userRef, updates);
+      }),
+    );
   }
 
   private startCountdown() {

@@ -80,6 +80,10 @@ export class ShopService {
   private firestore = inject(Firestore);
   private injector = inject(EnvironmentInjector);
 
+  // Serializza il grant per transactionIdentifier tra riscattaForzierePagato
+  // e riscattaAcquistiSospesi, vedi eseguiGrantTransazione().
+  private grantsInCorso = new Map<string, Promise<RisultatoForziere | null>>();
+
   readonly forzieri: ConfigForziere[] = [
     {
       tipo: 'viaggiatore',
@@ -175,6 +179,23 @@ export class ShopService {
       throw new Error('Utente non autenticato');
     }
 
+    /*
+     * addCoins/addXp ignorano in silenzio uno snapshot inesistente (non
+     * lanciano), per non far fallire altri chiamanti in scenari normali. Qui
+     * pero' un premio "riuscito" ma non scritto verrebbe comunque segnato
+     * come accreditato per sempre da riscattaForzierePagato/
+     * riscattaAcquistiSospesi: verifichiamo esplicitamente l'esistenza del
+     * documento prima di procedere, cosi' un doc mancante (es. race con una
+     * cancellazione account parziale) fa fallire il grant in modo visibile
+     * invece di "riuscire" senza scrivere nulla.
+     */
+    const userRef = doc(this.firestore, `users/${user.uid}`);
+    const userSnapshot = await this.runFirestore(() => getDoc(userRef));
+
+    if (!userSnapshot.exists()) {
+      throw new Error(`Documento utente inesistente per il grant: ${user.uid}`);
+    }
+
     let avatarSbloccato: AvatarModel | undefined;
     let fallbackUsato = false;
     let coinsDaAggiungere = config.coins;
@@ -216,55 +237,58 @@ export class ShopService {
    * Completa un acquisto gia' pagato: assegna la ricompensa e segna la
    * transazione come accreditata.
    *
-   * Il retry riguarda SOLO la registrazione "transazione accreditata"
-   * (markTransactionGranted), non l'intero riscattaForziere(): se il grant
-   * e' gia' andato a buon fine, ripeterlo per un errore transitorio nel solo
-   * passo di bookkeeping finale duplicherebbe coins/xp/avatar di un
-   * pagamento che l'utente ha gia' ricevuto per intero.
+   * Il grant vero e proprio (riscattaForziere) e la registrazione "gia'
+   * accreditata" passano entrambi da eseguiGrantTransazione(), che serializza
+   * per transactionIdentifier: questo e' l'unico modo per evitare che questo
+   * metodo e riscattaAcquistiSospesi() (richiamato ad ogni apertura shop,
+   * quindi possibile in parallelo se l'utente naviga via e torna mentre
+   * questo acquisto e' ancora in corso) accreditino due volte lo stesso
+   * pagamento reale.
    *
-   * Se riscattaForziere() stesso fallisce (grant non completato, o solo
-   * parzialmente), NON viene propagato l'errore originale: il chiamante deve
-   * sapere che l'utente ha gia' pagato, non che deve ripagare. Il recupero
-   * avviene alla riapertura dello shop, vedi riscattaAcquistiSospesi(). Nota:
-   * riscattaForziere() non e' un'unica transazione atomica (avatar, coins e
-   * xp sono tre scritture separate): un fallimento a meta' seguito da un
-   * retry riuscito (qui, o nella riconciliazione) puo', in casi rari,
-   * assegnare un secondo avatar o monete bonus in piu' del dovuto: un
-   * rischio residuo accettato perche' favorisce il giocatore, non causa mai
-   * la perdita del pagamento.
+   * Se il grant fallisce, NON viene propagato l'errore originale: il
+   * chiamante deve sapere che l'utente ha gia' pagato, non che deve
+   * ripagare. Il recupero avviene alla riapertura dello shop, vedi
+   * riscattaAcquistiSospesi(). Nota: riscattaForziere() non e' un'unica
+   * transazione atomica (avatar, coins e xp sono tre scritture separate): un
+   * fallimento a meta' seguito da un retry riuscito (qui, o nella
+   * riconciliazione) puo', in casi rari, assegnare un secondo avatar o
+   * monete bonus in piu' del dovuto: un rischio residuo accettato perche'
+   * favorisce il giocatore, non causa mai la perdita del pagamento.
    */
   async riscattaForzierePagato(
     tipo: TipoForziere,
     transactionIdentifier: string,
   ): Promise<RisultatoForziere> {
-    let risultato: RisultatoForziere;
+    const user = await firstValueFrom(this.auth.user$);
+
+    if (!user) {
+      throw new Error('Utente non autenticato');
+    }
+
+    let risultato: RisultatoForziere | null;
 
     try {
-      risultato = await this.riscattaForziere(tipo);
+      risultato = await this.eseguiGrantTransazione(
+        user.uid,
+        transactionIdentifier,
+        tipo,
+      );
     } catch (error) {
       console.error('Errore accredito forziere pagato:', error);
       throw new PurchaseGrantPendingError();
     }
 
-    const user = await firstValueFrom(this.auth.user$);
-
-    if (user) {
-      const registrata = await this.markTransactionGrantedWithRetry(
-        user.uid,
-        transactionIdentifier,
-      );
-
-      if (!registrata) {
-        // Il premio e' gia' stato assegnato per intero: non e' un pagamento
-        // senza accredito, quindi non lanciamo PurchaseGrantPendingError.
-        // Resta solo il rischio residuo, gia' accettato, che
-        // riscattaAcquistiSospesi() non veda ancora questo id nella lista
-        // "gia' accreditati" e lo riassegni alla prossima apertura shop.
-        console.error(
-          'Transazione accreditata ma non registrata come tale:',
-          transactionIdentifier,
-        );
-      }
+    if (risultato === null) {
+      /*
+       * Gia' accreditata da una chiamata concorrente (tipicamente
+       * riscattaAcquistiSospesi partita in parallelo su una ShopPage
+       * ricreata dalla navigazione). Non e' un errore e non va ripagata, ma
+       * non abbiamo i valori realmente assegnati (l'eventuale avatar era
+       * casuale): mostriamo la ricompensa di listino del forziere, il
+       * premio effettivo e' comunque gia' sul profilo dell'utente.
+       */
+      const config = this.getForziere(tipo);
+      return { coins: config.coins, xp: config.xp, fallbackUsato: false };
     }
 
     return risultato;
@@ -301,23 +325,17 @@ export class ShopService {
       if (!config) continue; // Prodotto non riconosciuto (es. rimosso dal catalogo).
 
       try {
-        const risultato = await this.riscattaForziere(config.tipo);
-
-        risultati.push({ ...risultato, titolo: config.titolo });
-
-        // Il grant e' gia' andato a buon fine: da qui in poi ritentiamo solo
-        // la registrazione, mai riscattaForziere(), per non duplicare coins/
-        // xp/avatar per un errore transitorio del solo bookkeeping.
-        const registrata = await this.markTransactionGrantedWithRetry(
+        const risultato = await this.eseguiGrantTransazione(
           user.uid,
           transazione.transactionIdentifier,
+          config.tipo,
         );
 
-        if (!registrata) {
-          console.error(
-            'Acquisto sospeso accreditato ma non registrato come tale:',
-            transazione.transactionIdentifier,
-          );
+        // null = gia' accreditata da una chiamata concorrente
+        // (riscattaForzierePagato in corso in parallelo): niente da
+        // mostrare qui, il premio e' comunque gia' sul profilo.
+        if (risultato) {
+          risultati.push({ ...risultato, titolo: config.titolo });
         }
       } catch (error) {
         console.error(
@@ -330,6 +348,53 @@ export class ShopService {
     }
 
     return risultati;
+  }
+
+  /*
+   * Serializza l'accredito di una singola transazione tra le due fonti
+   * concorrenti possibili (acquisto appena pagato e riconciliazione
+   * riscattaAcquistiSospesi): entrambe passano da qui, cosi' due chiamate
+   * per lo stesso transactionIdentifier condividono la stessa promise invece
+   * di eseguire riscattaForziere() due volte in parallelo. Il ricontrollo su
+   * Firestore appena prima del grant copre anche il caso NON concorrente in
+   * cui una chiamata precedente ha gia' completato e registrato la
+   * transazione poco prima (es. ShopPage ricreata da una navigazione,
+   * routing standard senza cache dei tab).
+   */
+  private eseguiGrantTransazione(
+    uid: string,
+    transactionIdentifier: string,
+    tipo: TipoForziere,
+  ): Promise<RisultatoForziere | null> {
+    const inCorso = this.grantsInCorso.get(transactionIdentifier);
+    if (inCorso) return inCorso;
+
+    const operazione = (async (): Promise<RisultatoForziere | null> => {
+      const giaAccreditata = await this.getGrantedTransactionIds(uid);
+      if (giaAccreditata.includes(transactionIdentifier)) return null;
+
+      const risultato = await this.riscattaForziere(tipo);
+
+      const registrata = await this.markTransactionGrantedWithRetry(
+        uid,
+        transactionIdentifier,
+      );
+
+      if (!registrata) {
+        console.error(
+          'Transazione accreditata ma non registrata come tale:',
+          transactionIdentifier,
+        );
+      }
+
+      return risultato;
+    })();
+
+    this.grantsInCorso.set(transactionIdentifier, operazione);
+
+    return operazione.finally(() => {
+      this.grantsInCorso.delete(transactionIdentifier);
+    });
   }
 
   private async getGrantedTransactionIds(uid: string): Promise<string[]> {

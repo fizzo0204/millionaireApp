@@ -435,7 +435,10 @@ export class QuizPage implements OnInit, OnDestroy {
     if (this.loading || !this.currentQuestion) return;
 
     const isInsideActiveQuestion =
-      !this.answered || this.showTimeModal || this.showExitModal;
+      !this.answered ||
+      this.showTimeModal ||
+      this.showExitModal ||
+      this.showWrongModal;
 
     if (!isInsideActiveQuestion) return;
 

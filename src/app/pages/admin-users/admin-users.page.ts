@@ -40,6 +40,7 @@ export class AdminUsersPage implements OnInit {
   menuUser: AdminUserRow | null = null;
 
   avatarPickerOpen = false;
+  addCoinsLoading = false;
 
   async ngOnInit(): Promise<void> {
     await this.loadUsers();
@@ -114,7 +115,13 @@ export class AdminUsersPage implements OnInit {
   async addCoins(): Promise<void> {
     const user = this.menuUser;
 
-    if (!user) return;
+    if (!user || this.addCoinsLoading) return;
+
+    // Impostato prima di qualunque await: un doppio tap rapido su questa
+    // voce (il popover resta aperto dopo il click) altrimenti avvia N
+    // transazioni Firestore indipendenti, accreditando N x coinsStep invece
+    // di una sola volta.
+    this.addCoinsLoading = true;
 
     try {
       const nextCoins = await this.adminUsersService.addCoins(
@@ -125,6 +132,8 @@ export class AdminUsersPage implements OnInit {
     } catch (error) {
       console.error('Errore aggiunta monete admin:', error);
       await this.showToast('Errore durante l\'aggiunta delle monete');
+    } finally {
+      this.addCoinsLoading = false;
     }
   }
 
