@@ -64,10 +64,6 @@ export class UserAvatarDataService {
     return avatar;
   }
 
-  async unlockDailyAvatar(uid: string, avatarId: string): Promise<void> {
-    await this.addUnlockedAvatarId(uid, avatarId);
-  }
-
   /*
    * Aggiunge un avatar alla lista sbloccati con arrayUnion, atomico lato
    * Firestore: a differenza di un leggi-poi-scrivi, due sblocchi avatar

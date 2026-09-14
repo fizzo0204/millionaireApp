@@ -635,14 +635,14 @@ export class ProfilePage {
       return;
     }
 
-    const user = await firstValueFrom(this.user$);
-    const titleReward = this.getAchievementRewardTitle(achievement);
-
-    if (!user || !titleReward) return;
-
     this.achievementClaimLoadingId = achievement.id;
 
     try {
+      const user = await firstValueFrom(this.user$);
+      const titleReward = this.getAchievementRewardTitle(achievement);
+
+      if (!user || !titleReward) return;
+
       const result = await this.userStatsService.claimAchievementTitleReward(
         user.uid,
         achievement.id,
@@ -725,18 +725,23 @@ export class ProfilePage {
   }
 
   async saveAvatar() {
-    const user = await firstValueFrom(this.user$);
-    const profile = await firstValueFrom(this.profile$);
-
-    if (!user) return;
+    if (this.nicknameSaving) return;
 
     this.nicknameSaving = true;
-    this.selectedAvatar = this.getSafeSelectedAvatar(this.tempSelectedAvatar);
-    const nickname =
-      this.normalizeNickname(this.tempNickname) ||
-      this.getPlayerName(user, profile);
 
     try {
+      const user = await firstValueFrom(this.user$);
+      const profile = await firstValueFrom(this.profile$);
+
+      if (!user) return;
+
+      this.selectedAvatar = this.getSafeSelectedAvatar(
+        this.tempSelectedAvatar,
+      );
+      const nickname =
+        this.normalizeNickname(this.tempNickname) ||
+        this.getPlayerName(user, profile);
+
       await Promise.all([
         this.dailyRewardService.saveSelectedAvatar(this.selectedAvatar),
         this.userStatsService.saveNickname(user.uid, nickname),
@@ -785,13 +790,15 @@ export class ProfilePage {
   }
 
   async saveTitle() {
-    const user = await firstValueFrom(this.user$);
-
-    if (!user) return;
+    if (this.titleSaving) return;
 
     this.titleSaving = true;
 
     try {
+      const user = await firstValueFrom(this.user$);
+
+      if (!user) return;
+
       await this.userStatsService.selectProfileTitle(
         user.uid,
         this.tempSelectedTitle,

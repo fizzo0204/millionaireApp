@@ -256,11 +256,6 @@ export class UserStatsService {
     return this.avatarData.getAvatarData(uid);
   }
 
-  // Sblocca un avatar giornaliero se non era gia presente.
-  async unlockDailyAvatar(uid: string, avatarId: string): Promise<void> {
-    return this.avatarData.unlockDailyAvatar(uid, avatarId);
-  }
-
   // Sblocca in modo permanente un avatar (es. avatar speciali), indipendente
   // dalla sorgente: resta sbloccato anche se cambia il motivo che lo ha attivato.
   async unlockAvatar(uid: string, avatarId: string): Promise<void> {

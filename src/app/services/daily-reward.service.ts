@@ -207,23 +207,6 @@ export class DailyRewardService {
     return this.userStatsService.applyDailyRewardBonus(user.uid, rewardPayload);
   }
 
-  async saveUnlockedAvatar(avatar: AvatarModel): Promise<void> {
-    const user = await firstValueFrom(this.auth.user$);
-
-    if (this.cachedAvatar.unlockedAvatarIds.includes(avatar.id)) return;
-
-    this.cachedAvatar = {
-      ...this.cachedAvatar,
-      unlockedAvatarIds: [...this.cachedAvatar.unlockedAvatarIds, avatar.id],
-    };
-
-    if (!user) return;
-
-    await this.ensureRemoteProfile(user);
-
-    await this.userStatsService.unlockDailyAvatar(user.uid, avatar.id);
-  }
-
   async refreshAvatarCacheForCurrentUser(): Promise<void> {
     const user = await firstValueFrom(this.auth.user$);
 
