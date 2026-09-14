@@ -22,6 +22,7 @@ import { QuizHistoryItem, UserStats } from 'src/app/models/user-stats.model';
 import { DifficultyId } from 'src/app/models/difficulty.model';
 import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
 import { getLevelFromXp } from 'src/app/utils/level-progress.util';
+import { getUpdatedStreakDays } from 'src/app/utils/streak-progress.util';
 import { ProgressService } from './progress.service';
 
 @Injectable({
@@ -45,19 +46,6 @@ export class UserQuizDataService {
     lives: USER_STATS_CONFIG.defaultLives,
     lastQuizPlayedAt: null,
   };
-
-  private getStartOfToday(): Date {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return today;
-  }
-
-  private getStartOfYesterday(): Date {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setHours(0, 0, 0, 0);
-    return yesterday;
-  }
 
   async recordQuizResult(
     uid: string,
@@ -108,25 +96,10 @@ export class UserQuizDataService {
           typeof stats?.wrongAnswers === 'number' ? stats.wrongAnswers : 0;
         const currentStreakDays = stats?.streakDays ?? 0;
         const lastQuizPlayedAt = stats?.lastQuizPlayedAt;
-        const todayStart = this.getStartOfToday();
-        const yesterdayStart = this.getStartOfYesterday();
-
-        let updatedStreakDays = currentStreakDays;
-
-        if (!lastQuizPlayedAt?.toDate) {
-          updatedStreakDays = 1;
-        } else {
-          const lastPlayedDate = lastQuizPlayedAt.toDate();
-          lastPlayedDate.setHours(0, 0, 0, 0);
-
-          if (lastPlayedDate.getTime() === todayStart.getTime()) {
-            updatedStreakDays = currentStreakDays;
-          } else if (lastPlayedDate.getTime() === yesterdayStart.getTime()) {
-            updatedStreakDays = currentStreakDays + 1;
-          } else {
-            updatedStreakDays = 1;
-          }
-        }
+        const updatedStreakDays = getUpdatedStreakDays(
+          lastQuizPlayedAt,
+          currentStreakDays,
+        );
 
         const xpEarned = correctAnswers * USER_STATS_CONFIG.xpPerCorrectAnswer;
         const updatedXp = currentXp + xpEarned;

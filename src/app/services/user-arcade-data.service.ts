@@ -17,6 +17,7 @@ import { UserArcadeData, UserStats } from 'src/app/models/user-stats.model';
 import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
 import { ARCADE_CONFIG } from 'src/app/config/arcade.config';
 import { getLevelFromXp } from 'src/app/utils/level-progress.util';
+import { getUpdatedStreakDays } from 'src/app/utils/streak-progress.util';
 
 @Injectable({
   providedIn: 'root',
@@ -124,6 +125,27 @@ export class UserArcadeDataService {
             ? stats.coins
             : this.defaultStats.coins;
 
+        /*
+         * Un livello Scalata completato equivale a un quiz normale vinto
+         * (recordArcadeLevelCompleted scatta solo su risposta corretta,
+         * stesso caso in cui il quiz normale chiama recordQuizResult): senza
+         * questo, chi gioca solo Arcade non incrementava mai quizPlayed ne'
+         * ricalcolava streakDays, quindi non sbloccava mai gli achievement
+         * "quiz giocati"/streak. Bug reale trovato in un audit il 2026-09-14.
+         */
+        const currentQuizPlayed =
+          typeof stats?.quizPlayed === 'number'
+            ? stats.quizPlayed
+            : this.defaultStats.quizPlayed;
+        const currentStreakDays =
+          typeof stats?.streakDays === 'number'
+            ? stats.streakDays
+            : this.defaultStats.streakDays;
+        const updatedStreakDays = getUpdatedStreakDays(
+          stats?.lastQuizPlayedAt,
+          currentStreakDays,
+        );
+
         const updatedXp = currentXp + rewardXp;
         const updatedLevel = getLevelFromXp(updatedXp);
 
@@ -145,6 +167,8 @@ export class UserArcadeDataService {
           'stats.coins': currentCoins + rewardCoins,
           'stats.xp': updatedXp,
           'stats.level': updatedLevel,
+          'stats.quizPlayed': currentQuizPlayed + 1,
+          'stats.streakDays': updatedStreakDays,
           'stats.lastQuizPlayedAt': serverTimestamp(),
         });
 

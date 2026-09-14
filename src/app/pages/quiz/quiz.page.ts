@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule, Platform } from '@ionic/angular';
+import { AlertController, IonicModule, Platform } from '@ionic/angular';
 import { ActivatedRoute, Router } from '@angular/router';
 import { App as CapacitorApp } from '@capacitor/app';
 import type { PluginListenerHandle } from '@capacitor/core';
@@ -31,7 +31,10 @@ import { NavigationTransitionService } from 'src/app/services/navigation-transit
 import { QuizAiutiTimerService } from 'src/app/services/quiz-aiuti-timer.service';
 import { QuizCompletamentoService } from 'src/app/services/quiz-completamento.service';
 import { QuizVideoRewardService } from 'src/app/services/quiz-video-reward.service';
-import { QuizScalataService } from 'src/app/services/quiz-scalata.service';
+import {
+  QuizScalataService,
+  RisultatoCompletamentoScalata,
+} from 'src/app/services/quiz-scalata.service';
 
 @Component({
   selector: 'app-quiz',
@@ -63,6 +66,7 @@ export class QuizPage implements OnInit, OnDestroy {
   private quizVideoRewardService = inject(QuizVideoRewardService);
   private quizScalataService = inject(QuizScalataService);
   private platform = inject(Platform);
+  private alertController = inject(AlertController);
 
   private appStateListener?: PluginListenerHandle;
   private backButtonSub?: Subscription;
@@ -70,7 +74,10 @@ export class QuizPage implements OnInit, OnDestroy {
   private adInProgress = false;
   private lifeLostForLeaving = false;
   private navigatingAway = false;
+  private destroyed = false;
   private questionEntranceTimer?: ReturnType<typeof setTimeout>;
+  private nextQuestionTimer?: ReturnType<typeof setTimeout>;
+  private wrongModalTimer?: ReturnType<typeof setTimeout>;
   levelAlreadyCompleted = false;
   rewardDoubleLoading = false;
   rewardDoubled = false;
@@ -614,7 +621,17 @@ export class QuizPage implements OnInit, OnDestroy {
         void this.dailyEventsService.trackDailyChallengeCorrect();
       }
 
-      setTimeout(() => {
+      /*
+       * Non ripulito e senza controllo su navigatingAway, un'uscita
+       * dal quiz (back fisico/in-app) entro questa finestra di 700ms
+       * lasciava comunque eseguire nextQuestion()/finishQuiz() su
+       * un'istanza gia' abbandonata: la vita veniva persa per l'uscita
+       * E il livello risultava comunque completato/premiato subito dopo.
+       * Bug reale trovato in un audit il 2026-09-14.
+       */
+      this.nextQuestionTimer = setTimeout(() => {
+        this.nextQuestionTimer = undefined;
+        if (this.navigatingAway) return;
         this.nextQuestion();
       }, 700);
 
@@ -625,7 +642,9 @@ export class QuizPage implements OnInit, OnDestroy {
     this.haptics.error();
     this.audioService.playErrorQuiz();
 
-    setTimeout(() => {
+    this.wrongModalTimer = setTimeout(() => {
+      this.wrongModalTimer = undefined;
+      if (this.navigatingAway) return;
       this.showWrongModal = true;
     }, 450);
   }
@@ -727,33 +746,39 @@ export class QuizPage implements OnInit, OnDestroy {
       return;
     }
 
-    const user = await firstValueFrom(this.auth.user$);
-    const risultato = await this.quizCompletamentoService.completaQuizNormale({
-      user,
-      categoryId: this.categoryId,
-      difficultyId: this.difficultyId,
-      levelNumber: this.levelNumber,
-      displayLevelNumber: this.displayLevelNumber,
-      correctAnswers: this.correctAnswers,
-      totalQuestions: this.questions.length,
-      levelAlreadyCompleted: this.levelAlreadyCompleted,
-      difficultyLevelNumbers: this.difficultyLevelNumbers,
-    });
+    try {
+      const user = await firstValueFrom(this.auth.user$);
+      const risultato =
+        await this.quizCompletamentoService.completaQuizNormale({
+          user,
+          categoryId: this.categoryId,
+          difficultyId: this.difficultyId,
+          levelNumber: this.levelNumber,
+          displayLevelNumber: this.displayLevelNumber,
+          correctAnswers: this.correctAnswers,
+          totalQuestions: this.questions.length,
+          levelAlreadyCompleted: this.levelAlreadyCompleted,
+          difficultyLevelNumbers: this.difficultyLevelNumbers,
+        });
 
-    this.levelAlreadyCompleted = risultato.levelAlreadyCompleted;
+      this.levelAlreadyCompleted = risultato.levelAlreadyCompleted;
 
-    if (risultato.completatoConPremio) {
-      this.rewardXp = risultato.rewardXp;
-      this.rewardDoubled = false;
-      this.rewardDoubleLoading = false;
-      this.rewardMessage = risultato.rewardMessage;
-      this.rewardUnlockedMessage = risultato.rewardUnlockedMessage;
-      this.showRewardModal = true;
-      return;
+      if (risultato.completatoConPremio) {
+        this.rewardXp = risultato.rewardXp;
+        this.rewardDoubled = false;
+        this.rewardDoubleLoading = false;
+        this.rewardMessage = risultato.rewardMessage;
+        this.rewardUnlockedMessage = risultato.rewardUnlockedMessage;
+        this.showRewardModal = true;
+        return;
+      }
+
+      this.navigatingAway = true;
+      this.goToExitPage();
+    } catch (error) {
+      console.error('Errore salvataggio risultato quiz:', error);
+      await this.mostraErroreSalvataggioRisultato(() => this.finishQuiz());
     }
-
-    this.navigatingAway = true;
-    this.goToExitPage();
   }
 
   markCurrentQuestionAsWrong() {
@@ -1108,10 +1133,20 @@ export class QuizPage implements OnInit, OnDestroy {
 
   private async finishArcadeLevel() {
     const user = await firstValueFrom(this.auth.user$);
-    const risultato = await this.quizScalataService.completaLivelloScalata(
-      user,
-      this.displayLevelNumber,
-    );
+    let risultato: RisultatoCompletamentoScalata | null;
+
+    try {
+      risultato = await this.quizScalataService.completaLivelloScalata(
+        user,
+        this.displayLevelNumber,
+      );
+    } catch (error) {
+      console.error('Errore salvataggio livello Scalata:', error);
+      await this.mostraErroreSalvataggioRisultato(() =>
+        this.finishArcadeLevel(),
+      );
+      return;
+    }
 
     if (!risultato) {
       this.navigatingAway = true;
@@ -1201,11 +1236,21 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   private async finishDailyChallenge() {
-    const result = await this.dailyEventsService.completeDailyChallenge(
-      this.correctAnswers,
-      this.questions.length,
-      this.usedHelps.length,
-    );
+    let result: { rewardCoins: number; alreadyClaimed: boolean };
+
+    try {
+      result = await this.dailyEventsService.completeDailyChallenge(
+        this.correctAnswers,
+        this.questions.length,
+        this.usedHelps.length,
+      );
+    } catch (error) {
+      console.error('Errore salvataggio sfida giornaliera:', error);
+      await this.mostraErroreSalvataggioRisultato(() =>
+        this.finishDailyChallenge(),
+      );
+      return;
+    }
 
     this.dailyChallengeRewardCoins = result.rewardCoins;
     this.dailyChallengeRewardAlreadyClaimed = result.alreadyClaimed;
@@ -1281,6 +1326,46 @@ export class QuizPage implements OnInit, OnDestroy {
     void this.navigation.navigateByUrl(
       `/levels/${this.categoryId}/${this.difficultyId}`,
     );
+  }
+
+  /*
+   * Mostrata quando il salvataggio del risultato (quiz/arcade/sfida
+   * giornaliera) fallisce per un errore di rete: prima l'errore veniva
+   * inghiottito in silenzio (quiz normale, premio perso senza avviso) o
+   * lasciava la pagina bloccata sull'ultima domanda senza alcun feedback
+   * (arcade/sfida giornaliera, nessun try/catch). Il retry e' sempre sicuro:
+   * un rifiuto di runTransaction() di Firestore significa che la scrittura
+   * non e' mai stata committata (nessun queueing offline per le
+   * transazioni), quindi non puo' causare un doppio accredito.
+   */
+  private async mostraErroreSalvataggioRisultato(
+    retry: () => void,
+  ): Promise<void> {
+    if (this.destroyed) return;
+
+    const alert = await this.alertController.create({
+      header: 'Errore di connessione',
+      message:
+        'Non è stato possibile salvare il risultato. Controlla la connessione e riprova.',
+      backdropDismiss: false,
+      cssClass: 'quiz-alert',
+      buttons: [
+        {
+          text: 'Riprova',
+          handler: () => retry(),
+        },
+        {
+          text: 'Esci',
+          role: 'cancel',
+          handler: () => {
+            this.navigatingAway = true;
+            this.goToExitPage();
+          },
+        },
+      ],
+    });
+
+    await alert.present();
   }
 
   private async switchQuestion() {
@@ -1394,8 +1479,18 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.destroyed = true;
+
     if (this.questionEntranceTimer) {
       clearTimeout(this.questionEntranceTimer);
+    }
+
+    if (this.nextQuestionTimer) {
+      clearTimeout(this.nextQuestionTimer);
+    }
+
+    if (this.wrongModalTimer) {
+      clearTimeout(this.wrongModalTimer);
     }
 
     this.stopTimer();

@@ -31,6 +31,7 @@ import {
   UserAchievementTitle,
 } from 'src/app/models/user-stats.model';
 import { getLevelProgress } from 'src/app/utils/level-progress.util';
+import { PROFILE_CONFIG } from 'src/app/config/profile.config';
 import { SpecialAvatarIntroModalComponent } from 'src/app/components/special-avatar-intro-modal/special-avatar-intro-modal.component';
 
 type SpecialIntroConfig = {
@@ -76,7 +77,7 @@ export class ProfilePage {
   tempSelectedAvatar = this.selectedAvatar;
   unlockedAvatarIds: string[] = [];
   tempNickname = '';
-  nicknameMaxLength = 10;
+  nicknameMaxLength = PROFILE_CONFIG.nicknameMaxLength;
   nicknameSaving = false;
 
   showAvatarModal = false;
@@ -416,7 +417,16 @@ export class ProfilePage {
     const providerName = user?.displayName || profile?.displayName;
 
     if (providerName?.trim()) {
-      return providerName.trim().split(/\s+/)[0] || 'Giocatore';
+      /*
+       * Troncato allo stesso limite del nickname esplicito: un nome del
+       * provider social piu' lungo (es. "Konstantinos") senza questo
+       * riapriva l'overflow dell'header profilo che il limite doveva
+       * prevenire. Bug reale trovato in un audit il 2026-09-14.
+       */
+      const firstName = providerName.trim().split(/\s+/)[0];
+      return firstName
+        ? firstName.slice(0, this.nicknameMaxLength)
+        : 'Giocatore';
     }
 
     if (!user) return 'Giocatore';

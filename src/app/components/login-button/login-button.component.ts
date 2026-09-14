@@ -17,6 +17,7 @@ import { AVATARS } from 'src/app/data/avatars.data';
 import { AppUserProfile } from 'src/app/models/user-stats.model';
 import { AuthPromptService } from 'src/app/services/auth-prompt.service';
 import { AUTH_CONFIG } from 'src/app/config/auth.config';
+import { PROFILE_CONFIG } from 'src/app/config/profile.config';
 import { AppAuthProviderId } from 'src/app/models/auth.model';
 import { NavigationTransitionService } from 'src/app/services/navigation-transition.service';
 
@@ -201,8 +202,12 @@ export class LoginButtonComponent {
 
   private extractFirstName(displayName?: string | null): string {
     /*
-     * Nel bottone profilo mostriamo solo il nome breve.
+     * Nel bottone profilo mostriamo solo il nome breve, troncato allo
+     * stesso limite del nickname esplicito (PROFILE_CONFIG.nicknameMaxLength):
+     * un nome del provider social piu' lungo (es. "Konstantinos") altrimenti
+     * riapriva l'overflow della navbar che il limite doveva prevenire.
      */
-    return displayName?.trim().split(/\s+/)[0] ?? '';
+    const firstName = displayName?.trim().split(/\s+/)[0] ?? '';
+    return firstName.slice(0, PROFILE_CONFIG.nicknameMaxLength);
   }
 }

@@ -1,6 +1,12 @@
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import {
+  Component,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import { IonicModule, Platform } from '@ionic/angular';
 import { NavigationEnd, Router } from '@angular/router';
 import { Subscription, filter } from 'rxjs';
 import { TUTORIAL_CONFIG } from 'src/app/config/tutorial.config';
@@ -54,7 +60,9 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
 
   private stateSub?: Subscription;
   private routerSub?: Subscription;
+  private backButtonSub?: Subscription;
   private syncToken = 0;
+  private platform = inject(Platform);
 
   constructor(
     private haptics: HapticsService,
@@ -77,11 +85,52 @@ export class TutorialOverlayComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         void this.refreshSpotlight();
       });
+
+    /*
+     * Senza questo handler il tasto back fisico Android fa un pop diretto
+     * della history (comportamento di default di Ionic): il router cambia
+     * pagina, ma questo overlay - montato globalmente fuori dal
+     * router-outlet, vedi app.component.html - resta visibile "orfano" su
+     * una route dove i suoi riferimenti (data-tutorial-id dello spotlight)
+     * non esistono piu'. Stesso pattern e priorita' di QuizPage. Registrato
+     * per tutta la vita del componente (che coincide con quella dell'app),
+     * ma agisce solo quando il tutorial e' davvero visibile: altrimenti
+     * lascia proseguire il back di default chiamando processNextHandler().
+     * Bug reale trovato in un audit il 2026-09-14.
+     */
+    this.backButtonSub = this.platform.backButton.subscribeWithPriority(
+      10,
+      (processNextHandler: () => void) => {
+        this.handleHardwareBackButton(processNextHandler);
+      },
+    );
   }
 
   ngOnDestroy(): void {
     this.stateSub?.unsubscribe();
     this.routerSub?.unsubscribe();
+    this.backButtonSub?.unsubscribe();
+  }
+
+  private handleHardwareBackButton(processNextHandler: () => void): void {
+    const state = this.tutorialService.getCurrentState();
+
+    if (!state.visible) {
+      processNextHandler();
+      return;
+    }
+
+    if (state.stepIndex > 0 && !state.completed) {
+      this.back();
+      return;
+    }
+
+    /*
+     * Primo step (o step finale in attesa del premio): non c'e' uno step
+     * precedente a cui tornare. Ignoriamo il back fisico invece di lasciar
+     * navigare via - uscire dal tutorial e' una scelta deliberata (bottone
+     * "Salta"), non un effetto collaterale del tasto indietro.
+     */
   }
 
   @HostListener('window:resize')

@@ -52,43 +52,48 @@ export class QuizCompletamentoService {
       return this.nessunPremio(params.levelAlreadyCompleted);
     }
 
-    try {
-      /*
-       * XP/monete e il completamento del livello vengono scritti nella stessa
-       * transazione Firestore (vedi UserQuizDataService.recordQuizResult):
-       * prima erano due scritture separate, e un errore di rete tra le due
-       * lasciava il premio gia' accreditato ma il livello non completato,
-       * quindi rigiocabile per incassare di nuovo lo stesso premio.
-       */
-      await this.userStatsService.recordQuizResult(
-        params.user.uid,
-        params.correctAnswers,
-        params.totalQuestions,
-        {
-          categoryId: params.categoryId,
-          difficultyId: params.difficultyId,
-          levelNumber: params.levelNumber,
-        },
-      );
+    /*
+     * XP/monete e il completamento del livello vengono scritti nella stessa
+     * transazione Firestore (vedi UserQuizDataService.recordQuizResult):
+     * prima erano due scritture separate, e un errore di rete tra le due
+     * lasciava il premio gia' accreditato ma il livello non completato,
+     * quindi rigiocabile per incassare di nuovo lo stesso premio.
+     *
+     * A differenza delle scritture "best effort" qui sotto (storico, eventi
+     * giornalieri, completamento difficolta'), un errore su QUESTA scrittura
+     * non va inghiottito in un nessunPremio() silenzioso: l'utente finirebbe
+     * un livello perfetto senza ricevere nulla e senza sapere perche'. Lo
+     * lasciamo propagare cosi' il chiamante (QuizPage) puo' mostrare un
+     * errore vero e offrire un retry. runTransaction() di Firestore non fa
+     * queueing offline come le scritture semplici: un rifiuto qui significa
+     * che la transazione non e' mai stata committata, quindi un retry e'
+     * sempre sicuro (mai un doppio accredito).
+     */
+    await this.userStatsService.recordQuizResult(
+      params.user.uid,
+      params.correctAnswers,
+      params.totalQuestions,
+      {
+        categoryId: params.categoryId,
+        difficultyId: params.difficultyId,
+        levelNumber: params.levelNumber,
+      },
+    );
 
-      await this.salvaStorico(params);
-      await this.tracciaLivelloCompletato();
-      await this.completaDifficoltaSeNecessario(params);
+    await this.salvaStorico(params);
+    await this.tracciaLivelloCompletato();
+    await this.completaDifficoltaSeNecessario(params);
 
-      return {
-        completatoConPremio: true,
-        levelAlreadyCompleted: true,
-        rewardXp: params.correctAnswers * USER_STATS_CONFIG.xpPerCorrectAnswer,
-        rewardMessage: `Hai completato il livello ${params.displayLevelNumber}!`,
-        rewardUnlockedMessage: this.getRewardUnlockedMessage(
-          params.levelNumber,
-          params.difficultyLevelNumbers,
-        ),
-      };
-    } catch (error) {
-      console.error('Errore completamento quiz:', error);
-      return this.nessunPremio(params.levelAlreadyCompleted);
-    }
+    return {
+      completatoConPremio: true,
+      levelAlreadyCompleted: true,
+      rewardXp: params.correctAnswers * USER_STATS_CONFIG.xpPerCorrectAnswer,
+      rewardMessage: `Hai completato il livello ${params.displayLevelNumber}!`,
+      rewardUnlockedMessage: this.getRewardUnlockedMessage(
+        params.levelNumber,
+        params.difficultyLevelNumbers,
+      ),
+    };
   }
 
   // Registra gli eventi giornalieri generici collegati al quiz normale.
