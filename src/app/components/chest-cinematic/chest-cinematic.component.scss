@@ -448,9 +448,16 @@
 /*
  * Nella variante compatta liberiamo spazio sopra ai pulsanti,
  * senza alterare la cinematica standard del Daily Reward.
+ *
+ * Nudge da 45% a 48% (2026-09-16): con revealType="coins" ed un premio con
+ * doppia riga ("+X TurtleCoins • +Y XP", es. Forziere Scalata/missioni), il
+ * testo di .reward-label-premium puo' andare a capo su due righe - lo scrigno,
+ * posizionato a percentuale fissa senza tener conto dell'altezza reale del
+ * testo sopra di lui, arrivava a toccarlo/sovrapporlo. Margine volutamente
+ * piccolo per non spingere lo scrigno troppo vicino ai pulsanti sotto.
  */
 .premium-reward-content.compact-actions .premium-chest-image {
-  top: 45%;
+  top: 48%;
 }
 
 .premium-reward-content.compact-actions .chest-img {
@@ -474,7 +481,7 @@
   }
 
   .premium-reward-content.compact-actions .premium-chest-image {
-    top: 43%;
+    top: 45%;
   }
 
   .premium-reward-content.compact-actions .chest-img {

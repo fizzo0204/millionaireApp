@@ -327,18 +327,48 @@ export class AdsService {
 
     if (state.isActive) return;
 
-    await new Promise<void>(async (resolve) => {
+    await new Promise<void>((resolve) => {
+      let settled = false;
       let listener: PluginListenerHandle | undefined;
 
-      listener = await App.addListener(
-        'appStateChange',
-        async ({ isActive }) => {
-          if (!isActive) return;
+      const finishWait = () => {
+        if (settled) return;
 
-          await listener?.remove();
-          resolve();
-        },
-      );
+        settled = true;
+        clearTimeout(safetyTimeout);
+        void listener?.remove();
+        resolve();
+      };
+
+      /*
+       * Rete di sicurezza (2026-09-16): tra il controllo di App.getState()
+       * sopra e la registrazione del listener qui sotto c'e' una finestra
+       * reale (entrambe chiamate cross-bridge asincrone) in cui l'app puo'
+       * gia' tornare attiva. Se la transizione avviene proprio in quella
+       * finestra, l'evento futuro 'appStateChange isActive:true' non arriva
+       * mai: prima restavamo bloccati qui per sempre (nessun timeout), quindi
+       * showRewardedAd() non risolveva mai la sua Promise e il reward -
+       * accreditato solo dopo quell'await, vedi i chiamanti - non veniva mai
+       * assegnato nonostante il video fosse stato guardato fino alla fine.
+       * Bug reale trovato il 2026-09-16 (segnalato dall'utente: reward assenti
+       * dopo aver visto il video fino in fondo su piu' flussi diversi).
+       */
+      const safetyTimeout = setTimeout(finishWait, 3000);
+
+      App.addListener('appStateChange', ({ isActive }) => {
+        if (!isActive) return;
+
+        finishWait();
+      })
+        .then((handle) => {
+          if (settled) {
+            void handle.remove();
+            return;
+          }
+
+          listener = handle;
+        })
+        .catch(() => finishWait());
     });
   }
 
