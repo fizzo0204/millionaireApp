@@ -71,7 +71,7 @@ export class QuizPage implements OnInit, OnDestroy {
   private appStateListener?: PluginListenerHandle;
   private backButtonSub?: Subscription;
 
-  private adInProgress = false;
+  adInProgress = false;
   private lifeLostForLeaving = false;
   private navigatingAway = false;
   private destroyed = false;

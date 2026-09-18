@@ -299,35 +299,69 @@
 
       <div class="wrong-actions">
         @if (dailyChallengeMode) {
-        <button class="ad-btn" type="button" (click)="watchAdAndContinue()">
-          Guarda video e riprova
+        <button
+          class="ad-btn"
+          type="button"
+          (click)="watchAdAndContinue()"
+          [disabled]="adInProgress"
+        >
+          @if (!adInProgress) { Guarda video e riprova } @else { Caricamento
+          video... }
         </button>
 
         <button
           class="life-btn"
           type="button"
           (click)="restartDailyChallenge()"
+          [disabled]="adInProgress"
         >
           Ricomincia da capo
         </button>
 
-        <button class="ad-btn" type="button" (click)="returnToEvents()">
+        <button
+          class="ad-btn"
+          type="button"
+          (click)="returnToEvents()"
+          [disabled]="adInProgress"
+        >
           Torna agli eventi
         </button>
         } @else if (arcadeMode) {
-        <button class="ad-btn" type="button" (click)="watchAdAndContinue()">
-          ▶ Guarda video e cambia domanda
+        <button
+          class="ad-btn"
+          type="button"
+          (click)="watchAdAndContinue()"
+          [disabled]="adInProgress"
+        >
+          @if (!adInProgress) { ▶ Guarda video e cambia domanda } @else {
+          Caricamento video... }
         </button>
 
-        <button class="life-btn" type="button" (click)="loseLifeAndContinue()">
+        <button
+          class="life-btn"
+          type="button"
+          (click)="loseLifeAndContinue()"
+          [disabled]="adInProgress"
+        >
           Perdi una vita e torna alla scalata
         </button>
         } @else {
-        <button class="ad-btn" type="button" (click)="watchAdAndContinue()">
-          ▶ Guarda pubblicità e continua
+        <button
+          class="ad-btn"
+          type="button"
+          (click)="watchAdAndContinue()"
+          [disabled]="adInProgress"
+        >
+          @if (!adInProgress) { ▶ Guarda pubblicità e continua } @else {
+          Caricamento video... }
         </button>
 
-        <button class="life-btn" type="button" (click)="loseLifeAndContinue()">
+        <button
+          class="life-btn"
+          type="button"
+          (click)="loseLifeAndContinue()"
+          [disabled]="adInProgress"
+        >
           Perdi una vita
         </button>
         }
@@ -367,42 +401,68 @@
 
       <div class="wrong-actions">
         @if (dailyChallengeMode) {
-        <button class="ad-btn" type="button" (click)="watchAdForMoreTime()">
-          Guarda video e ottieni +5s
+        <button
+          class="ad-btn"
+          type="button"
+          (click)="watchAdForMoreTime()"
+          [disabled]="adInProgress"
+        >
+          @if (!adInProgress) { Guarda video e ottieni +5s } @else {
+          Caricamento video... }
         </button>
 
         <button
           class="life-btn"
           type="button"
           (click)="restartDailyChallenge()"
+          [disabled]="adInProgress"
         >
           Ricomincia da capo
         </button>
 
-        <button class="ad-btn" type="button" (click)="returnToEvents()">
+        <button
+          class="ad-btn"
+          type="button"
+          (click)="returnToEvents()"
+          [disabled]="adInProgress"
+        >
           Torna agli eventi
         </button>
         } @else if (arcadeMode) {
-        <button class="ad-btn" type="button" (click)="watchAdForMoreTime()">
-          ▶ Guarda video e ottieni +5s
+        <button
+          class="ad-btn"
+          type="button"
+          (click)="watchAdForMoreTime()"
+          [disabled]="adInProgress"
+        >
+          @if (!adInProgress) { ▶ Guarda video e ottieni +5s } @else {
+          Caricamento video... }
         </button>
 
         <button
           class="life-btn"
           type="button"
           (click)="loseLifeAfterTimeExpired()"
+          [disabled]="adInProgress"
         >
           Perdi una vita e torna alla scalata
         </button>
         } @else {
-        <button class="ad-btn" type="button" (click)="watchAdForMoreTime()">
-          ▶ Guarda pubblicità e ottieni +5s
+        <button
+          class="ad-btn"
+          type="button"
+          (click)="watchAdForMoreTime()"
+          [disabled]="adInProgress"
+        >
+          @if (!adInProgress) { ▶ Guarda pubblicità e ottieni +5s } @else {
+          Caricamento video... }
         </button>
 
         <button
           class="life-btn"
           type="button"
           (click)="loseLifeAfterTimeExpired()"
+          [disabled]="adInProgress"
         >
           Perdi una vita
         </button>
@@ -440,7 +500,12 @@
   } @if (showCoinsModal) {
   <div class="quiz-modal-backdrop">
     <div class="coins-modal">
-      <button class="modal-close" type="button" (click)="closeCoinsModal()">
+      <button
+        class="modal-close"
+        type="button"
+        (click)="closeCoinsModal()"
+        [disabled]="adInProgress"
+      >
         <ion-icon name="close-outline"></ion-icon>
       </button>
 
@@ -463,11 +528,16 @@
         class="ad-btn coins-ad-btn"
         type="button"
         (click)="watchAdForCoins()"
+        [disabled]="adInProgress"
       >
         <span class="ad-btn-icon">▶</span>
         <span class="ad-btn-copy">
+          @if (!adInProgress) {
           <strong>Guarda video</strong>
           <small>Ottieni 10 TurtleCoins</small>
+          } @else {
+          <strong>Caricamento video...</strong>
+          }
         </span>
       </button>
     </div>
@@ -529,13 +599,19 @@
         class="reward-next-level-btn"
         type="button"
         (click)="vaiAllaDomandaSuccessivaDiretta()"
+        [disabled]="rewardDoubleLoading"
       >
         Vai alla domanda successiva
         <ion-icon name="play-forward-outline"></ion-icon>
       </button>
       }
 
-      <button class="reward-btn" type="button" (click)="continueAfterReward()">
+      <button
+        class="reward-btn"
+        type="button"
+        (click)="continueAfterReward()"
+        [disabled]="rewardDoubleLoading"
+      >
         Torna alla schermata delle domande
         <ion-icon name="chevron-forward-outline"></ion-icon>
       </button>

@@ -5,7 +5,18 @@ import { Router, NavigationEnd } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import type { PluginListenerHandle } from '@capacitor/core';
-import { Observable, Subscription, filter, map, of, switchMap } from 'rxjs';
+import {
+  Observable,
+  Subscription,
+  catchError,
+  filter,
+  firstValueFrom,
+  map,
+  of,
+  switchMap,
+  take,
+  timeout,
+} from 'rxjs';
 import { User } from 'firebase/auth';
 import { UiService } from './services/ui.service';
 import { AuthService } from './services/auth.service';
@@ -98,6 +109,7 @@ export class AppComponent implements OnDestroy {
   async initializeApp() {
     await Promise.all([
       this.prepareApp(),
+      this.waitForInitialUser(),
       this.wait(APP_CONFIG.loaderDuration),
     ]);
 
@@ -106,6 +118,29 @@ export class AppComponent implements OnDestroy {
     this.dailyRewardAutoOpen.start();
     this.achievementToast.start();
     this.syncBannerVisibility();
+  }
+
+  /*
+   * Aspetta la prima emissione di un utente autenticato (anonimo incluso)
+   * prima di far sparire lo splash, non solo platform.ready() + un timer
+   * fisso: altrimenti header/navbar/home diventano visibili prima che i dati
+   * utente siano davvero pronti, restando "bloccati" fino a quando lo stream
+   * si popola. Limitato da loaderAuthWaitMs per non restare bloccati sullo
+   * splash all'infinito se l'avvio e' davvero offline.
+   */
+  private waitForInitialUser(): Promise<void> {
+    return firstValueFrom(
+      this.auth.user$.pipe(
+        filter((user) => !!user),
+        take(1),
+        timeout({
+          first: APP_CONFIG.loaderAuthWaitMs,
+          with: () => of(null),
+        }),
+        catchError(() => of(null)),
+        map(() => undefined),
+      ),
+    );
   }
 
   private async prepareApp() {
