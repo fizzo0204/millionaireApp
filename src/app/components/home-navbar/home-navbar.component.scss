@@ -23,8 +23,8 @@
 }
 
 .navbar-brand {
-  flex: 0 0 auto;
-  width: auto;
+  flex: 0 1 215px;
+  min-width: 0;
   display: flex;
   align-items: center;
   overflow: visible;
@@ -32,7 +32,8 @@
 
 .navbar-brand-logo {
   display: block;
-  width: 215px;
+  width: 100%;
+  max-width: 215px;
   height: auto;
   margin-left: 0;
   object-fit: contain;
@@ -68,9 +69,5 @@
     min-height: 78px;
     padding: 8px 10px;
     gap: 8px;
-  }
-
-  .navbar-brand-logo {
-    width: 200px;
   }
 }
