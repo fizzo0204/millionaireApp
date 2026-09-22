@@ -1,4 +1,4 @@
-<ion-app>
+<ion-app [style.--tm-ad-banner-height.px]="(bannerHeightPx$ | async) ?? 0">
   @if (showAppLoader) {
     <div class="app-loader-screen">
       <app-game-loader
@@ -7,11 +7,7 @@
       ></app-game-loader>
     </div>
   } @else {
-    <div
-      class="app-shell"
-      [class.app-shell--no-nav]="navHidden"
-      [style.--tm-ad-banner-height.px]="(bannerHeightPx$ | async) ?? 0"
-    >
+    <div class="app-shell" [class.app-shell--no-nav]="navHidden">
       <app-home-navbar></app-home-navbar>
 
       <div class="app-content">

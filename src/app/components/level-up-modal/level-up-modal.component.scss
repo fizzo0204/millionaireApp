@@ -13,7 +13,9 @@
   place-items: center;
   overflow: hidden;
   padding: calc(env(safe-area-inset-top) + 22px) 22px
-    calc(env(safe-area-inset-bottom) + 26px);
+    calc(
+      env(safe-area-inset-bottom) + 26px + var(--tm-ad-banner-height, 0px)
+    );
   color: #fff;
   background:
     radial-gradient(

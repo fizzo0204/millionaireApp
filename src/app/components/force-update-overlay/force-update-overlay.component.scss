@@ -12,7 +12,9 @@
   display: grid;
   place-items: center;
   padding: max(22px, env(safe-area-inset-top)) 22px
-    max(22px, env(safe-area-inset-bottom));
+    calc(
+      max(22px, env(safe-area-inset-bottom)) + var(--tm-ad-banner-height, 0px)
+    );
   background: rgba(2, 6, 23, 0.88);
 }
 

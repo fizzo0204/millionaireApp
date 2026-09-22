@@ -862,9 +862,12 @@ ion-spinner {
   .tutorial-backdrop {
     /*
      * Spazio riservato al banner AdMob fisso in basso: evita che i bottoni
-     * del tutorial finiscano sotto la pubblicità sui telefoni.
+     * del tutorial finiscano sotto la pubblicità sui telefoni. Usa l'altezza
+     * reale del banner (--tm-ad-banner-height, impostata su ion-app da
+     * AppComponent) quando disponibile; 68px resta come stima di fallback
+     * per i rari casi in cui la variabile non fosse ancora valorizzata.
      */
-    --tutorial-fixed-banner-offset: 68px;
+    --tutorial-fixed-banner-offset: var(--tm-ad-banner-height, 68px);
   }
 }
 
