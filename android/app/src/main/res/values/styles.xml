@@ -13,6 +13,15 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
+        <!--
+          L'app ha un solo tema (sempre scuro): questo flag a livello di
+          Activity e' il segnale che alcuni WebView OEM (Xiaomi/Oppo/Vivo)
+          controllano per le proprie funzioni di "colore intelligente"/
+          "modalita' lettura", indipendentemente dalle API WebView standard
+          gia' disattivate in MainActivity.java. Richiede API 29+, ignorato
+          senza errori sulle versioni precedenti.
+        -->
+        <item name="android:forceDarkAllowed">false</item>
     </style>
 
     <!-- Splash screen theme -->

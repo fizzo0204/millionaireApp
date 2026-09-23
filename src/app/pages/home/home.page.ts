@@ -78,9 +78,31 @@ export class HomePage implements OnInit, OnDestroy {
 
       this.previousLives = lives;
     });
+
+    void this.handleHomeEntry();
   }
 
-  async ionViewWillEnter() {
+  /*
+   * Volutamente in ngOnInit(), non in ionViewWillEnter(): quando l'outlet
+   * di Ionic viene creato per la primissima volta (il nostro
+   * @if(showAppLoader)/@else in app.component.html, l'outlet non esiste
+   * finche' lo splash non sparisce), IonRouterOutlet attiva la rotta gia'
+   * risolta chiamando activateWith() da dentro il proprio ngOnInit()
+   * (vedi IonRouterOutlet.initializeOutletWithName() in
+   * @ionic/angular/fesm2022/ionic-angular-common.mjs). In quella finestra
+   * l'elemento nativo <ion-router-outlet> puo' non essere ancora "upgradato"
+   * da Stencil (containerEl.commit non ancora disponibile): la transizione
+   * che dispatcha ionViewWillEnter viene silenziosamente saltata, quindi il
+   * tutorial/daily-reward non partono al primissimo avvio - solo alla
+   * navigazione successiva, quando l'outlet e' gia' pronto. Bug segnalato
+   * dall'utente su piu' telefoni (2026-09-23). ngOnInit() e' un hook Angular
+   * puro, non passa da quella catena, e in questa app HomePage viene sempre
+   * ricreata da zero ad ogni navigazione verso /home (nessun
+   * RouteReuseStrategy custom, mai la stessa istanza riusata) - quindi
+   * ngOnInit() copre in modo affidabile anche i rientri successivi, non solo
+   * il primo avvio.
+   */
+  private async handleHomeEntry() {
     const view = this.route.snapshot.queryParamMap.get('view');
 
     if (view === 'categories') {

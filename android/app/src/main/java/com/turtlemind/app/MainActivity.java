@@ -43,6 +43,20 @@ public class MainActivity extends BridgeActivity {
         WebSettingsCompat.setAlgorithmicDarkeningAllowed(webView.getSettings(), false);
         Log.d("ThemeInit", "🌙 Scurimento algoritmico WebView disabilitato");
       }
+
+      /*
+       * ALGORITHMIC_DARKENING ha sostituito la vecchia API FORCE_DARK in una
+       * versione successiva di androidx.webkit: su WebView piu' datate (che
+       * supportano ancora il controllo del force-dark ma non la nuova API)
+       * la chiamata sopra e' un no-op silenzioso e il testo resta a rischio.
+       * Copriamo anche quel caso con l'API legacy, deprecata ma ancora
+       * funzionante, cosi' la disattivazione vale sulla gamma piu' ampia
+       * possibile di versioni WebView.
+       */
+      if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
+        WebSettingsCompat.setForceDark(webView.getSettings(), WebSettingsCompat.FORCE_DARK_OFF);
+        Log.d("ThemeInit", "🌙 Force dark legacy disabilitato");
+      }
     } catch (Exception e) {
       Log.e("ThemeInit", "❌ Errore disabilitazione scurimento automatico WebView", e);
     }
