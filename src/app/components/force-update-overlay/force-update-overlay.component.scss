@@ -11,6 +11,15 @@
   pointer-events: auto;
   display: grid;
   place-items: center;
+  overflow-x: hidden;
+  /*
+   * Rete di sicurezza in aggiunta al padding basato su
+   * --tm-ad-banner-height: questa schermata non si puo' saltare, quindi se
+   * il bottone finisse comunque irraggiungibile su un device specifico
+   * l'utente resterebbe bloccato fuori dall'app per sempre. Con overflow-y
+   * scorrevole puo' comunque raggiungerlo scorrendo.
+   */
+  overflow-y: auto;
   padding: max(22px, env(safe-area-inset-top)) 22px
     calc(
       max(22px, env(safe-area-inset-bottom)) + var(--tm-ad-banner-height, 0px)

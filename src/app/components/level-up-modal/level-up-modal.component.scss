@@ -11,7 +11,17 @@
   pointer-events: auto;
   display: grid;
   place-items: center;
-  overflow: hidden;
+  overflow-x: hidden;
+  /*
+   * overflow-y: auto invece di hidden - rete di sicurezza in aggiunta al
+   * padding basato su --tm-ad-banner-height sopra: se su un device l'altezza
+   * riservata non bastasse comunque (banner piu' alto del previsto, o il
+   * valore non ancora disponibile quando la modale appare), l'utente puo'
+   * scorrere per raggiungere il bottone "Continua" invece di trovarselo
+   * irraggiungibile sotto il banner. Bug segnalato piu' volte dagli utenti
+   * (2026-09-22/23).
+   */
+  overflow-y: auto;
   padding: calc(env(safe-area-inset-top) + 22px) 22px
     calc(
       env(safe-area-inset-bottom) + 26px + var(--tm-ad-banner-height, 0px)

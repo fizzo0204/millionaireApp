@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
+import { App as CapacitorApp } from '@capacitor/app';
 import { User } from 'firebase/auth';
 import { ModalController, ToastController } from '@ionic/angular/standalone';
 import { LogoutConfirmModalComponent } from 'src/app/components/logout-confirm-modal/logout-confirm-modal.component';
@@ -39,6 +40,7 @@ export class SettingsPage {
   logoutLoading = false;
   readonly privacyPolicyUrl = LEGAL_CONFIG.privacyPolicyUrl;
   readonly privacyOptionsRequired$ = this.adsService.privacyOptionsRequired$;
+  appVersionLabel = '';
 
   constructor(
     private audioService: AudioService,
@@ -55,6 +57,23 @@ export class SettingsPage {
     this.musicEnabled = this.audioService.isMusicEnabled();
     this.clickEnabled = this.audioService.isClickEnabled();
     this.notificationsEnabled = this.notificationsService.isEnabled();
+    void this.loadAppVersion();
+  }
+
+  /*
+   * versionName resta fermo a "0.0.1" ad ogni build (mai incrementato): da
+   * solo non basta a distinguere quale versione ha davvero un utente/tester,
+   * per quello mostriamo anche "build" (il versionCode Android, incrementato
+   * ad ogni release). Su web (nessun plugin nativo) App.getInfo() rifiuta:
+   * lasciamo la label vuota invece di mostrare un placeholder fuorviante.
+   */
+  private async loadAppVersion(): Promise<void> {
+    try {
+      const info = await CapacitorApp.getInfo();
+      this.appVersionLabel = `Versione ${info.version} (build ${info.build})`;
+    } catch {
+      this.appVersionLabel = '';
+    }
   }
 
   toggleMusic() {
