@@ -683,6 +683,10 @@
 
 .reward-next-level-btn {
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   margin-top: 16px;
   border: 0;
   border-radius: 18px;
