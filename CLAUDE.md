@@ -43,9 +43,16 @@ Il flusso reale è: `ng build` → `npx cap sync android` → build/run da Andro
 **Accesso alla produzione approvato da Google il 2026-10-09**, dopo i 14 giorni di test chiuso con 12 tester. Il lavoro su Play Console (scheda store, classificazione contenuti, sicurezza dei dati, pubblico, dichiarazione annunci) l'utente lo segue con Claude app, fuori da questo repo: qui resta solo la parte di build.
 
 Flusso per un AAB di release (a differenza del workflow di sviluppo sotto, qui serve la build di **produzione**):
-1. Alza `versionCode` in `android/app/build.gradle` (ogni AAB caricato richiede un codice mai usato; `versionName` resta `0.0.1`, vedi "Aggiornamento forzato").
-2. `npm run build` (senza `--configuration`: `defaultConfiguration` e' gia' `production`) → `npx cap sync android`.
-3. `cd android && ./gradlew bundleRelease` → `android/app/build/outputs/bundle/release/app-release.aab`. Richiede il keystore e `keystore.properties` descritti sopra.
+1. Alza `versionCode` in `android/app/build.gradle` (ogni AAB caricato richiede un codice mai usato) e, se la release lo merita, `versionName` (visibile agli utenti, vedi "Aggiornamento forzato"); tieni allineato `version` in `package.json`/`package-lock.json`.
+2. `npm run build -- --configuration production` (esplicito, anche se `defaultConfiguration` e' gia' `production`) → `npx cap sync android`.
+3. `cd android && ./gradlew bundleRelease` → `android/app/build/outputs/bundle/release/app-release.aab`. Richiede il keystore e `keystore.properties` descritti sopra, `android/local.properties` e Java 21 (vedi sotto).
+4. Verifica la firma: `keytool -printcert -jarfile app-release.aab` deve dare uno SHA-256 che finisce in `F3:74` (SHA-1 `80:3B:F5:F4:...`, la stessa registrata in `google-services.json`).
+
+**Prima release di produzione (2026-10-13)**: `versionCode 41`, `versionName "1.0.0"` (fino al test chiuso era sempre `0.0.1`). AAB generato e verificato: firma corretta, `production: true`, ID AdMob reali, nessuno strumento di debug esposto. Warning noto e non bloccante: il bundle iniziale supera il budget Angular di 2 MB (2,22 MB), solo un avviso di dimensione.
+
+**Requisiti d'ambiente per `gradlew` da terminale su questo PC (scoperti il 2026-10-13)**:
+- `android/local.properties` (non tracciato, normalmente creato da Android Studio all'apertura del progetto) con `sdk.dir=C:/Users/giuse/AppData/Local/Android/Sdk`. Usare slash in avanti: in un file `.properties` i backslash singoli sono caratteri di escape e corrompono il percorso.
+- **Java 21**: Capacitor 7 compila con `source 21`, mentre il `JAVA_HOME` di sistema e' un JDK 17 (errore `invalid source release: 21`). Impostato `JAVA_HOME` **a livello utente** (su Windows ha la precedenza su quello di sistema, lasciato invariato) a `C:\Users\giuse\.jdks\jbr-21.0.11` (JBR scaricata da Android Studio). Non usare la JBR inclusa in `C:\Program Files\Android\Android Studio\jbr`: e' Java 25, troppo nuova per Gradle 8.11. Un terminale aperto prima della modifica non vede il nuovo valore: riaprirlo o passare `JAVA_HOME` esplicitamente al comando.
 
 ## Workflow di sviluppo
 
@@ -89,7 +96,7 @@ Non c'è validazione server-side degli importi: il client calcola XP/monete/vite
 
 `AppUpdateService` legge in streaming `appConfig/android.minVersionCode` da Firestore (documento pubblico, scrivibile solo da console, vedi `firestore.rules`) e lo confronta col `versionCode` reale via `App.getInfo()`. Se la versione installata e' inferiore, `ForceUpdateOverlayComponent` copre l'intera app senza via di chiusura finche' l'utente non tocca "Aggiorna ora" (apre la scheda Play Store). Per forzare un aggiornamento basta alzare `minVersionCode` da Firebase Console, nessun rilascio necessario. Config in `src/app/config/app-update.config.ts`.
 
-Il `versionName` resta fermo a `0.0.1` ad ogni release: l'unico identificativo reale di una build e' il `versionCode`, che va alzato ad ogni AAB caricato su Play Console (un codice gia' usato viene rifiutato). Dal 2026-09-23 Impostazioni mostra in fondo "Versione X (build Y)" (`SettingsPage.loadAppVersion()`), utile per verificare quale build ha davvero un tester prima di indagare una segnalazione.
+Fino al test chiuso il `versionName` e' rimasto fermo a `0.0.1`; dalla prima release di produzione (2026-10-13) parte da `1.0.0` ed e' il numero visibile agli utenti (scheda Store, Impostazioni). L'aggiornamento forzato continua invece a usare solo il `versionCode`, l'unico identificativo tecnico di una build, che va alzato ad ogni AAB caricato su Play Console (un codice gia' usato viene rifiutato). Dal 2026-09-23 Impostazioni mostra in fondo "Versione X (build Y)" (`SettingsPage.loadAppVersion()`), utile per verificare quale build ha davvero un tester prima di indagare una segnalazione.
 
 ### Banner AdMob e overlay globali
 

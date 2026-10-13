@@ -8,7 +8,7 @@ TurtleMind è un'app mobile di quiz a risposta multipla in italiano, in stile "g
 
 - **Piattaforma target**: Android (Google Play Store). Il progetto è un'app web Ionic/Angular impacchettata con Capacitor; non è (ancora) pubblicato su iOS.
 - **Package name**: `com.turtlemind.app`.
-- **Stato**: `version: 0.0.1`; `versionCode` in `android/app/build.gradle` viene incrementato ad ogni build di test/release (controllare il file per il valore corrente). Test chiuso su Play Console con 12 tester completato (requisito Google per i nuovi account sviluppatore personali: 12 tester per 14 giorni consecutivi, iniziato intorno al 2026-09-24). **Accesso alla produzione approvato da Google il 2026-10-09**: si sta preparando la prima release pubblica (requisiti Play Console seguiti dall'utente con Claude app, build AAB di produzione da questo repo — vedi "Release in produzione" in `CLAUDE.md`).
+- **Stato**: prima release di produzione `versionName 1.0.0` / `versionCode 41` (AAB generato il 2026-10-13; fino al test chiuso era sempre `0.0.1`); `versionCode` in `android/app/build.gradle` viene incrementato ad ogni build di test/release (controllare il file per il valore corrente). Test chiuso su Play Console con 12 tester completato (requisito Google per i nuovi account sviluppatore personali: 12 tester per 14 giorni consecutivi, iniziato intorno al 2026-09-24). **Accesso alla produzione approvato da Google il 2026-10-09**: si sta preparando la prima release pubblica (requisiti Play Console seguiti dall'utente con Claude app, build AAB di produzione da questo repo — vedi "Release in produzione" in `CLAUDE.md`).
 
 ## Meccaniche di gioco
 
