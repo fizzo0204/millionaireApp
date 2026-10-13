@@ -98,6 +98,8 @@ Non c'è validazione server-side degli importi: il client calcola XP/monete/vite
 
 `AppUpdateService` legge in streaming `appConfig/android.minVersionCode` da Firestore (documento pubblico, scrivibile solo da console, vedi `firestore.rules`) e lo confronta col `versionCode` reale via `App.getInfo()`. Se la versione installata e' inferiore, `ForceUpdateOverlayComponent` copre l'intera app senza via di chiusura finche' l'utente non tocca "Aggiorna ora" (apre la scheda Play Store). Per forzare un aggiornamento basta alzare `minVersionCode` da Firebase Console, nessun rilascio necessario. Config in `src/app/config/app-update.config.ts`.
 
+**Regola: alzare `minVersionCode` su Firestore solo dopo che una release e' al 100% su Play Console, mai durante un rilascio graduale.** Durante un rollout parziale (o finche' la release e' in revisione) la nuova build non e' ancora scaricabile da tutti: chi non e' nella percentuale vedrebbe l'overlay bloccante senza via d'uscita, e "Aggiorna ora" aprirebbe una scheda Play Store che non offre ancora nessun aggiornamento.
+
 Fino al test chiuso il `versionName` e' rimasto fermo a `0.0.1`; dalla prima release di produzione (2026-10-13) parte da `1.0.0` ed e' il numero visibile agli utenti (scheda Store, Impostazioni). L'aggiornamento forzato continua invece a usare solo il `versionCode`, l'unico identificativo tecnico di una build, che va alzato ad ogni AAB caricato su Play Console (un codice gia' usato viene rifiutato). Dal 2026-09-23 Impostazioni mostra in fondo "Versione X (build Y)" (`SettingsPage.loadAppVersion()`), utile per verificare quale build ha davvero un tester prima di indagare una segnalazione.
 
 ### Banner AdMob e overlay globali
