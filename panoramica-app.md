@@ -8,7 +8,7 @@ TurtleMind è un'app mobile di quiz a risposta multipla in italiano, in stile "g
 
 - **Piattaforma target**: Android (Google Play Store). Il progetto è un'app web Ionic/Angular impacchettata con Capacitor; non è (ancora) pubblicato su iOS.
 - **Package name**: `com.turtlemind.app`.
-- **Stato**: prima release di produzione `versionName 1.0.0` / `versionCode 41` (AAB generato e inviato a Google Play in produzione il 2026-10-13, tag git `v1.0.0`; fino al test chiuso era sempre `0.0.1`); `versionCode` in `android/app/build.gradle` viene incrementato ad ogni build di test/release (controllare il file per il valore corrente). Test chiuso su Play Console con 12 tester completato (requisito Google per i nuovi account sviluppatore personali: 12 tester per 14 giorni consecutivi, iniziato intorno al 2026-09-24). **Accesso alla produzione approvato da Google il 2026-10-09**: si sta preparando la prima release pubblica (requisiti Play Console seguiti dall'utente con Claude app, build AAB di produzione da questo repo — vedi "Release in produzione" in `CLAUDE.md`).
+- **Stato**: **pubblicata su Google Play dal 2026-10-15** — release 41 (`versionName 1.0.0`, tag git `v1.0.0`), distribuita solo in Italia. Accesso alla produzione approvato da Google il 2026-10-09, dopo il test chiuso con 12 tester per 14 giorni consecutivi (requisito per i nuovi account sviluppatore personali, iniziato intorno al 2026-09-24). Fino al test chiuso il `versionName` era sempre `0.0.1`; il `versionCode` in `android/app/build.gradle` va incrementato ad ogni release (controllare il file per il valore corrente). Cronologia del lancio e prossimi passi nella sezione "Pubblicazione su Google Play" sotto; flusso di build in "Release in produzione" in `CLAUDE.md`.
 
 ## Meccaniche di gioco
 
@@ -36,7 +36,25 @@ TurtleMind è un'app mobile di quiz a risposta multipla in italiano, in stile "g
 
 Ionic + Angular 20 (standalone components) + Capacitor per il bridge nativo Android, Firebase (Authentication + Firestore) come unico backend — non esiste un server/API proprio, tutta la logica applicativa vive nel client e parla direttamente con Firestore, protetto da regole di sicurezza (`firestore.rules`). Dettagli architetturali e comandi di sviluppo sono in `CLAUDE.md`.
 
+## Pubblicazione su Google Play
+
+Cronologia del lancio:
+- **2026-10-09**: accesso alla produzione approvato da Google.
+- **2026-10-13**: release 41 (`1.0.0`) inviata in produzione. Al primo upload Play Console ha chiesto `minSdkVersion` 24 per la protezione automatica di Play (alzato da 23, vedi `CLAUDE.md`). Pubblicato `app-ads.txt` su Firebase Hosting.
+- **2026-10-15**: app online sul Play Store (solo Italia, implementazione completa: la prima release di produzione non consente il rilascio graduale). `minVersionCode` su Firestore impostato a 41.
+- Sito web aggiunto alla scheda Store: `https://millionaire-app-69005.web.app` (deve restare questo dominio per la verifica di `app-ads.txt`).
+- **2026-10-17**: AdMob collegato alla scheda Google Play, `app-ads.txt` verificato; revisione di idoneita' AdMob in corso.
+- **Tester del test chiuso rimossi** sia dal canale "Test chiusi - Alpha" sia dal canale "Test interni" (la lista "Tester interni" era collegata a entrambi). **License tester ridotti alla sola lista "Sviluppatore"** (solo l'account dello sviluppatore): gli ex tester ora pagano gli acquisti come utenti normali. Lo stato "beta" che i tester vedono nel Play Store si aggiorna da solo (oppure svuotando la cache del Play Store).
+
+Prossimi passi:
+1. Attendere l'esito della revisione AdMob, che rimuove "Pubblicazione annunci limitata".
+2. Compilare in AdMob → Pagamenti i dati fiscali e l'IBAN.
+3. Monitorare Android vitals (crash/ANR) su Play Console e le prime transazioni reali in RevenueCat.
+4. Per i prossimi aggiornamenti usare il rilascio graduale, e alzare `minVersionCode` solo a rilascio completato (regola in `CLAUDE.md`, "Aggiornamento forzato").
+
 ## Stato di avanzamento e cose aperte prima della pubblicazione
+
+*Sezione storica: descrive il percorso fino alla pubblicazione del 2026-10-15.*
 
 Il progetto è tecnicamente solido e ben strutturato (buona separazione servizi/config, gestione accurata dei conflitti di login), e l'accesso alla produzione e' stato approvato il 2026-10-09 (vedi "Stato" sopra). Storicamente, prima dell'approvazione: tutto quello che si poteva sistemare da codice è stato fatto (vedi sezione sotto): quello che resta aperto oggi richiede **solo azioni su account/console esterni** (AdMob, Firebase, Play Console) o una scelta consapevole al momento del rilascio — nessuna di queste richiede altro codice applicativo, solo configurazione. Sono il punto di partenza giusto per una prossima sessione con Claude dedicata a chiudere la pubblicazione:
 
