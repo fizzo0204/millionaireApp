@@ -206,119 +206,293 @@ export class AdsService {
     }
   }
 
+  /*
+   * Mostra un rewarded video e risolve con true solo se l'utente ha davvero
+   * guadagnato il premio. Risolve SEMPRE (mai pending per sempre) e libera
+   * sempre il lock rewardedAdInProgress, qualunque cosa accada.
+   *
+   * Riscritto il 2026-10-18 dopo segnalazioni in produzione ("guardo il video
+   * fino alla fine, lo chiudo e non succede niente"). Due bug nella versione
+   * precedente:
+   * 1. Un timeout fisso di 60s, partito prima ancora del caricamento, chiudeva
+   *    il flusso con false mentre l'annuncio era ancora a schermo: gli annunci
+   *    reali (video 30s + schermata finale/playable, piu' il caricamento)
+   *    superano spesso il minuto, a differenza di quelli di test. Rimossi i
+   *    listener e risolto false, il Rewarded/Dismissed successivi andavano persi.
+   * 2. AdMob.showRewardVideoAd() lato nativo (@capacitor-community/admob 7.2.0)
+   *    risolve SOLO quando il premio viene guadagnato: se l'utente chiudeva il
+   *    video prima della fine, o l'annuncio falliva a mostrarsi, quell'await
+   *    restava pending per sempre e con lui rewardedAdInProgress (ogni video
+   *    successivo diventava un no-op fino al riavvio dell'app).
+   */
   async showRewardedAd(countForDailyMission = true): Promise<boolean> {
     if (this.rewardedAdInProgress) return false;
 
     this.rewardedAdInProgress = true;
 
-    let hasReward = false;
-    let finished = false;
-
-    let rewardedListener: PluginListenerHandle | undefined;
-    let dismissedListener: PluginListenerHandle | undefined;
-    let failedListener: PluginListenerHandle | undefined;
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-
-    const cleanup = async () => {
-      if (timeout) {
-        clearTimeout(timeout);
-        timeout = undefined;
-      }
-
-      await rewardedListener?.remove();
-      await dismissedListener?.remove();
-      await failedListener?.remove();
-
-      rewardedListener = undefined;
-      dismissedListener = undefined;
-      failedListener = undefined;
-    };
+    let musicPaused = false;
 
     try {
       const initialized = await this.initialize();
 
       if (!initialized) return false;
 
-      const options: RewardAdOptions = {
-        adId: ADS_CONFIG.rewarded.adId,
-      };
-
       await this.audioService.pauseMusic();
+      musicPaused = true;
 
-      const resultPromise = new Promise<boolean>(async (resolve) => {
-        const finish = async (result: boolean) => {
-          if (finished) return;
+      const result = await this.runRewardedAd();
 
-          finished = true;
-          await cleanup();
+      /*
+       * Fix rewarded video: su alcuni device l'evento della reward arriva
+       * mentre la pubblicita e ancora sopra l'app. Aspettiamo quindi che
+       * l'app torni davvero attiva prima di far partire ruota, premi o UI.
+       */
+      await this.waitAppActiveAfterAd();
+      await this.wait(350);
 
-          /*
-           * Fix rewarded video: su alcuni device l'evento della reward arriva
-           * mentre la pubblicita e ancora sopra l'app. Aspettiamo quindi che
-           * l'app torni davvero attiva prima di far partire ruota, premi o UI.
-           */
-          await this.waitAppActiveAfterAd();
-          await this.wait(350);
-          await this.audioService.playMusic();
+      if (result && countForDailyMission) {
+        this.rewardedAdCompletedSubject.next();
+      }
 
-          if (result && countForDailyMission) {
-            this.rewardedAdCompletedSubject.next();
-          }
-
-          resolve(result);
-        };
-
-        try {
-          rewardedListener = await AdMob.addListener(
-            RewardAdPluginEvents.Rewarded,
-            async (reward: AdMobRewardItem) => {
-              if (reward && reward.amount > 0) {
-                hasReward = true;
-              }
-            },
-          );
-
-          dismissedListener = await AdMob.addListener(
-            RewardAdPluginEvents.Dismissed,
-            async () => {
-              await finish(hasReward);
-            },
-          );
-
-          failedListener = await AdMob.addListener(
-            RewardAdPluginEvents.FailedToShow,
-            async () => {
-              await finish(false);
-            },
-          );
-
-          timeout = setTimeout(() => {
-            void finish(false);
-          }, 60000);
-        } catch (error) {
-          /*
-           * Questo executor e' async: un errore qui non farebbe mai
-           * risolvere/rifiutare resultPromise (la Promise costruita ignora
-           * il return dell'executor), lasciando rewardedAdInProgress bloccato
-           * a true per sempre. finish(false) garantisce sempre una risoluzione.
-           */
-          console.error('Errore registrazione listener rewarded video:', error);
-          await finish(false);
-        }
-      });
-
-      await AdMob.prepareRewardVideoAd(options);
-      await AdMob.showRewardVideoAd();
-
-      return await resultPromise;
+      return result;
     } catch (err) {
       console.error('❌ Errore rewarded video:', err);
-      await cleanup();
-      await this.audioService.playMusic();
       return false;
     } finally {
       this.rewardedAdInProgress = false;
+
+      if (musicPaused) {
+        await this.audioService.playMusic().catch(() => undefined);
+      }
     }
+  }
+
+  /*
+   * Macchina a stati del singolo rewarded video. Fasi:
+   * - loading: prepareRewardVideoAd in corso (tetto loadTimeoutMs);
+   * - requested: show richiesto, in attesa di Showed (tetto showStartTimeoutMs);
+   * - showing: annuncio a schermo, NESSUN limite di durata. Termina con
+   *   Dismissed, oppure col watchdog se il Dismissed va perso;
+   * - done: risolto, listener/timer rimossi, eventi tardivi ignorati.
+   *
+   * Il premio e' considerato guadagnato con uno qualunque di due segnali:
+   * evento Rewarded, oppure risoluzione di showRewardVideoAd() (che lato
+   * nativo risolve proprio con il RewardItem). Non si guarda reward.amount:
+   * dipende dalla configurazione dell'unita' in console AdMob, mentre un
+   * Rewarded significa comunque che l'utente ha visto l'annuncio per intero.
+   */
+  private runRewardedAd(): Promise<boolean> {
+    const config = ADS_CONFIG.rewarded;
+
+    return new Promise<boolean>((resolve) => {
+      let phase: 'loading' | 'requested' | 'showing' | 'done' = 'loading';
+      let hasReward = false;
+      let dismissed = false;
+      let appSeenInactive = false;
+      let consecutiveActiveChecks = 0;
+
+      const listeners: PluginListenerHandle[] = [];
+      const timers = new Set<ReturnType<typeof setTimeout>>();
+      let watchdog: ReturnType<typeof setInterval> | undefined;
+
+      const schedule = (callback: () => void, ms: number) => {
+        const timer = setTimeout(() => {
+          timers.delete(timer);
+          callback();
+        }, ms);
+
+        timers.add(timer);
+        return timer;
+      };
+
+      const cancel = (timer: ReturnType<typeof setTimeout>) => {
+        clearTimeout(timer);
+        timers.delete(timer);
+      };
+
+      const finish = (result: boolean) => {
+        if (phase === 'done') return;
+
+        phase = 'done';
+        timers.forEach((timer) => clearTimeout(timer));
+        timers.clear();
+
+        if (watchdog) {
+          clearInterval(watchdog);
+          watchdog = undefined;
+        }
+
+        listeners.splice(0).forEach((handle) => {
+          void handle.remove().catch(() => undefined);
+        });
+
+        resolve(result);
+      };
+
+      // Un listener registrato dopo finish() viene rimosso subito, non resta appeso.
+      const track = (handle: PluginListenerHandle) => {
+        if (phase === 'done') {
+          void handle.remove().catch(() => undefined);
+          return;
+        }
+
+        listeners.push(handle);
+      };
+
+      const markRewarded = () => {
+        if (phase === 'done') return;
+
+        hasReward = true;
+
+        // Rewarded arrivato dopo il Dismissed (in attesa nella finestra di grazia).
+        if (dismissed) finish(true);
+      };
+
+      /*
+       * Rete di sicurezza se il Dismissed non arriva mai al JS: con l'annuncio
+       * a schermo l'Activity dell'app e' in pausa (App.getState().isActive ===
+       * false); se torna attiva in modo stabile l'annuncio e' chiuso. Chiude
+       * solo dopo aver visto l'app inattiva almeno una volta, cosi' su un
+       * device che riportasse sempre "attiva" non chiude mai per errore mentre
+       * il video e' in corso. Un errore di getState conta come "inattiva" per
+       * lo stesso motivo.
+       */
+      const startWatchdog = () => {
+        if (watchdog) return;
+
+        watchdog = setInterval(async () => {
+          const state = await App.getState().catch(() => ({ isActive: false }));
+
+          if (phase !== 'showing' || dismissed) return;
+
+          if (!state.isActive) {
+            appSeenInactive = true;
+            consecutiveActiveChecks = 0;
+            return;
+          }
+
+          if (!appSeenInactive) return;
+
+          consecutiveActiveChecks++;
+
+          if (consecutiveActiveChecks >= config.watchdogActiveChecks) {
+            console.warn('Rewarded video: Dismissed non ricevuto, chiusura dal watchdog.');
+            finish(hasReward);
+          }
+        }, config.watchdogIntervalMs);
+      };
+
+      const markShowing = () => {
+        if (phase !== 'loading' && phase !== 'requested') return;
+
+        phase = 'showing';
+        startWatchdog();
+      };
+
+      const run = async () => {
+        track(
+          await AdMob.addListener(RewardAdPluginEvents.Rewarded, () => {
+            markRewarded();
+          }),
+        );
+
+        track(
+          await AdMob.addListener(RewardAdPluginEvents.Showed, () => {
+            markShowing();
+          }),
+        );
+
+        track(
+          await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
+            if (phase === 'done') return;
+
+            dismissed = true;
+
+            if (hasReward) {
+              finish(true);
+              return;
+            }
+
+            // Alcuni adapter di mediazione consegnano il Rewarded subito dopo il Dismissed.
+            schedule(() => finish(hasReward), config.rewardGraceMs);
+          }),
+        );
+
+        track(
+          await AdMob.addListener(RewardAdPluginEvents.FailedToShow, (error) => {
+            console.warn('Rewarded video non mostrato:', error);
+            finish(false);
+          }),
+        );
+
+        track(
+          await App.addListener('appStateChange', ({ isActive }) => {
+            if (isActive) return;
+
+            appSeenInactive = true;
+
+            // App in pausa per l'annuncio anche se lo Showed e' andato perso.
+            if (phase === 'requested') markShowing();
+          }),
+        );
+
+        if (phase === 'done') return;
+
+        const loadTimer = schedule(() => {
+          console.warn('Rewarded video: caricamento oltre il tempo massimo.');
+          finish(false);
+        }, config.loadTimeoutMs);
+
+        const options: RewardAdOptions = { adId: config.adId };
+
+        await AdMob.prepareRewardVideoAd(options);
+
+        // Caricamento terminato dopo il timeout: non mostrare piu' nulla.
+        if (phase !== 'loading') return;
+
+        cancel(loadTimer);
+        phase = 'requested';
+
+        schedule(async () => {
+          if (phase !== 'requested') return;
+
+          const state = await App.getState().catch(() => ({ isActive: true }));
+
+          if (phase !== 'requested') return;
+
+          // App coperta da qualcosa: l'annuncio e' quasi certamente a schermo.
+          if (!state.isActive) {
+            markShowing();
+            return;
+          }
+
+          console.warn('Rewarded video: Showed non ricevuto in tempo.');
+          finish(false);
+        }, config.showStartTimeoutMs);
+
+        /*
+         * Volutamente senza await: lato nativo questa chiamata risolve solo
+         * quando il premio e' guadagnato e resta pending per sempre se il video
+         * viene chiuso prima o non parte. L'esito arriva dai listener; la
+         * risoluzione serve solo come secondo segnale del premio.
+         */
+        AdMob.showRewardVideoAd()
+          .then((reward?: AdMobRewardItem) => {
+            if (reward) markRewarded();
+          })
+          .catch((error) => {
+            if (phase === 'showing' || phase === 'done') return;
+
+            console.warn('Errore show rewarded video:', error);
+            finish(false);
+          });
+      };
+
+      run().catch((error) => {
+        console.error('Errore flusso rewarded video:', error);
+        finish(false);
+      });
+    });
   }
 
   // Aspetta che l'app sia tornata in foreground dopo la pubblicita.
