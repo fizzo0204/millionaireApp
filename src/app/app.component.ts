@@ -1,5 +1,11 @@
 import { Component, OnDestroy, HostListener, inject } from '@angular/core';
-import { IonicModule, Platform } from '@ionic/angular';
+import {
+  AlertController,
+  IonicModule,
+  ModalController,
+  Platform,
+  PopoverController,
+} from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
@@ -37,8 +43,11 @@ import { AssetPreloadService } from './services/asset-preload.service';
 import { AchievementToastService } from './services/achievement-toast.service';
 import { NotificationsService } from './services/notifications.service';
 import { PurchasesService } from './services/purchases.service';
+import { AppUpdateService } from './services/app-update.service';
+import { TutorialService } from './services/tutorial.service';
 import { NavigationTab } from './models/navigation.model';
 import { APP_CONFIG } from 'src/app/config/app.config';
+import { APP_UPDATE_CONFIG } from 'src/app/config/app-update.config';
 import { USER_STATS_CONFIG } from 'src/app/config/user-stats.config';
 
 @Component({
@@ -70,7 +79,16 @@ export class AppComponent implements OnDestroy {
   bannerHeightPx$: Observable<number>;
 
   showAppLoader = true;
+  /*
+   * Vero quando la versione installata e' sotto appConfig/android.minVersionCode:
+   * il gioco non viene proprio montato (shell, router, overlay globali) e i
+   * flussi automatici (daily reward, toast, tutorial) non partono. Resta
+   * visibile solo ForceUpdateOverlayComponent.
+   */
+  updateRequired = false;
   hideBottomNav = false;
+  private gameStarted = false;
+  private updateSub?: Subscription;
   private musicStarted = false;
   private isMobile = false;
 
@@ -96,6 +114,11 @@ export class AppComponent implements OnDestroy {
     private notificationsService: NotificationsService,
     private purchasesService: PurchasesService,
     private router: Router,
+    private appUpdate: AppUpdateService,
+    private tutorialService: TutorialService,
+    private modalCtrl: ModalController,
+    private alertCtrl: AlertController,
+    private popoverCtrl: PopoverController,
   ) {
     this.bannerHeightPx$ = this.adsService.bannerHeight$;
     void this.dailyEventsService;
@@ -110,14 +133,61 @@ export class AppComponent implements OnDestroy {
     await Promise.all([
       this.prepareApp(),
       this.waitForInitialUser(),
+      this.appUpdate.waitForInitialStatus(APP_UPDATE_CONFIG.initialStatusWaitMs),
       this.wait(APP_CONFIG.loaderDuration),
     ]);
 
+    this.updateRequired = this.appUpdate.isUpdateRequired();
     this.showAppLoader = false;
+    this.syncBannerVisibility();
+
+    /*
+     * Aggiornamento forzato (2026-10-18): prima l'overlay di update conviveva
+     * col gioco gia' avviato, e la modale del daily reward (o tutorial, login
+     * ospite, ecc.) si apriva sopra di lui: per aggiornare bisognava prima
+     * riscattare il reward. Ora, se serve l'update, il gioco non parte; se
+     * minVersionCode cambia a sessione aperta, il gioco viene smontato e le
+     * modali gia' aperte chiuse.
+     */
+    this.updateSub = this.appUpdate.updateRequired$.subscribe((required) => {
+      this.updateRequired = required;
+
+      if (required) {
+        void this.closeGameOverlays();
+        return;
+      }
+
+      this.startGame();
+    });
+  }
+
+  private startGame() {
+    if (this.gameStarted) return;
+
+    this.gameStarted = true;
     this.assetPreload.preloadPriorityImages();
     this.dailyRewardAutoOpen.start();
     this.achievementToast.start();
-    this.syncBannerVisibility();
+  }
+
+  // Chiude tutto cio' che il gioco puo' aver aperto sopra l'app.
+  private async closeGameOverlays() {
+    if (this.tutorialService.getCurrentState().visible) {
+      this.tutorialService.close();
+    }
+
+    const controllers = [this.modalCtrl, this.alertCtrl, this.popoverCtrl];
+
+    for (const controller of controllers) {
+      // Tetto di sicurezza: un overlay che rifiuta il dismiss non deve bloccare il ciclo.
+      for (let attempt = 0; attempt < 10; attempt++) {
+        const top = await controller.getTop();
+
+        if (!top) break;
+
+        await top.dismiss().catch(() => false);
+      }
+    }
   }
 
   /*
@@ -177,7 +247,10 @@ export class AppComponent implements OnDestroy {
           }
 
           this.syncBannerVisibility();
-          this.dailyRewardAutoOpen.notifyAppBecameActive();
+
+          if (!this.updateRequired) {
+            this.dailyRewardAutoOpen.notifyAppBecameActive();
+          }
           return;
         }
 
@@ -226,7 +299,10 @@ export class AppComponent implements OnDestroy {
       .subscribe((event) => {
         this.updateActiveTabFromUrl(event.urlAfterRedirects);
         this.syncBannerVisibility();
-        void this.dailyRewardAutoOpen.checkAndOpen({ delayMs: 250 });
+
+        if (!this.updateRequired) {
+          void this.dailyRewardAutoOpen.checkAndOpen({ delayMs: 250 });
+        }
       });
   }
 
@@ -375,6 +451,7 @@ export class AppComponent implements OnDestroy {
     this.routerSub?.unsubscribe();
     this.levelSub?.unsubscribe();
     this.userSub?.unsubscribe();
+    this.updateSub?.unsubscribe();
     this.achievementToast.stop();
     this.appStateListener?.remove();
   }

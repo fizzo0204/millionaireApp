@@ -4,6 +4,7 @@ import {
   runInInjectionContext,
 } from '@angular/core';
 import { Router } from '@angular/router';
+import { AppUpdateService } from './app-update.service';
 import { User } from 'firebase/auth';
 import {
   Firestore,
@@ -62,6 +63,7 @@ export class TutorialService {
     private dailyRewardService: DailyRewardService,
     private ui: UiService,
     private userStatsService: UserStatsService,
+    private appUpdate: AppUpdateService,
   ) {}
 
   getCurrentState(): TutorialState {
@@ -248,6 +250,9 @@ export class TutorialService {
   }
 
   private open(mode: TutorialMode, rewardClaimed: boolean): void {
+    // Con l'aggiornamento forzato attivo il gioco non deve partire.
+    if (this.appUpdate.isUpdateRequired()) return;
+
     this.ui.openModalOverlay();
     this.stateSubject.next({
       ...this.initialState,

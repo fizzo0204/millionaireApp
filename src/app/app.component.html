@@ -6,7 +6,7 @@
         subtitle="Preparazione della partita..."
       ></app-game-loader>
     </div>
-  } @else {
+  } @else if (!updateRequired) {
     <div class="app-shell" [class.app-shell--no-nav]="navHidden">
       <app-home-navbar></app-home-navbar>
 
@@ -25,8 +25,10 @@
     </div>
   }
 
-  <app-achievement-toast></app-achievement-toast>
-  <app-level-up-modal></app-level-up-modal>
-  <app-tutorial-overlay></app-tutorial-overlay>
+  @if (!updateRequired) {
+    <app-achievement-toast></app-achievement-toast>
+    <app-level-up-modal></app-level-up-modal>
+    <app-tutorial-overlay></app-tutorial-overlay>
+  }
   <app-force-update-overlay></app-force-update-overlay>
 </ion-app>

@@ -8,6 +8,7 @@ import { AnonymousModalComponent } from 'src/app/components/anonymous-modal/anon
 import { AuthService } from './auth.service';
 import { AppUserProfile } from 'src/app/models/user-stats.model';
 import { UserStatsService } from './user-stats.service';
+import { AppUpdateService } from './app-update.service';
 
 interface LoginPromptOptions {
   force?: boolean;
@@ -21,6 +22,7 @@ export class AuthPromptService {
   private isPromptOpen = false;
 
   constructor(
+    private appUpdate: AppUpdateService,
     private modalCtrl: ModalController,
     private auth: AuthService,
     private router: Router,
@@ -75,6 +77,9 @@ export class AuthPromptService {
       }
 
       if (!options.force && !this.canShowHomePrompt()) return;
+
+      // Con l'aggiornamento forzato attivo il gioco non deve partire.
+      if (this.appUpdate.isUpdateRequired()) return;
 
       const modal = await this.modalCtrl.create({
         component: AnonymousModalComponent,

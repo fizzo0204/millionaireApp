@@ -15,6 +15,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { DailyEventsService } from 'src/app/services/daily-events.service';
 import { DailyRewardService } from 'src/app/services/daily-reward.service';
 import { TutorialService } from 'src/app/services/tutorial.service';
+import { AppUpdateService } from 'src/app/services/app-update.service';
 
 @Injectable({
   providedIn: 'root',
@@ -47,6 +48,7 @@ export class DailyRewardAutoOpenService implements OnDestroy {
     private modalCtrl: ModalController,
     private router: Router,
     private tutorialService: TutorialService,
+    private appUpdate: AppUpdateService,
   ) {}
 
   start(): void {
@@ -94,6 +96,9 @@ export class DailyRewardAutoOpenService implements OnDestroy {
     delayMs?: number;
   }): Promise<boolean> {
     if (!this.started || this.opening) return false;
+
+    // Con l'aggiornamento forzato attivo il gioco non deve partire.
+    if (this.appUpdate.isUpdateRequired()) return false;
 
     /*
      * La guardia va impostata QUI, prima di qualunque await: più trigger
@@ -149,6 +154,9 @@ export class DailyRewardAutoOpenService implements OnDestroy {
       if (!options?.ignoreSessionGuard && this.autoOpenedDate === todayKey) {
         return false;
       }
+
+      // Ricontrollo dopo gli await: l'update puo' essere diventato obbligatorio nel frattempo.
+      if (this.appUpdate.isUpdateRequired()) return false;
 
       this.pendingCheck = false;
       this.autoOpenedDate = todayKey;
